@@ -79,6 +79,7 @@ sub _parse_ini {
     $src_name = $src;
     $src = [do { local (*ARGV); @ARGV = ($src_name); <> }];
   }
+  my $act_section;
   for (my $i = 0; $i < @$src; ++$i) {
     my $line = $src->[$i];
     if (index($line, ";!") == 0 || index($line, "=") == 0) {
@@ -114,8 +115,7 @@ sub _parse_ini {
   #     $src = [split(/\n/, $str)];
   #   }
   # }
-
-
+  return $act_section;
 }
 
 #
