@@ -9,23 +9,26 @@ use feature ":5.10";
 
 our $VERSION = '0.01';
 
-sub new {
-  state $allowed_keys = {map {$_ => undef} qw(clone sec src_name)};
+sub new { bless {}, ref($_[0]) || ref($_[0]) }
+
+sub parse_ini {
+  state $allowed_keys = {map {$_ => undef} qw(clone src src_name predef)};
   state $dflt_src_name = "INI data";
-  my $class = shift;
-  my $self = { clone => "", @_ };
-  delete $self->{src_name} if (exists($self->{src_name}) && !defined($self->{src_name}));
+  my $self = shift;
+  %$self = (clone => "", predef => {}, @_ );
   foreach my $key (keys(%$self)) {
     croak("$key: Unsupported argument") if !exists($allowed_keys->{$key});
   }
+  my $clone = delete $self->{clone};
+  delete $self->{src_name} if (exists($self->{src_name}) && !defined($self->{src_name}));
   my $src = delete($self->{src}) // croak("'src': Missing mandatory argument");#####
-  ref($self->{clone}) and croak("'clone': arg must not be a reference");
+   croak("'clone': arg must not be a reference") if ref($self->{clone});
   if (my $ref_src = ref($src)) {
     $self->{src_name} = $dflt_src_name if !exists($self->{src_name});
     if ($ref_src eq 'ARRAY') {
       $src = [@$src] if $self->{clone};
       for (my $i = 0; $i < @$i; ++$i) {
-        ref($src->[$i]) and croak(_fmt_err($self->{src_name}, $i + 1, "Unexpected data."));
+        croak(_fmt_err($self->{src_name}, $i + 1, "Unexpected ref type.")) if ref($src->[$i]);
         $src->[$i] //= "";
       }
     } else {
@@ -41,10 +44,20 @@ sub new {
       $self->{src_name} = $dflt_src_name if !exists($self->{src_name});
     }
   }
-  $self->{sections} = [];
+  if (exists($self->{predef})) {
+    if (defined($self->{predef})) {
+      croak("'predef': must be a HASH ref") if ref($self->{predef}) ne 'HASH';
+      while (my ($var, $val) = each(%{$self->{predef}})) {
+        croak("'predef': unexpected ref type for variable $var") if ref($val);
+      }
+      $self->{predef} = {%{$self->{predef}}} if $clone;
+    } else {
+      $self->{predef} = {};
+    }
+  }
+  $self->{sections}  = [];
   $self->{variables} = {};
-  bless($self, $class);
-
+  # ...
   return $self;
 }
 
@@ -63,7 +76,7 @@ sub _parse_ini {
   } else {
     $ini_src = [do { local (*ARGV); @ARGV = ($ini_src); <> }];
   }
-    # ...= @{{@_}}{qw(src, clone)};
+  # ...= @{{@_}}{qw(src, clone)};
   # my $src_name = "INI data";
   # if (my $ref_src = ref($src)) {
   #   if ($ref_src eq 'ARRAY') {
