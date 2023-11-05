@@ -70,11 +70,33 @@ sub _fmt_err {
 
 
 sub _parse_ini {
-  my ($self, $ini_src) = @_;
-  if (ref($ini_src)) {
-    ref($ini_src) eq 'ARRAY' or croak("Internal error");
+  my ($self, $src) = @_;
+  my $src_name;
+  if (ref($src)) {
+    ref($src) eq 'ARRAY' or croak("Internal error");
+    $src_name = $self->{src_name};
   } else {
-    $ini_src = [do { local (*ARGV); @ARGV = ($ini_src); <> }];
+    $src_name = $src;
+    $src = [do { local (*ARGV); @ARGV = ($src_name); <> }];
+  }
+  for (my $i = 0; $i < @$src; ++$i) {
+    my $line = $src->[$i];
+    if (index($line, ";!") == 0 || index($line, "=") == 0) {
+      croak("'$src_name' Directives are not yet supported");
+    }
+    $line =~ s/^\s+//;
+    next if $line eq "" || $line =~ /^[;#]/;
+    $line =~ s/\s+$//;
+    if (index($line, "[") == 0) {
+      index($line, "]") > 0 or croak("Invalid section header at line " . $i + 1);
+      # ....
+      next;
+    }
+    if (my $eq_idx = index($line, "=") < 0) {
+      croak("Neither section header not key definition at line " . $i + 1)
+    }
+    # it's a var line!
+    # ...
   }
   # ...= @{{@_}}{qw(src, clone)};
   # my $src_name = "INI data";
@@ -103,32 +125,7 @@ sub _error_msg {
   return sprintf("", @_)
 }
 
-sub _process_INI_data {
-  my ($src, $src_name) = @_;
-  for (my $i = 0; $i < @$src; ++$i) {
-    my $line = $src->[$i];
-    $line =~ s/^\s+//;
-    next if $line eq "";
-    if (index($line, ";!") == 0 || index($line, "=") == 0) {
-      croak("'$src_name' Directives are not yet supported");
-    }
-    if ($line =~ /^[;#]/) {
-      $line = "";
-      next;
-    }
-    $line =~ s/\s+$//;
-    if (index($line, "[") == 0) {
-      index($line, "]") > 0 or croak("Invalid section header at line " . $i + 1);
-      $line =~ s/\]\s*[;#][^]]$//;
-      next;
-    }
-    if (my $eq_idx = index($line, "=") < 0) {
-      croak("Neither section header not key definition at line " . $i + 1)
-    } else {
-      1; ##############
-    }
-  }
-}
+
 
 1; # End of Config::INI::AccVars
 
