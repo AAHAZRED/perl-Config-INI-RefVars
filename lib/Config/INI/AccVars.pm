@@ -99,6 +99,7 @@ sub _parse_ini {
     $line =~ s/^\s+//;
     next if $line eq "" || $line =~ /^[;#]/;
     $line =~ s/\s+$//;
+    # section header
     if (index($line, "[") == 0) {
       croak("Invalid section header at line " . $i + 1) if index($line, "]") > 0;
       $line =~ s/\s*[#;][^\]]*$//;
@@ -110,18 +111,24 @@ sub _parse_ini {
       push(@$sections, $curr_section);
       next;
     }
-    if (my $eq_idx = index($line, "=") < 0) {
+    if (index($line, "=") < 0) {
       croak("Neither section header not key definition at line " . $i + 1)
+    } else {
+      # var = val
+      $line =~ /^(.*?)\s*([[:punct:]]*)=(?:\s*)(.*)/ or
+        croak("Neither section header not key definition at line " . $i + 1);
+      my ($var_name, $modifier, $value) = ($1, $2, $3);
+      croak("Empty variable name at line " . $i + 1) if $var_name eq "";
+      if (!defined($curr_section)) {
+        $curr_section = $self->{default_section};
+        $sections_h->{$curr_section} = undef;
+        push(@$sections, $curr_section);
+      }
+      my $sect_vars = $self->{variables}{$curr_section} //= {};
+      if ($modifier eq "") {
+        $sect_vars->{$var_name} = $value;
+      }
     }
-    # ... = ...
-    if (!defined($curr_section)) {
-      $curr_section = $self->{default_section};
-      $sections_h->{$curr_section} = undef;
-      push(@$sections, $curr_section);
-      # ...
-    }
-    # it's a var line!
-    # ...
   }
   # ...= @{{@_}}{qw(src, clone)};
   # my $src_name = "INI data";
