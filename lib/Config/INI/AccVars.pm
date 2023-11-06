@@ -28,7 +28,9 @@ sub parse_ini {
   foreach my $scalar_arg (qw(clone src_name default_section common_section)) {
      croak("'$scalar_arg': must not be a reference") if ref($self->{$scalar_arg});
   }
-  %$self = (clone => "", predef => {}, @_ );
+  %$self = (clone => "", predef => {},
+            default_section => $Default_Section, common_section => $Common_Section,
+            @_ );
   my $clone = delete $self->{clone};
   my $src = delete($self->{src}) // croak("'src': Missing mandatory argument");#####
   if (my $ref_src = ref($src)) {
@@ -110,6 +112,11 @@ sub _parse_ini {
     }
     if (my $eq_idx = index($line, "=") < 0) {
       croak("Neither section header not key definition at line " . $i + 1)
+    }
+    # ... = ...
+    if (!defined($curr_section)) {
+      $curr_section = $self->{default_section};
+      # ...
     }
     # it's a var line!
     # ...
