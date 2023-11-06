@@ -116,6 +116,8 @@ sub _parse_ini {
     # ... = ...
     if (!defined($curr_section)) {
       $curr_section = $self->{default_section};
+      $sections_h->{$curr_section} = undef;
+      push(@$sections, $curr_section);
       # ...
     }
     # it's a var line!
