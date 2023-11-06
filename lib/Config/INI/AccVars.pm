@@ -86,7 +86,7 @@ sub _parse_ini {
     $src_name = $src;
     $src = [do { local (*ARGV); @ARGV = ($src_name); <> }];
   }
-  my $act_section;
+  my $curr_section;
   my $sections   = $self->{sections};
   my $sections_h = $self->{sections_h};
   for (my $i = 0; $i < @$src; ++$i) {
@@ -101,11 +101,11 @@ sub _parse_ini {
       croak("Invalid section header at line " . $i + 1) if index($line, "]") > 0;
       $line =~ s/\s*[#;][^\]]*$//;
       $line =~ /^\[\s*(.*?)\s*\]$/ or croak("Invalid section header at line " . $i + 1);
-      $act_section = $1;
-      croak("'$act_section': duplicate section name at line " . $i + 1)
-        if exists($sections_h->{act_section});
-      $sections_h->{$act_section} = undef;
-      push(@$sections, $act_section);
+      $curr_section = $1;
+      croak("'$curr_section': duplicate section name at line " . $i + 1)
+        if exists($sections_h->{curr_section});
+      $sections_h->{$curr_section} = undef;
+      push(@$sections, $curr_section);
       next;
     }
     if (my $eq_idx = index($line, "=") < 0) {
@@ -130,7 +130,7 @@ sub _parse_ini {
   #     $src = [split(/\n/, $str)];
   #   }
   # }
-  return $act_section;
+  return $curr_section;
 }
 
 #
