@@ -9,20 +9,28 @@ use feature ":5.10";
 
 our $VERSION = '0.01';
 
+our $Default_Section = "__COMMON__";
+our $Common_Section  = $Default_Section;
+
+
 sub new { bless {}, ref($_[0]) || ref($_[0]) }
 
+
 sub parse_ini {
-  state $allowed_keys = {map {$_ => undef} qw(clone src src_name predef)};
-  state $dflt_src_name = "INI data";
+  state $allowed_keys = {map {$_ => undef} qw(clone src src_name predef
+                                              default_section common_section)};
+  state $dflt_src_name = "INI data";  ### our???
   my $self = shift;
-  %$self = (clone => "", predef => {}, @_ );
   foreach my $key (keys(%$self)) {
     croak("$key: Unsupported argument") if !exists($allowed_keys->{$key});
   }
+  delete @$self{ grep { !defined($self->{$_}) } keys(%$self) };
+  foreach my $scalar_arg (qw(clone src_name default_section common_section)) {
+     croak("'$scalar_arg': must not be a reference") if ref($self->{$scalar_arg});
+  }
+  %$self = (clone => "", predef => {}, @_ );
   my $clone = delete $self->{clone};
-  delete $self->{src_name} if (exists($self->{src_name}) && !defined($self->{src_name}));
   my $src = delete($self->{src}) // croak("'src': Missing mandatory argument");#####
-   croak("'clone': arg must not be a reference") if ref($self->{clone});
   if (my $ref_src = ref($src)) {
     $self->{src_name} = $dflt_src_name if !exists($self->{src_name});
     if ($ref_src eq 'ARRAY') {
@@ -45,15 +53,13 @@ sub parse_ini {
     }
   }
   if (exists($self->{predef})) {
-    if (defined($self->{predef})) {
-      croak("'predef': must be a HASH ref") if ref($self->{predef}) ne 'HASH';
-      while (my ($var, $val) = each(%{$self->{predef}})) {
-        croak("'predef': unexpected ref type for variable $var") if ref($val);
-      }
-      $self->{predef} = {%{$self->{predef}}} if $clone;
-    } else {
-      $self->{predef} = {};
+    croak("'predef': must be a HASH ref") if ref($self->{predef}) ne 'HASH';
+    while (my ($var, $val) = each(%{$self->{predef}})) {
+      croak("'predef': unexpected ref type for variable $var") if ref($val);
     }
+    $self->{predef} = {%{$self->{predef}}} if $clone;
+  } else {
+    $self->{predef} = {};
   }
   $self->{sections}  = [];
   $self->{variables} = {};
