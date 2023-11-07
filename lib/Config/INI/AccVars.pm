@@ -213,6 +213,8 @@ Perhaps a little code snippet.
 
 =head1 DESCRIPTION
 
+Sections without any vars do not appear in 'variables' hash.
+
 =head1 EXPORT
 
 A list of functions that can be exported.  You can delete this section
