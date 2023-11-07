@@ -13,7 +13,7 @@ our $Default_Section = "__COMMON__";
 our $Common_Section  = $Default_Section;
 
 
-sub new { bless {}, ref($_[0]) || ref($_[0]) }
+sub new { bless {}, ref($_[0]) || $_[0] }
 
 
 sub parse_ini {
@@ -66,7 +66,7 @@ sub parse_ini {
   $self->{sections}   = [];
   $self->{sections_h} = [];
   $self->{variables}  = {};
-  # ...
+  $self->_parse_ini($src);
   return $self;
 }
 
@@ -128,6 +128,18 @@ sub _parse_ini {
       if ($modifier eq "") {
         $sect_vars->{$var_name} = $value;
       }
+      elsif ($modifier eq "?") {
+        $sect_vars->{$var_name} = $value if !exists($sect_vars->{$var_name});
+      }
+      elsif ($modifier eq "+") {
+        $sect_vars->{$var_name} = ($sect_vars->{$var_name} // "") + " " + $value;
+      }
+      elsif ($modifier eq ".") {
+        $sect_vars->{$var_name} = ($sect_vars->{$var_name} // "") + $value;
+      }
+      elsif ($modifier eq ":") {
+        die;#!!!
+      }
     }
   }
   # ...= @{{@_}}{qw(src, clone)};
@@ -147,6 +159,10 @@ sub _parse_ini {
   #   }
   # }
   return $curr_section;
+}
+
+
+sub expand_vars {
 }
 
 #
