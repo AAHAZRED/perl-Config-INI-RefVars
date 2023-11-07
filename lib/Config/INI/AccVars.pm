@@ -21,6 +21,9 @@ sub parse_ini {
                                               default_section common_section)};
   state $dflt_src_name = "INI data";  ### our???
   my $self = shift;
+  %$self = (clone => "", predef => {},
+            default_section => $Default_Section, common_section => $Common_Section,
+            @_ );
   foreach my $key (keys(%$self)) {
     croak("$key: Unsupported argument") if !exists($allowed_keys->{$key});
   }
@@ -28,9 +31,6 @@ sub parse_ini {
   foreach my $scalar_arg (qw(clone src_name default_section common_section)) {
      croak("'$scalar_arg': must not be a reference") if ref($self->{$scalar_arg});
   }
-  %$self = (clone => "", predef => {},
-            default_section => $Default_Section, common_section => $Common_Section,
-            @_ );
   my $clone = delete $self->{clone};
   my $src = delete($self->{src}) // croak("'src': Missing mandatory argument");#####
   if (my $ref_src = ref($src)) {
@@ -106,24 +106,24 @@ sub _parse_ini {
     $line =~ s/\s+$//;
     # section header
     if (index($line, "[") == 0) {
-      croak("Invalid section header at line " . $i + 1) if index($line, "]") > 0;
+      croak("Invalid section header at line ", $i + 1) if index($line, "]") < 0;
       $line =~ s/\s*[#;][^\]]*$//;
-      $line =~ /^\[\s*(.*?)\s*\]$/ or croak("Invalid section header at line " . $i + 1);
+      $line =~ /^\[\s*(.*?)\s*\]$/ or croak("Invalid section header at line ", $i + 1);
       $curr_section = $1;
-      croak("'$curr_section': duplicate section name at line " . $i + 1)
+      croak("'$curr_section': duplicate section name at line ", $i + 1)
         if exists($sections_h->{curr_section});
       $sections_h->{$curr_section} = undef;
       push(@$sections, $curr_section);
       next;
     }
     if (index($line, "=") < 0) {
-      croak("Neither section header not key definition at line " . $i + 1)
+      croak("Neither section header not key definition at line ", $i + 1)
     } else {
       # var = val
       $line =~ /^(.*?)\s*([[:punct:]]*)=(?:\s*)(.*)/ or
-        croak("Neither section header not key definition at line " . $i + 1);
+        croak("Neither section header not key definition at line ", $i + 1);
       my ($var_name, $modifier, $value) = ($1, $2, $3);
-      croak("Empty variable name at line " . $i + 1) if $var_name eq "";
+      croak("Empty variable name at line ", $i + 1) if $var_name eq "";
       if (!defined($curr_section)) {
         $curr_section = $self->{default_section};
         $sections_h->{$curr_section} = undef;
