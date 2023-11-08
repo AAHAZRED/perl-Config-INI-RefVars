@@ -178,21 +178,29 @@ subtest "default section, empty section name" => sub {
   check_other($obj);
 };
 
-subtest "clone + predef (empty)" => sub {
+subtest "arguments" => sub {
   my $obj = new_ok('Config::INI::AccVars');
   my $input = ["a=b",
                "[]",
                "A=B"];
-  my $predef = {};
-  $obj->parse_ini(src => $input, predef => $predef);
-  is_deeply($obj->predef, {}, "predef() is {}");
-  is($obj->predef, $predef, "predef is not cloned");
+  subtest "clone + predef (empty)" => sub {
+    my $predef = {};
+    $obj->parse_ini(src => $input, predef => $predef);
+    is_deeply($obj->predef, {}, "predef() is {}");
+    is($obj->predef, $predef, "predef is not cloned");
 
-  $obj->parse_ini(src => $input, predef => $predef, clone => 1);
-  is_deeply($obj->predef, {}, "predef() is {}");
-  isnt($obj->predef, $predef, "predef is not cloned");
+    $obj->parse_ini(src => $input, predef => $predef, clone => 1);
+    is_deeply($obj->predef, {}, "predef() is {}");
+    isnt($obj->predef, $predef, "predef is not cloned");
+  };
+  subtest "src_name, default_section, common_section" => sub {
+    $obj->parse_ini(src => $input, src_name => "The source",
+                    default_section => "FOO", common_section => "BAR");
+    is($obj->src_name,        "The source", "src_name()");
+    is($obj->default_section, "FOO",        "default_section");
+    is($obj->common_section,  "BAR",        "common_section");
+  };
 };
-
 
 #==================================================================================================
 done_testing();
