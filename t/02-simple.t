@@ -10,9 +10,15 @@ use File::Spec::Functions;
 
 sub test_data_file { catfile(qw(t 02_data), $_[0]) }
 
+subtest 'predefined sections' => sub {
+  is($Config::INI::AccVars::Default_Section, "__COMMON__", "Default_Section");
+  is($Config::INI::AccVars::Common_Section,
+     $Config::INI::AccVars::Default_Section,
+     "By default, Default_Section equals Default_Section");
+};
 
 subtest 'before any parsing' => sub {
-    my $obj = new_ok('Config::INI::AccVars');
+  my $obj = new_ok('Config::INI::AccVars');
   is($obj->sections,   undef, 'sections(): undef');
   is($obj->sections_h, undef, 'sections_h(): undef');
   is($obj->variables,  undef, 'variables(): undef');
@@ -22,7 +28,7 @@ subtest 'before any parsing' => sub {
 subtest 'empty input' => sub {
   subtest "string that only contains a line break" => sub {
     my $obj = new_ok('Config::INI::AccVars');
-    $obj->parse_ini(src => "\n");
+    is($obj->parse_ini(src => "\n"), $obj, "parse_ini() returns obj");
     is_deeply($obj->sections,   [], 'sections(): empty array');
     is_deeply($obj->sections_h, {}, 'sections_h(): empty hash');
     is_deeply($obj->variables,  {}, 'variables(): empty hash');
@@ -136,6 +142,25 @@ subtest "simple content / reuse" => sub {
                'variables()');
   };
 };
+
+
+subtest "default section, empty section name" => sub {
+  my $obj = new_ok('Config::INI::AccVars');
+  my $input = ["a=b",
+               "[]",
+               "A=B"];
+  is($obj->parse_ini(src => $input), $obj, "parse_ini() returns obj");
+  is_deeply($obj->sections, [$Config::INI::AccVars::Default_Section, ""],
+            "sections(): default and empty section");
+  is_deeply($obj->sections_h, { $Config::INI::AccVars::Default_Section => undef,
+                                ""                                     => undef},
+            'sections_h()');
+  is_deeply($obj->variables,  { $Config::INI::AccVars::Default_Section => {a => 'b'},
+                                ""                                     => {A => 'B'},
+                              },
+               'variables()');
+};
+
 
 #==================================================================================================
 done_testing();
