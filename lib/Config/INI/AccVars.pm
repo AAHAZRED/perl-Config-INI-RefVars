@@ -142,10 +142,10 @@ sub _parse_ini {
         $sect_vars->{$var_name} = $value if !exists($sect_vars->{$var_name});
       }
       elsif ($modifier eq "+") {
-        $sect_vars->{$var_name} = ($sect_vars->{$var_name} // "") + " " + $value;
+        $sect_vars->{$var_name} = ($sect_vars->{$var_name} // "") . " " . $value;
       }
       elsif ($modifier eq ".") {
-        $sect_vars->{$var_name} = ($sect_vars->{$var_name} // "") + $value;
+        $sect_vars->{$var_name} = ($sect_vars->{$var_name} // "") . $value;
       }
       elsif ($modifier eq ":") {
         die;#!!!
