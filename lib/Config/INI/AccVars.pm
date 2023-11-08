@@ -36,7 +36,7 @@ sub parse_ini {
   if (my $ref_src = ref($src)) {
     $self->{src_name} = $dflt_src_name if !exists($self->{src_name});
     if ($ref_src eq 'ARRAY') {
-      $src = [@$src] if $self->{clone};
+      $src = [@$src] if $clone;
       for (my $i = 0; $i < @$src; ++$i) {
         croak(_fmt_err($self->{src_name}, $i + 1, "Unexpected ref type.")) if ref($src->[$i]);
         $src->[$i] //= "";
@@ -71,9 +71,14 @@ sub parse_ini {
 }
 
 
-sub sections   {$_[0]->{sections}}
-sub sections_h {$_[0]->{sections_h}}
-sub variables  {$_[0]->{variables}}
+sub sections        {$_[0]->{sections}}
+sub sections_h      {$_[0]->{sections_h}}
+sub variables       {$_[0]->{variables}}
+sub src_name        {$_[0]->{src_name}}
+sub predef          {$_[0]->{predef}}
+sub default_section {$_[0]->{default_section}}
+sub common_section  {$_[0]->{common_section}}
+
 
 #
 # _fmt_err(SRC, LINE_NO, MSG)

@@ -9,7 +9,15 @@ use Config::INI::AccVars;
 ok(defined($Config::INI::AccVars::VERSION), '$VERSION is defined');
 
 foreach my $meth (qw(new
-            parse_ini)) {
+                     parse_ini
+                     sections
+                     sections_h
+                     variables
+                     src_name
+                     predef
+                     default_section
+                     common_section
+                   )) {
   ok(Config::INI::AccVars->can($meth), "$meth() exists");
 }
 

@@ -19,9 +19,15 @@ subtest 'predefined sections' => sub {
 
 subtest 'before any parsing' => sub {
   my $obj = new_ok('Config::INI::AccVars');
-  is($obj->sections,   undef, 'sections(): undef');
-  is($obj->sections_h, undef, 'sections_h(): undef');
-  is($obj->variables,  undef, 'variables(): undef');
+  foreach my $meth (qw(sections
+                       sections_h
+                       variables
+                       src_name
+                       predef
+                       default_section
+                       common_section)) {
+    is($obj->$meth, undef, "$meth(): undef");
+  }
 };
 
 
@@ -32,6 +38,7 @@ subtest 'empty input' => sub {
     is_deeply($obj->sections,   [], 'sections(): empty array');
     is_deeply($obj->sections_h, {}, 'sections_h(): empty hash');
     is_deeply($obj->variables,  {}, 'variables(): empty hash');
+    check_other($obj);
   };
   subtest "empty array" => sub {
     my $obj = new_ok('Config::INI::AccVars');
@@ -39,6 +46,7 @@ subtest 'empty input' => sub {
     is_deeply($obj->sections,   [], 'sections(): empty array');
     is_deeply($obj->sections_h, {}, 'sections_h(): empty hash');
     is_deeply($obj->variables,  {}, 'variables(): empty hash');
+    check_other($obj);
   };
   subtest "array containing an empty string" => sub {
     my $obj = new_ok('Config::INI::AccVars');
@@ -46,6 +54,7 @@ subtest 'empty input' => sub {
     is_deeply($obj->sections,   [], 'sections(): empty array');
     is_deeply($obj->sections_h, {}, 'sections_h(): empty hash');
     is_deeply($obj->variables,  {}, 'variables(): empty hash');
+    check_other($obj);
   };
   subtest "empty file" => sub {
     my $obj = new_ok('Config::INI::AccVars');
@@ -55,6 +64,7 @@ subtest 'empty input' => sub {
     is_deeply($obj->sections,   [], 'sections(): empty array');
     is_deeply($obj->sections_h, {}, 'sections_h(): empty hash');
     is_deeply($obj->variables,  {}, 'variables(): empty hash');
+    check_other($obj, $empty_file);
   };
   subtest "file containing only spaces" => sub {
     my $obj = new_ok('Config::INI::AccVars');
@@ -64,6 +74,7 @@ subtest 'empty input' => sub {
     is_deeply($obj->sections,   [], 'sections(): empty array');
     is_deeply($obj->sections_h, {}, 'sections_h(): empty hash');
     is_deeply($obj->variables,  {}, 'variables(): empty hash');
+    check_other($obj, $spaces_file);
   };
 };
 
@@ -75,6 +86,7 @@ subtest 'only comments' => sub {
     is_deeply($obj->sections,   [], 'sections(): empty array');
     is_deeply($obj->sections_h, {}, 'sections_h(): empty hash');
     is_deeply($obj->variables,  {}, 'variables(): empty hash');
+    check_other($obj);
   };
   subtest "array containing only comments" => sub {
     my $obj = new_ok('Config::INI::AccVars');
@@ -83,6 +95,7 @@ subtest 'only comments' => sub {
     is_deeply($obj->sections,   [], 'sections(): empty array');
     is_deeply($obj->sections_h, {}, 'sections_h(): empty hash');
     is_deeply($obj->variables,  {}, 'variables(): empty hash');
+    check_other($obj);
   };
   subtest "file containing only comments" => sub {
     my $obj = new_ok('Config::INI::AccVars');
@@ -92,6 +105,7 @@ subtest 'only comments' => sub {
     is_deeply($obj->sections,   [], 'sections(): empty array');
     is_deeply($obj->sections_h, {}, 'sections_h(): empty hash');
     is_deeply($obj->variables,  {}, 'variables(): empty hash');
+    check_other($obj, $only_comments);
   };
 };
 
@@ -103,11 +117,11 @@ subtest "simple content / reuse" => sub {
     is_deeply($obj->sections_h, {'a section' => undef}, 'sections_h(): empty hash');
     is_deeply($obj->variables,  {'a section' => {foo => 'bar'}},
               'variables(): empty hash');
+    check_other($obj);
   };
   subtest "file input" => sub {
     my $file = test_data_file('simple_content.ini');
     $obj->parse_ini(src => $file);
-    ok 1;
     is_deeply($obj->sections, ['first section',
                                'second section',
                                'empty section'],
@@ -122,6 +136,7 @@ subtest "simple content / reuse" => sub {
                                  'second section' => {this => 'that'},
                                 },
               'variables()');
+    check_other($obj, $file);
   };
   subtest "file input (with and without newlines)" => sub {
     $obj->parse_ini(src => ["[sec-1]",
@@ -139,7 +154,8 @@ subtest "simple content / reuse" => sub {
     is_deeply($obj->variables,  { 'sec-1' => {a => 'a_val', b => '#;;#' },
                                   'sec-2' => {var => 'val'}
                                   },
-               'variables()');
+              'variables()');
+    check_other($obj);
   };
 };
 
@@ -159,6 +175,22 @@ subtest "default section, empty section name" => sub {
                                 ""                                     => {A => 'B'},
                               },
                'variables()');
+  check_other($obj);
+};
+
+subtest "clone + predef (empty)" => sub {
+  my $obj = new_ok('Config::INI::AccVars');
+  my $input = ["a=b",
+               "[]",
+               "A=B"];
+  my $predef = {};
+  $obj->parse_ini(src => $input, predef => $predef);
+  is_deeply($obj->predef, {}, "predef() is {}");
+  is($obj->predef, $predef, "predef is not cloned");
+
+  $obj->parse_ini(src => $input, predef => $predef, clone => 1);
+  is_deeply($obj->predef, {}, "predef() is {}");
+  isnt($obj->predef, $predef, "predef is not cloned");
 };
 
 
@@ -166,3 +198,12 @@ subtest "default section, empty section name" => sub {
 done_testing();
 
 
+###################################################################################################
+
+sub check_other {
+  my $obj = shift;
+  my $src_name = shift // "INI data";
+  is_deeply($obj->predef, {}, 'predef()');
+  is($obj->default_section, $Config::INI::AccVars::Default_Section, 'default_section()');
+  is($obj->common_section, $Config::INI::AccVars::Common_Section, 'common_section()');
+}
