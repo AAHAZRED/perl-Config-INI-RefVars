@@ -16,79 +16,7 @@ our $Common_Section  = $Default_Section;
 sub new { bless {}, ref($_[0]) || $_[0] }
 
 
-sub parse_ini {
-  state $allowed_keys = {map {$_ => undef} qw(clone src src_name predef
-                                              default_section common_section)};
-  state $dflt_src_name = "INI data";  ### our???
-  my $self = shift;
-  %$self = (clone => "", predef => {},
-            default_section => $Default_Section, common_section => $Common_Section,
-            @_ );
-  foreach my $key (keys(%$self)) {
-    croak("$key: Unsupported argument") if !exists($allowed_keys->{$key});
-  }
-  delete @$self{ grep { !defined($self->{$_}) } keys(%$self) };
-  foreach my $scalar_arg (qw(clone src_name default_section common_section)) {
-     croak("'$scalar_arg': must not be a reference") if ref($self->{$scalar_arg});
-  }
-  my $clone = delete $self->{clone};
-  my $src = delete($self->{src}) // croak("'src': Missing mandatory argument");#####
-  if (my $ref_src = ref($src)) {
-    $self->{src_name} = $dflt_src_name if !exists($self->{src_name});
-    if ($ref_src eq 'ARRAY') {
-      $src = [@$src] if $clone;
-      for (my $i = 0; $i < @$src; ++$i) {
-        croak(_fmt_err($self->{src_name}, $i + 1, "Unexpected ref type.")) if ref($src->[$i]);
-        $src->[$i] //= "";
-      }
-    } else {
-      croak("$ref_src: ref type not allowed for argument 'src'");
-    }
-  } else {
-    if (index($src, "\n") < 0) {
-      my $file = $src;
-      $src = [do { local (*ARGV); @ARGV = ($file); <> }];
-      $self->{src_name} = $file if !exists($self->{src_name});
-    } else {
-      $src = [split(/\n/, $src)];
-      $self->{src_name} = $dflt_src_name if !exists($self->{src_name});
-    }
-  }
-  if (exists($self->{predef})) {
-    croak("'predef': must be a HASH ref") if ref($self->{predef}) ne 'HASH';
-    while (my ($var, $val) = each(%{$self->{predef}})) {
-      croak("'predef': unexpected ref type for variable $var") if ref($val);
-    }
-    $self->{predef} = {%{$self->{predef}}} if $clone;
-  } else {
-    $self->{predef} = {};
-  }
-  $self->{sections}   = [];
-  $self->{sections_h} = {};
-  $self->{variables}  = {};
-  $self->_parse_ini($src);
-  return $self;
-}
-
-
-sub sections        {$_[0]->{sections}}
-sub sections_h      {$_[0]->{sections_h}}
-sub variables       {$_[0]->{variables}}
-sub src_name        {$_[0]->{src_name}}
-sub predef          {$_[0]->{predef}}
-sub default_section {$_[0]->{default_section}}
-sub common_section  {$_[0]->{common_section}}
-
-
-#
-# _fmt_err(SRC, LINE_NO, MSG)
-#
-sub _fmt_err {
-  return sprintf("%s at line %d: %s", @_);
-}
-
-
-sub _parse_ini {
+my $_parse_ini = sub {
   my ($self, $src) = @_;
   my $src_name;
   if (ref($src)) {
@@ -152,23 +80,79 @@ sub _parse_ini {
       }
     }
   }
-  # ...= @{{@_}}{qw(src, clone)};
-  # my $src_name = "INI data";
-  # if (my $ref_src = ref($src)) {
-  #   if ($ref_src eq 'ARRAY') {
-  #     $src = [@$src] if $clone;
-  #   } else {
-  #     croak("$ref_src: ref type not allowed for argument 'src'");
-  #   }
-  # } else {
-  #   if (index($src, "\n") < 0) {
-  #     $src_name = $src;
-  #     $src = [do { local (*ARGV); @ARGV = ($src_name); <> }];
-  #   } else {
-  #     $src = [split(/\n/, $str)];
-  #   }
-  # }
   return $curr_section;
+};
+
+
+sub parse_ini {
+  state $allowed_keys = {map {$_ => undef} qw(clone src src_name predef
+                                              default_section common_section)};
+  state $dflt_src_name = "INI data";  ### our???
+  my $self = shift;
+  %$self = (clone => "", predef => {},
+            default_section => $Default_Section, common_section => $Common_Section,
+            @_ );
+  foreach my $key (keys(%$self)) {
+    croak("$key: Unsupported argument") if !exists($allowed_keys->{$key});
+  }
+  delete @$self{ grep { !defined($self->{$_}) } keys(%$self) };
+  foreach my $scalar_arg (qw(clone src_name default_section common_section)) {
+     croak("'$scalar_arg': must not be a reference") if ref($self->{$scalar_arg});
+  }
+  my $clone = delete $self->{clone};
+  my $src = delete($self->{src}) // croak("'src': Missing mandatory argument");#####
+  if (my $ref_src = ref($src)) {
+    $self->{src_name} = $dflt_src_name if !exists($self->{src_name});
+    if ($ref_src eq 'ARRAY') {
+      $src = [@$src] if $clone;
+      for (my $i = 0; $i < @$src; ++$i) {
+        croak(_fmt_err($self->{src_name}, $i + 1, "Unexpected ref type.")) if ref($src->[$i]);
+        $src->[$i] //= "";
+      }
+    } else {
+      croak("$ref_src: ref type not allowed for argument 'src'");
+    }
+  } else {
+    if (index($src, "\n") < 0) {
+      my $file = $src;
+      $src = [do { local (*ARGV); @ARGV = ($file); <> }];
+      $self->{src_name} = $file if !exists($self->{src_name});
+    } else {
+      $src = [split(/\n/, $src)];
+      $self->{src_name} = $dflt_src_name if !exists($self->{src_name});
+    }
+  }
+  if (exists($self->{predef})) {
+    croak("'predef': must be a HASH ref") if ref($self->{predef}) ne 'HASH';
+    while (my ($var, $val) = each(%{$self->{predef}})) {
+      croak("'predef': unexpected ref type for variable $var") if ref($val);
+    }
+    $self->{predef} = {%{$self->{predef}}} if $clone;
+  } else {
+    $self->{predef} = {};
+  }
+  $self->{sections}   = [];
+  $self->{sections_h} = {};
+  $self->{variables}  = {};
+  $self->$_parse_ini($src);
+  return $self;
+}
+
+
+sub sections        {$_[0]->{sections}}
+sub sections_h      {$_[0]->{sections_h}}
+sub variables       {$_[0]->{variables}}
+sub src_name        {$_[0]->{src_name}}
+sub predef          {$_[0]->{predef}}
+sub default_section {$_[0]->{default_section}}
+sub common_section  {$_[0]->{common_section}}
+
+
+#
+# _fmt_err(SRC, LINE_NO, MSG)
+#
+sub _fmt_err {
+  return sprintf("%s at line %d: %s", @_);
 }
 
 
