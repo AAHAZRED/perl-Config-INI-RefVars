@@ -15,12 +15,12 @@ subtest "basic assignments" => sub {
   foreach my $file (test_data_file('basic.ini'), test_data_file('basic_spaces.ini')) {
     subtest $file => sub {
       $obj->parse_ini(src => $file);
-      is_deeply($obj->sections, [$Config::INI::AccVars::Default_Section, "this section"],
+      is_deeply($obj->sections, [Config::INI::AccVars::DEFAULT_SECTION, "this section"],
                 "sections()");
-      is_deeply($obj->sections_h, { $Config::INI::AccVars::Default_Section => undef,
-                                    "this section"                         => undef },
+      is_deeply($obj->sections_h, { Config::INI::AccVars::DEFAULT_SECTION => undef,
+                                    "this section"                        => undef },
                 "sections_h()");
-      is_deeply($obj->variables, { $Config::INI::AccVars::Default_Section => {foo => 'foo_val'},
+      is_deeply($obj->variables, { Config::INI::AccVars::DEFAULT_SECTION => {foo => 'foo_val'},
                                    "this section" => {str => "hello world"}
                                  },
                 "variables()");

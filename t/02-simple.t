@@ -11,10 +11,10 @@ use File::Spec::Functions;
 sub test_data_file { catfile(qw(t 02_data), $_[0]) }
 
 subtest 'predefined sections' => sub {
-  is($Config::INI::AccVars::Default_Section, "__COMMON__", "Default_Section");
-  is($Config::INI::AccVars::Common_Section,
-     $Config::INI::AccVars::Default_Section,
-     "By default, Default_Section equals Default_Section");
+  is(Config::INI::AccVars::DEFAULT_SECTION, "__COMMON__", "DEFAULT_SECTION");
+  is(Config::INI::AccVars::COMMON_SECTION,
+     Config::INI::AccVars::DEFAULT_SECTION,
+     "By default, DEFAULT_SECTION equals DEFAULT_SECTION");
 };
 
 subtest 'before any parsing' => sub {
@@ -160,19 +160,19 @@ subtest "simple content / reuse" => sub {
 };
 
 
-subtest "default section, empty section name" => sub {
+subtest "default section" => sub {
   my $obj = new_ok('Config::INI::AccVars');
   my $input = ["a=b",
-               "[]",
+               "[blah]",
                "A=B"];
   is($obj->parse_ini(src => $input), $obj, "parse_ini() returns obj");
-  is_deeply($obj->sections, [$Config::INI::AccVars::Default_Section, ""],
+  is_deeply($obj->sections, [Config::INI::AccVars::DEFAULT_SECTION, "blah"],
             "sections(): default and empty section");
-  is_deeply($obj->sections_h, { $Config::INI::AccVars::Default_Section => undef,
-                                ""                                     => undef},
+  is_deeply($obj->sections_h, { Config::INI::AccVars::DEFAULT_SECTION => undef,
+                                'blah'                                => undef},
             'sections_h()');
-  is_deeply($obj->variables,  { $Config::INI::AccVars::Default_Section => {a => 'b'},
-                                ""                                     => {A => 'B'},
+  is_deeply($obj->variables,  { Config::INI::AccVars::DEFAULT_SECTION => {a => 'b'},
+                                'blah'                                => {A => 'B'},
                               },
                'variables()');
   check_other($obj);
@@ -212,6 +212,6 @@ sub check_other {
   my $obj = shift;
   my $src_name = shift // "INI data";
   is_deeply($obj->predef, {}, 'predef()');
-  is($obj->default_section, $Config::INI::AccVars::Default_Section, 'default_section()');
-  is($obj->common_section, $Config::INI::AccVars::Common_Section, 'common_section()');
+  is($obj->default_section, Config::INI::AccVars::DEFAULT_SECTION, 'default_section()');
+  is($obj->common_section,  Config::INI::AccVars::COMMON_SECTION, 'common_section()');
 }

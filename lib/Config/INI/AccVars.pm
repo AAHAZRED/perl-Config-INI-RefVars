@@ -1,5 +1,5 @@
 package Config::INI::AccVars;
-
+#use Object::InsideOut;
 use 5.010;
 use strict;
 use warnings;
@@ -9,11 +9,12 @@ use feature ":5.10";
 
 our $VERSION = '0.01';
 
-our $Default_Section = "__COMMON__";
-our $Common_Section  = $Default_Section;
+use constant DEFAULT_SECTION => "__COMMON__";
+use constant COMMON_SECTION  => DEFAULT_SECTION;
 
 
 sub new { bless {}, ref($_[0]) || $_[0] }
+
 
 
 my $_parse_ini = sub {
@@ -56,6 +57,11 @@ my $_parse_ini = sub {
     }
     else {
       # var = val
+      if (!defined($curr_section)) {
+        $curr_section = $self->{default_section};
+        push(@$sections, $curr_section);
+        $sections_h->{$curr_section} = undef;
+      }
       $line =~ /^(.*?)\s*([[:punct:]]*?)=(?:\s*)(.*)/ or
         croak("Neither section header not key definition at line ", $i + 1);
       my ($var_name, $modifier, $value) = ($1, $2, $3);
@@ -98,7 +104,7 @@ sub parse_ini {
   state $dflt_src_name = "INI data";  ### our???
   my $self = shift;
   %$self = (clone => "", predef => {},
-            default_section => $Default_Section, common_section => $Common_Section,
+            default_section => DEFAULT_SECTION, common_section => COMMON_SECTION,
             @_ );
   foreach my $key (keys(%$self)) {
     croak("$key: Unsupported argument") if !exists($allowed_keys->{$key});
@@ -202,6 +208,7 @@ sub _x_var_name {
     return "[$1]$2";
   }
   else {
+    croak("???? ", (caller)[2]) unless defined $curr_sect;
     return "[$curr_sect]$variable";
   }
 }
