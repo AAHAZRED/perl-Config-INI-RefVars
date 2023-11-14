@@ -22,7 +22,8 @@ my $_parse_ini = sub {
   if (ref($src)) {
     ref($src) eq 'ARRAY' or croak("Internal error");
     $src_name = $self->{src_name};
-  } else {
+  }
+  else {
     $src_name = $src;
     $src = [do { local (*ARGV); @ARGV = ($src_name); <> }];
   }
@@ -52,7 +53,8 @@ my $_parse_ini = sub {
     }
     if (index($line, "=") < 0) {
       croak("Neither section header not key definition at line ", $i + 1)
-    } else {
+    }
+    else {
       # var = val
       $line =~ /^(.*?)\s*([[:punct:]]*?)=(?:\s*)(.*)/ or
         croak("Neither section header not key definition at line ", $i + 1);
@@ -115,15 +117,18 @@ sub parse_ini {
         croak(_fmt_err($self->{src_name}, $i + 1, "Unexpected ref type.")) if ref($src->[$i]);
         $src->[$i] //= "";
       }
-    } else {
+    }
+    else {
       croak("$ref_src: ref type not allowed for argument 'src'");
     }
-  } else {
+  }
+  else {
     if (index($src, "\n") < 0) {
       my $file = $src;
       $src = [do { local (*ARGV); @ARGV = ($file); <> }];
       $self->{src_name} = $file if !exists($self->{src_name});
-    } else {
+    }
+    else {
       $src = [split(/\n/, $src)];
       $self->{src_name} = $dflt_src_name if !exists($self->{src_name});
     }
@@ -134,7 +139,8 @@ sub parse_ini {
       croak("'predef': unexpected ref type for variable $var") if ref($val);
     }
     $self->{predef} = {%{$self->{predef}}} if $clone;
-  } else {
+  }
+  else {
     $self->{predef} = {};
   }
   $self->{globals}    = {};
@@ -176,9 +182,11 @@ sub _look_up {
   my ($v_section, $v_basename) = $variable =~ $vre ? ($1, $2) : ($curr_sect, $variable);
   if ($v_basename !~ /\S/) {
     return $v_basename;
-  } elsif ($v_basename eq '=') {
+  }
+  elsif ($v_basename eq '=') {
     return $v_section;
-  } else {
+  }
+  else {
     my $variables = $self->{variables};
     return "" if !exists($variables->{$v_section});
     return "" if !exists($variables->{$v_section}{$v_basename});
@@ -210,10 +218,11 @@ sub _expand_vars {
   foreach my $token (split(/(\$\(|\))/, $value)) {
     if ($token eq '$(') {
       ++$level;
-    } elsif ($token eq ')' && $level) {
+    }
+    elsif ($token eq ')' && $level) {
       my $ref_var = $result[$level];
       my $x_varname = $self->_x_var_name($curr_sect, $ref_var);
-      die("Recursive variable '" . $x_varname . "' references itself")
+      die("Recursive variable '", $x_varname, "' references itself")
         if exists($seen->{$x_varname});
       $seen->{$x_varname} = undef;
       if ($ref_var eq '==') {
@@ -227,15 +236,14 @@ sub _expand_vars {
       }
       pop(@result);
       --$level;
-    } else {
+    }
+    else {
       $result[$level] .= $token;
     }
   }
   die("unterminated variable reference") if $level;
   $value = $result[0];
-  if ($top) {
-    $expanded->{$x_variable_name} = undef;
-  }
+  $expanded->{$x_variable_name} = undef if $top;
   return $value;
 }
 
