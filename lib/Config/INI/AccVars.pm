@@ -32,6 +32,12 @@ my $_parse_ini = sub {
   my $sections   = $self->{sections};
   my $sections_h = $self->{sections_h};
   my $expanded   = $self->{expanded};
+  my $set_curr_section = sub {
+    $curr_section = shift;
+    die("'$curr_section': duplicate section") if exists($sections_h->{$curr_section});
+    $sections_h->{$curr_section} = undef;
+    push(@$sections, $curr_section);
+  };
   for (my $i = 0; $i < @$src; ++$i) {
     my $line = $src->[$i];
     if (index($line, ";!") == 0 || index($line, "=") == 0) {
@@ -45,11 +51,7 @@ my $_parse_ini = sub {
       croak("Invalid section header at line ", $i + 1) if index($line, "]") < 0;
       $line =~ s/\s*[#;][^\]]*$//;
       $line =~ /^\[\s*(.*?)\s*\]$/ or croak("Invalid section header at line ", $i + 1);
-      $curr_section = $1;
-      croak("'$curr_section': duplicate section name at line ", $i + 1)
-        if exists($sections_h->{curr_section});
-      $sections_h->{$curr_section} = undef;
-      push(@$sections, $curr_section);
+      $set_curr_section->($1);
       next;
     }
     if (index($line, "=") < 0) {
@@ -58,9 +60,7 @@ my $_parse_ini = sub {
     else {
       # var = val
       if (!defined($curr_section)) {
-        $curr_section = $self->{default_section};
-        push(@$sections, $curr_section);
-        $sections_h->{$curr_section} = undef;
+        $set_curr_section->($self->{default_section});
       }
       $line =~ /^(.*?)\s*([[:punct:]]*?)=(?:\s*)(.*)/ or
         croak("Neither section header not key definition at line ", $i + 1);
@@ -68,11 +68,6 @@ my $_parse_ini = sub {
       delete $expanded->{$self->_x_var_name($curr_section, #########################
                                             $var_name)};       ## _expand_vars() my set this
       croak("Empty variable name at line ", $i + 1) if $var_name eq "";
-      if (!defined($curr_section)) {
-        $curr_section = $self->{default_section};
-        $sections_h->{$curr_section} = undef;
-        push(@$sections, $curr_section);
-      }
       my $sect_vars = $self->{variables}{$curr_section} //= {};
       if ($modifier eq "") {
         $sect_vars->{$var_name} = $value;
