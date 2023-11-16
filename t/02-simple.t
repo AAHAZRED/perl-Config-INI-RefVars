@@ -11,10 +11,7 @@ use File::Spec::Functions;
 sub test_data_file { catfile(qw(t 02_data), $_[0]) }
 
 subtest 'predefined sections' => sub {
-  is(Config::INI::AccVars::DEFAULT_SECTION, "__COMMON__", "DEFAULT_SECTION");
-  is(Config::INI::AccVars::COMMON_SECTION,
-     Config::INI::AccVars::DEFAULT_SECTION,
-     "By default, DEFAULT_SECTION equals DEFAULT_SECTION");
+  is(Config::INI::AccVars::COMMON_SECTION, "__COMMON__", "COMMON_SECTION default");
 };
 
 subtest 'before any parsing' => sub {
@@ -24,7 +21,6 @@ subtest 'before any parsing' => sub {
                        variables
                        src_name
                        predef
-                       default_section
                        common_section)) {
     is($obj->$meth, undef, "$meth(): undef");
   }
@@ -160,23 +156,24 @@ subtest "simple content / reuse" => sub {
 };
 
 
-subtest "default section" => sub {
+subtest "common section" => sub {
   my $obj = new_ok('Config::INI::AccVars');
   my $input = ["a=b",
                "[blah]",
                "A=B"];
   is($obj->parse_ini(src => $input), $obj, "parse_ini() returns obj");
-  is_deeply($obj->sections, [Config::INI::AccVars::DEFAULT_SECTION, "blah"],
+  is_deeply($obj->sections, [Config::INI::AccVars::COMMON_SECTION, "blah"],
             "sections(): default and empty section");
-  is_deeply($obj->sections_h, { Config::INI::AccVars::DEFAULT_SECTION => undef,
-                                'blah'                                => undef},
+  is_deeply($obj->sections_h, { Config::INI::AccVars::COMMON_SECTION => undef,
+                                'blah'                               => undef},
             'sections_h()');
-  is_deeply($obj->variables,  { Config::INI::AccVars::DEFAULT_SECTION => {a => 'b'},
-                                'blah'                                => {A => 'B'},
+  is_deeply($obj->variables,  { Config::INI::AccVars::COMMON_SECTION => {a => 'b'},
+                                'blah'                               => {A => 'B'},
                               },
                'variables()');
   check_other($obj);
 };
+
 
 subtest "arguments" => sub {
   my $obj = new_ok('Config::INI::AccVars');
@@ -193,13 +190,6 @@ subtest "arguments" => sub {
     is_deeply($obj->predef, {}, "predef() is {}");
     isnt($obj->predef, $predef, "predef is not cloned");
   };
-  subtest "src_name, default_section, common_section" => sub {
-    $obj->parse_ini(src => $input, src_name => "The source",
-                    default_section => "FOO", common_section => "BAR");
-    is($obj->src_name,        "The source", "src_name()");
-    is($obj->default_section, "FOO",        "default_section");
-    is($obj->common_section,  "BAR",        "common_section");
-  };
 };
 
 #==================================================================================================
@@ -212,6 +202,5 @@ sub check_other {
   my $obj = shift;
   my $src_name = shift // "INI data";
   is_deeply($obj->predef, {}, 'predef()');
-  is($obj->default_section, Config::INI::AccVars::DEFAULT_SECTION, 'default_section()');
   is($obj->common_section,  Config::INI::AccVars::COMMON_SECTION, 'common_section()');
 }

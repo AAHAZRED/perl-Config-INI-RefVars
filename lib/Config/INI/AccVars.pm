@@ -9,8 +9,7 @@ use feature ":5.10";
 
 our $VERSION = '0.01';
 
-use constant DEFAULT_SECTION => "__COMMON__";
-use constant COMMON_SECTION  => DEFAULT_SECTION;
+use constant COMMON_SECTION  => "__COMMON__";
 
 
 sub new { bless {}, ref($_[0]) || $_[0] }
@@ -60,7 +59,7 @@ my $_parse_ini = sub {
     else {
       # var = val
       if (!defined($curr_section)) {
-        $set_curr_section->($self->{default_section});
+        $set_curr_section->($self->{common_section});
       }
       $line =~ /^(.*?)\s*([[:punct:]]*?)=(?:\s*)(.*)/ or
         croak("Neither section header not key definition at line ", $i + 1);
@@ -95,17 +94,17 @@ my $_parse_ini = sub {
 
 sub parse_ini {
   state $allowed_keys = {map {$_ => undef} qw(clone src src_name predef
-                                              default_section common_section)};
+                                              common_section)};
   state $dflt_src_name = "INI data";  ### our???
   my $self = shift;
   %$self = (clone => "", predef => {},
-            default_section => DEFAULT_SECTION, common_section => COMMON_SECTION,
+            common_section => COMMON_SECTION,
             @_ );
   foreach my $key (keys(%$self)) {
     croak("$key: Unsupported argument") if !exists($allowed_keys->{$key});
   }
   delete @$self{ grep { !defined($self->{$_}) } keys(%$self) };
-  foreach my $scalar_arg (qw(clone src_name default_section common_section)) {
+  foreach my $scalar_arg (qw(clone src_name common_section)) {
      croak("'$scalar_arg': must not be a reference") if ref($self->{$scalar_arg});
   }
   my $clone = delete $self->{clone};
@@ -144,7 +143,6 @@ sub parse_ini {
   else {
     $self->{predef} = {};
   }
-  $self->{globals}    = {};
   $self->{sections}   = [];
   $self->{sections_h} = {};
   $self->{variables}  = {};
@@ -164,7 +162,6 @@ sub sections_h      {$_[0]->{sections_h}}
 sub variables       {$_[0]->{variables}}
 sub src_name        {$_[0]->{src_name}}
 sub predef          {$_[0]->{predef}}
-sub default_section {$_[0]->{default_section}}
 sub common_section  {$_[0]->{common_section}}
 
 
