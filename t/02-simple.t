@@ -11,7 +11,7 @@ use File::Spec::Functions;
 sub test_data_file { catfile(qw(t 02_data), $_[0]) }
 
 subtest 'predefined sections' => sub {
-  is(Config::INI::AccVars::COMMON_SECTION, "__COMMON__", "COMMON_SECTION default");
+  is(Config::INI::AccVars::DFLT_COMMON_SECTION, "__COMMON__", "COMMON_SECTION default");
 };
 
 subtest 'before any parsing' => sub {
@@ -162,13 +162,13 @@ subtest "common section" => sub {
                "[blah]",
                "A=B"];
   is($obj->parse_ini(src => $input), $obj, "parse_ini() returns obj");
-  is_deeply($obj->sections, [Config::INI::AccVars::COMMON_SECTION, "blah"],
+  is_deeply($obj->sections, [Config::INI::AccVars::DFLT_COMMON_SECTION, "blah"],
             "sections(): default and empty section");
-  is_deeply($obj->sections_h, { Config::INI::AccVars::COMMON_SECTION => undef,
-                                'blah'                               => undef},
+  is_deeply($obj->sections_h, { Config::INI::AccVars::DFLT_COMMON_SECTION => undef,
+                                'blah'                                    => undef},
             'sections_h()');
-  is_deeply($obj->variables,  { Config::INI::AccVars::COMMON_SECTION => {a => 'b'},
-                                'blah'                               => {A => 'B'},
+  is_deeply($obj->variables,  { Config::INI::AccVars::DFLT_COMMON_SECTION => {a => 'b'},
+                                'blah'                                    => {A => 'B'},
                               },
                'variables()');
   check_other($obj);
@@ -202,5 +202,5 @@ sub check_other {
   my $obj = shift;
   my $src_name = shift // "INI data";
   is_deeply($obj->predef, {}, 'predef()');
-  is($obj->common_section,  Config::INI::AccVars::COMMON_SECTION, 'common_section()');
+  is($obj->common_section,  Config::INI::AccVars::DFLT_COMMON_SECTION, 'common_section()');
 }

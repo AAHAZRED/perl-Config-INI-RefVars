@@ -9,7 +9,22 @@ use feature ":5.10";
 
 our $VERSION = '0.01';
 
-use constant COMMON_SECTION  => "__COMMON__";
+use constant DFLT_COMMON_SECTION  => "__COMMON__";
+
+use constant FLD_KEY_PREFIX => __PACKAGE__ . ' __ ';
+
+use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
+
+              COMMON_SECTION    => FLD_KEY_PREFIX . 'COMMON_SECTION',
+              PREDEF            => FLD_KEY_PREFIX . 'PREDEF',
+              SECTIONS          => FLD_KEY_PREFIX . 'SECTIONS',
+              SECTIONS_H        => FLD_KEY_PREFIX . 'SECTIONS_H',
+              SRC_NAME          => FLD_KEY_PREFIX . 'SRC_NAME',
+              VARIABLES         => FLD_KEY_PREFIX . 'VARIABLES',
+             };
+
+our %Arg_Map = map {$_ => (FLD_KEY_PREFIX . uc($_))} qw (common_section expanded predef sections
+                                                         sections_h src_name variables);
 
 
 sub new { bless {}, ref($_[0]) || $_[0] }
@@ -21,16 +36,16 @@ my $_parse_ini = sub {
   my $src_name;
   if (ref($src)) {
     ref($src) eq 'ARRAY' or croak("Internal error");
-    $src_name = $self->{src_name};
+    $src_name = $self->{(SRC_NAME)};
   }
   else {
     $src_name = $src;
     $src = [do { local (*ARGV); @ARGV = ($src_name); <> }];
   }
   my $curr_section;
-  my $sections   = $self->{sections};
-  my $sections_h = $self->{sections_h};
-  my $expanded   = $self->{expanded};
+  my $sections   = $self->{(SECTIONS)};
+  my $sections_h = $self->{(SECTIONS_H)};
+  my $expanded   = $self->{(EXPANDED)};
   my $set_curr_section = sub {
     $curr_section = shift;
     die("'$curr_section': duplicate section") if exists($sections_h->{$curr_section});
@@ -59,7 +74,7 @@ my $_parse_ini = sub {
     else {
       # var = val
       if (!defined($curr_section)) {
-        $set_curr_section->($self->{common_section});
+        $set_curr_section->($self->{(COMMON_SECTION)});
       }
       $line =~ /^(.*?)\s*([[:punct:]]*?)=(?:\s*)(.*)/ or
         croak("Neither section header not key definition at line ", $i + 1);
@@ -67,7 +82,7 @@ my $_parse_ini = sub {
       delete $expanded->{$self->_x_var_name($curr_section, #########################
                                             $var_name)};       ## _expand_vars() my set this
       croak("Empty variable name at line ", $i + 1) if $var_name eq "";
-      my $sect_vars = $self->{variables}{$curr_section} //= {};
+      my $sect_vars = $self->{(VARIABLES)}{$curr_section} //= {};
       if ($modifier eq "") {
         $sect_vars->{$var_name} = $value;
       }
@@ -97,24 +112,27 @@ sub parse_ini {
                                               common_section)};
   state $dflt_src_name = "INI data";  ### our???
   my $self = shift;
-  %$self = (clone => "", predef => {},
-            common_section => COMMON_SECTION,
-            @_ );
-  foreach my $key (keys(%$self)) {
+  my %args = (clone => "", predef => {},
+            common_section => DFLT_COMMON_SECTION,
+              @_ );
+  foreach my $key (keys(%args)) {
     croak("$key: Unsupported argument") if !exists($allowed_keys->{$key});
   }
-  delete @$self{ grep { !defined($self->{$_}) } keys(%$self) };
+  delete @args{ grep { !defined($args{$_}) } keys(%args) };
   foreach my $scalar_arg (qw(clone src_name common_section)) {
-     croak("'$scalar_arg': must not be a reference") if ref($self->{$scalar_arg});
+     croak("'$scalar_arg': must not be a reference") if ref($args{$scalar_arg});
   }
-  my $clone = delete $self->{clone};
-  my $src = delete($self->{src}) // croak("'src': Missing mandatory argument");#####
+  my $clone = delete $args{clone};
+  my $src   = delete($args{src}) // croak("'src': Missing mandatory argument");#####
+  $self->{$Arg_Map{$_}} = $args{$_} for keys(%args);
+  use Data::Dumper; print Dumper($self);
+
   if (my $ref_src = ref($src)) {
-    $self->{src_name} = $dflt_src_name if !exists($self->{src_name});
+    $self->{(SRC_NAME)} = $dflt_src_name if !exists($self->{(SRC_NAME)});
     if ($ref_src eq 'ARRAY') {
       $src = [@$src] if $clone;
       for (my $i = 0; $i < @$src; ++$i) {
-        croak(_fmt_err($self->{src_name}, $i + 1, "Unexpected ref type.")) if ref($src->[$i]);
+        croak(_fmt_err($self->{(SRC_NAME)}, $i + 1, "Unexpected ref type.")) if ref($src->[$i]);
         $src->[$i] //= "";
       }
     }
@@ -126,29 +144,29 @@ sub parse_ini {
     if (index($src, "\n") < 0) {
       my $file = $src;
       $src = [do { local (*ARGV); @ARGV = ($file); <> }];
-      $self->{src_name} = $file if !exists($self->{src_name});
+      $self->{(SRC_NAME)} = $file if !exists($self->{(SRC_NAME)});
     }
     else {
       $src = [split(/\n/, $src)];
-      $self->{src_name} = $dflt_src_name if !exists($self->{src_name});
+      $self->{(SRC_NAME)} = $dflt_src_name if !exists($self->{(SRC_NAME)});
     }
   }
-  if (exists($self->{predef})) {
-    croak("'predef': must be a HASH ref") if ref($self->{predef}) ne 'HASH';
-    while (my ($var, $val) = each(%{$self->{predef}})) {
+  if (exists($self->{(PREDEF)})) {
+    croak("'predef': must be a HASH ref") if ref($self->{(PREDEF)}) ne 'HASH';
+    while (my ($var, $val) = each(%{$self->{(PREDEF)}})) {
       croak("'predef': unexpected ref type for variable $var") if ref($val);
     }
-    $self->{predef} = {%{$self->{predef}}} if $clone;
+    $self->{(PREDEF)} = {%{$self->{(PREDEF)}}} if $clone;
   }
   else {
-    $self->{predef} = {};
+    $self->{(PREDEF)} = {};
   }
-  $self->{sections}   = [];
-  $self->{sections_h} = {};
-  $self->{variables}  = {};
-  $self->{expanded}  = {};
+  $self->{(SECTIONS)}   = [];
+  $self->{(SECTIONS_H)} = {};
+  $self->{(VARIABLES)}  = {};
+  $self->{(EXPANDED)}  = {};
   $self->$_parse_ini($src);
-  while (my ($section, $variables) = each(%{$self->{variables}})) {
+  while (my ($section, $variables) = each(%{$self->{(VARIABLES)}})) {
     while (my ($variable, $value) = each(%$variables)) {
       $variables->{$variable} = $self->_expand_vars($section, $variable, $value);
     }
@@ -157,12 +175,12 @@ sub parse_ini {
 }
 
 
-sub sections        {$_[0]->{sections}}
-sub sections_h      {$_[0]->{sections_h}}
-sub variables       {$_[0]->{variables}}
-sub src_name        {$_[0]->{src_name}}
-sub predef          {$_[0]->{predef}}
-sub common_section  {$_[0]->{common_section}}
+sub sections        {$_[0]->{(SECTIONS)}}
+sub sections_h      {$_[0]->{(SECTIONS_H)}}
+sub variables       {$_[0]->{(VARIABLES)}}
+sub src_name        {$_[0]->{(SRC_NAME)}}
+sub predef          {$_[0]->{(PREDEF)}}
+sub common_section  {$_[0]->{(COMMON_SECTION)}}
 
 
 #
@@ -185,7 +203,7 @@ sub _look_up {
     return $v_section;
   }
   else {
-    my $variables = $self->{variables};
+    my $variables = $self->{(VARIABLES)};
     return "" if !exists($variables->{$v_section});
     return "" if !exists($variables->{$v_section}{$v_basename});
     return $variables->{$v_section}{$v_basename};
@@ -211,7 +229,7 @@ sub _expand_vars {
   $seen = {"[$curr_sect]$variable" => undef} if !$seen;
   my @result = ("");
   my $level = 0;
-  my $expanded = $self->{expanded};
+  my $expanded = $self->{(EXPANDED)};
   my $x_variable_name = $self->_x_var_name($curr_sect, $variable);
   return $value if exists($expanded->{$x_variable_name});
   foreach my $token (split(/(\$\(|\))/, $value)) {
