@@ -57,11 +57,10 @@ my $_parse_ini = sub {
       $common_vars = $variables->{$common_sec} = {} if !$common_vars;
     } elsif ($common_vars) {
       %{$variables->{$curr_section}} = %{$common_vars};
-     # use Data::Dumper; print Dumper ;
     } else {
       $variables->{$curr_section} = {};
     }
-    $sections_h->{$curr_section} = undef;       #### index!!!!!!
+    $sections_h->{$curr_section} = @$sections;#undef;       #### index!!!!!!
     push(@$sections, $curr_section);
   };
 

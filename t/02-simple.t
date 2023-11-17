@@ -109,8 +109,8 @@ subtest "simple content / reuse" => sub {
   my $obj = new_ok('Config::INI::AccVars');
   subtest "string input" => sub {
     $obj->parse_ini(src => "[a section]\nfoo=bar\n");
-    is_deeply($obj->sections,   ['a section'],          'sections()');
-    is_deeply($obj->sections_h, {'a section' => undef}, 'sections_h(): empty hash');
+    is_deeply($obj->sections,   ['a section'],      'sections()');
+    is_deeply($obj->sections_h, {'a section' => 0}, 'sections_h(): empty hash');
     is_deeply($obj->variables,  {'a section' => {foo => 'bar'}},
               'variables(): empty hash');
     check_other($obj);
@@ -122,9 +122,9 @@ subtest "simple content / reuse" => sub {
                                'second section',
                                'empty section'],
               'sections()');
-    is_deeply($obj->sections_h, { 'first section'  => undef,
-                                  'second section' => undef,
-                                  'empty section'  => undef,
+    is_deeply($obj->sections_h, { 'first section'  => 0,
+                                  'second section' => 1,
+                                  'empty section'  => 2,
                                 },
               'sections_h()');
     is_deeply($obj->variables,  {'first section'  => {var_1 => 'val_1',
@@ -144,8 +144,8 @@ subtest "simple content / reuse" => sub {
                             "  var   =   val"
                            ]);
     is_deeply($obj->sections, [qw(sec-1 sec-2)], 'sections()');
-    is_deeply($obj->sections_h, { 'sec-1' => undef,
-                                  'sec-2' => undef
+    is_deeply($obj->sections_h, { 'sec-1' => 0,
+                                  'sec-2' => 1
                                 },
               'sections_h()');
     is_deeply($obj->variables,  { 'sec-1' => {a => 'a_val', b => '#;;#' },
@@ -165,8 +165,8 @@ subtest "common section" => sub {
   is($obj->parse_ini(src => $input), $obj, "parse_ini() returns obj");
   is_deeply($obj->sections, [Config::INI::AccVars::DFLT_COMMON_SECTION, "blah"],
             "sections(): default and empty section");
-  is_deeply($obj->sections_h, { Config::INI::AccVars::DFLT_COMMON_SECTION => undef,
-                                'blah'                                    => undef},
+  is_deeply($obj->sections_h, { Config::INI::AccVars::DFLT_COMMON_SECTION => 0,
+                                'blah'                                    => 1},
             'sections_h()');
   is_deeply($obj->variables,  { Config::INI::AccVars::DFLT_COMMON_SECTION => {a => 'b'},
                                 'blah'                                    => {A => 'B',

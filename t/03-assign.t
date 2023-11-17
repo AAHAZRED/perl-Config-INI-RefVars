@@ -17,8 +17,8 @@ subtest "basic assignments" => sub {
       $obj->parse_ini(src => $file);
       is_deeply($obj->sections, [Config::INI::AccVars::DFLT_COMMON_SECTION, "this section"],
                 "sections()");
-      is_deeply($obj->sections_h, { Config::INI::AccVars::DFLT_COMMON_SECTION => undef,
-                                    "this section"                            => undef },
+      is_deeply($obj->sections_h, { Config::INI::AccVars::DFLT_COMMON_SECTION => 0,
+                                    "this section"                            => 1 },
                 "sections_h()");
       is_deeply($obj->variables, { Config::INI::AccVars::DFLT_COMMON_SECTION => {foo => 'foo_val'},
                                    "this section" => {foo => 'foo_val',
