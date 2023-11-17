@@ -21,7 +21,8 @@ subtest "basic assignments" => sub {
                                     "this section"                            => undef },
                 "sections_h()");
       is_deeply($obj->variables, { Config::INI::AccVars::DFLT_COMMON_SECTION => {foo => 'foo_val'},
-                                   "this section" => {str => "hello world"}
+                                   "this section" => {foo => 'foo_val',
+                                                      str => "hello world"}
                                  },
                 "variables()");
     };

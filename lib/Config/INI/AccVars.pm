@@ -43,17 +43,25 @@ my $_parse_ini = sub {
     $src = [do { local (*ARGV); @ARGV = ($src_name); <> }];
   }
   my $curr_section;
-  my $sections   = $self->{+SECTIONS};
-  my $sections_h = $self->{+SECTIONS_H};
-  my $expanded   = $self->{+EXPANDED};
-  my $common_sec = $self->{+COMMON_SECTION};
+  my $sections    = $self->{+SECTIONS};
+  my $sections_h  = $self->{+SECTIONS_H};
+  my $expanded    = $self->{+EXPANDED};
+  my $variables   = $self->{+VARIABLES};
+  my $common_sec  = $self->{+COMMON_SECTION};
+  my $common_vars = $variables->{$common_sec}; # hash key need not to exist!
 
   my $set_curr_section = sub {
     $curr_section = shift;
-    die("'$curr_section': duplicate section") if exists($sections_h->{$curr_section});
-    die("common section '$common_sec' must be first section")
-      if (@$sections && $curr_section eq $common_sec);
-    $sections_h->{$curr_section} = undef;
+    if ($curr_section eq $common_sec) {
+      die("common section '$common_sec' must be first section") if @$sections;
+      $common_vars = $variables->{$common_sec} = {} if !$common_vars;
+    } elsif ($common_vars) {
+      %{$variables->{$curr_section}} = %{$common_vars};
+     # use Data::Dumper; print Dumper ;
+    } else {
+      $variables->{$curr_section} = {};
+    }
+    $sections_h->{$curr_section} = undef;       #### index!!!!!!
     push(@$sections, $curr_section);
   };
 
@@ -85,7 +93,7 @@ my $_parse_ini = sub {
       delete $expanded->{$self->_x_var_name($curr_section, #########################
                                             $var_name)};       ## _expand_vars() my set this
       croak("Empty variable name at line ", $i + 1) if $var_name eq "";
-      my $sect_vars = $self->{+VARIABLES}{$curr_section} //= {};
+      my $sect_vars = $variables->{$curr_section} //= {};
       if ($modifier eq "") {
         $sect_vars->{$var_name} = $value;
       }
@@ -128,7 +136,6 @@ sub parse_ini {
   my $clone = delete $args{clone};
   my $src   = delete($args{src}) // croak("'src': Missing mandatory argument");#####
   $self->{$Arg_Map{$_}} = $args{$_} for keys(%args);
-  use Data::Dumper; print Dumper($self);
 
   if (my $ref_src = ref($src)) {
     $self->{+SRC_NAME} = $dflt_src_name if !exists($self->{+SRC_NAME});

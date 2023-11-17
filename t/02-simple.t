@@ -130,6 +130,7 @@ subtest "simple content / reuse" => sub {
     is_deeply($obj->variables,  {'first section'  => {var_1 => 'val_1',
                                                       var_2 => 'val_2'},
                                  'second section' => {this => 'that'},
+                                 'empty section'  => {},
                                 },
               'variables()');
     check_other($obj, $file);
@@ -168,7 +169,8 @@ subtest "common section" => sub {
                                 'blah'                                    => undef},
             'sections_h()');
   is_deeply($obj->variables,  { Config::INI::AccVars::DFLT_COMMON_SECTION => {a => 'b'},
-                                'blah'                                    => {A => 'B'},
+                                'blah'                                    => {A => 'B',
+                                                                              a => 'b'},
                               },
                'variables()');
   check_other($obj);
