@@ -20,7 +20,7 @@ subtest 'before any parsing' => sub {
                        sections_h
                        variables
                        src_name
-                       predef
+                       global
                        common_section)) {
     is($obj->$meth, undef, "$meth(): undef");
   }
@@ -180,15 +180,15 @@ subtest "arguments" => sub {
   my $input = ["a=b",
                "[]",
                "A=B"];
-  subtest "clone + predef (empty)" => sub {
-    my $predef = {};
-    $obj->parse_ini(src => $input, predef => $predef);
-    is_deeply($obj->predef, {}, "predef() is {}");
-    is($obj->predef, $predef, "predef is not cloned");
+  subtest "clone + global (empty)" => sub {
+    my $global = {};
+    $obj->parse_ini(src => $input, global => $global);
+    is_deeply($obj->global, {}, "global() is {}");
+    is($obj->global, $global, "global is not cloned");
 
-    $obj->parse_ini(src => $input, predef => $predef, clone => 1);
-    is_deeply($obj->predef, {}, "predef() is {}");
-    isnt($obj->predef, $predef, "predef is not cloned");
+    $obj->parse_ini(src => $input, global => $global, clone => 1);
+    is_deeply($obj->global, {}, "global() is {}");
+    isnt($obj->global, $global, "global is not cloned");
   };
 };
 
@@ -201,6 +201,6 @@ done_testing();
 sub check_other {
   my $obj = shift;
   my $src_name = shift // "INI data";
-  is_deeply($obj->predef, {}, 'predef()');
+  is_deeply($obj->global, {}, 'global()');
   is($obj->common_section,  Config::INI::AccVars::DFLT_COMMON_SECTION, 'common_section()');
 }

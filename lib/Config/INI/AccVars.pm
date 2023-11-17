@@ -16,14 +16,14 @@ use constant FLD_KEY_PREFIX => __PACKAGE__ . ' __ ';
 use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
 
               COMMON_SECTION    => FLD_KEY_PREFIX . 'COMMON_SECTION',
-              PREDEF            => FLD_KEY_PREFIX . 'PREDEF',
+              GLOBAL            => FLD_KEY_PREFIX . 'GLOBAL',
               SECTIONS          => FLD_KEY_PREFIX . 'SECTIONS',
               SECTIONS_H        => FLD_KEY_PREFIX . 'SECTIONS_H',
               SRC_NAME          => FLD_KEY_PREFIX . 'SRC_NAME',
               VARIABLES         => FLD_KEY_PREFIX . 'VARIABLES',
              };
 
-our %Arg_Map = map {$_ => (FLD_KEY_PREFIX . uc($_))} qw (common_section expanded predef sections
+our %Arg_Map = map {$_ => (FLD_KEY_PREFIX . uc($_))} qw (common_section expanded global sections
                                                          sections_h src_name variables);
 
 
@@ -111,11 +111,11 @@ my $_parse_ini = sub {
 
 
 sub parse_ini {
-  state $allowed_keys = {map {$_ => undef} qw(clone src src_name predef
+  state $allowed_keys = {map {$_ => undef} qw(clone src src_name global
                                               common_section)};
   state $dflt_src_name = "INI data";  ### our???
   my $self = shift;
-  my %args = (clone => "", predef => {},
+  my %args = (clone => "", global => {},
             common_section => DFLT_COMMON_SECTION,
               @_ );
   foreach my $key (keys(%args)) {
@@ -154,15 +154,15 @@ sub parse_ini {
       $self->{+SRC_NAME} = $dflt_src_name if !exists($self->{+SRC_NAME});
     }
   }
-  if (exists($self->{+PREDEF})) {
-    croak("'predef': must be a HASH ref") if ref($self->{+PREDEF}) ne 'HASH';
-    while (my ($var, $val) = each(%{$self->{+PREDEF}})) {
-      croak("'predef': unexpected ref type for variable $var") if ref($val);
+  if (exists($self->{+GLOBAL})) {
+    croak("'global': must be a HASH ref") if ref($self->{+GLOBAL}) ne 'HASH';
+    while (my ($var, $val) = each(%{$self->{+GLOBAL}})) {
+      croak("'global': unexpected ref type for variable $var") if ref($val);
     }
-    $self->{+PREDEF} = {%{$self->{+PREDEF}}} if $clone;
+    $self->{+GLOBAL} = {%{$self->{+GLOBAL}}} if $clone;
   }
   else {
-    $self->{+PREDEF} = {};
+    $self->{+GLOBAL} = {};
   }
   $self->{+SECTIONS}   = [];
   $self->{+SECTIONS_H} = {};
@@ -182,7 +182,7 @@ sub sections        {$_[0]->{+SECTIONS}}
 sub sections_h      {$_[0]->{+SECTIONS_H}}
 sub variables       {$_[0]->{+VARIABLES}}
 sub src_name        {$_[0]->{+SRC_NAME}}
-sub predef          {$_[0]->{+PREDEF}}
+sub global          {$_[0]->{+GLOBAL}}
 sub common_section  {$_[0]->{+COMMON_SECTION}}
 
 
