@@ -198,18 +198,26 @@ sub _look_up {
   my ($self, $curr_sect, $variable) = @_;
   #state $vre = qr{^(.*?)/(.*)$};
   state $vre = qr/^\[\s*(.*?)\s*\](.+)$/;
-  my ($v_section, $v_basename) = $variable =~ $vre ? ($1, $2) : ($curr_sect, $variable);
+  my $matched = $variable =~ $vre;
+  my ($v_section, $v_basename) = $matched ? ($1, $2) : ($curr_sect, $variable);
   if ($v_basename !~ /\S/) {
     return $v_basename;
   }
   elsif ($v_basename eq '=') {
     return $v_section;
   }
-  else {
-    my $variables = $self->{+VARIABLES};
+  my $variables = $self->{+VARIABLES};
+  if ($matched) {
     return "" if !exists($variables->{$v_section});
     return "" if !exists($variables->{$v_section}{$v_basename});
     return $variables->{$v_section}{$v_basename};
+  } else {
+    die("Internal error") if !exists($variables->{$v_section});
+    if (exists($variables->{$v_section}{$v_basename})) {
+      return $variables->{$v_section}{$v_basename};
+    } else {
+      return $self->{+GLOBAL}{$v_basename} // "";
+    }
   }
 }
 
