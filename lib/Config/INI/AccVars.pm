@@ -46,12 +46,17 @@ my $_parse_ini = sub {
   my $sections   = $self->{+SECTIONS};
   my $sections_h = $self->{+SECTIONS_H};
   my $expanded   = $self->{+EXPANDED};
+  my $common_sec = $self->{+COMMON_SECTION};
+
   my $set_curr_section = sub {
     $curr_section = shift;
     die("'$curr_section': duplicate section") if exists($sections_h->{$curr_section});
+    die("common section '$common_sec' must be first section")
+      if (@$sections && $curr_section eq $common_sec);
     $sections_h->{$curr_section} = undef;
     push(@$sections, $curr_section);
   };
+
   for (my $i = 0; $i < @$src; ++$i) {
     my $line = $src->[$i];
     if (index($line, ";!") == 0 || index($line, "=") == 0) {
@@ -73,9 +78,7 @@ my $_parse_ini = sub {
     }
     else {
       # var = val
-      if (!defined($curr_section)) {
-        $set_curr_section->($self->{+COMMON_SECTION});
-      }
+      $set_curr_section->($common_sec) if !defined($curr_section);
       $line =~ /^(.*?)\s*([[:punct:]]*?)=(?:\s*)(.*)/ or
         croak("Neither section header not key definition at line ", $i + 1);
       my ($var_name, $modifier, $value) = ($1, $2, $3);
