@@ -96,16 +96,21 @@ my $_parse_ini = sub {
       if ($modifier eq "") {
         $sect_vars->{$var_name} = $value;
       }
-      elsif ($modifier eq "?") {
+      elsif ($modifier eq '?') {
         $sect_vars->{$var_name} = $value if !exists($sect_vars->{$var_name});
       }
-      elsif ($modifier eq "+") {
-        $sect_vars->{$var_name} = ($sect_vars->{$var_name} // "") . " " . $value;
+      elsif ($modifier eq '+') {
+        if (exists($sect_vars->{$var_name})) {
+          $sect_vars->{$var_name} .= " " . $value;
+        }
+        else {
+          $sect_vars->{$var_name} = "";
+        }
       }
-      elsif ($modifier eq ".") {
+      elsif ($modifier eq '.') {
         $sect_vars->{$var_name} = ($sect_vars->{$var_name} // "") . $value;
       }
-      elsif ($modifier eq ":") {
+      elsif ($modifier eq ':') {
         $sect_vars->{$var_name} = $self->_expand_vars($curr_section, $var_name, $value);
       }
       else {
@@ -261,22 +266,20 @@ sub _x_var_name {
 sub _expand_vars {
   my ($self, $curr_sect, $variable, $value, $seen) = @_;
   my $top = !$seen;
-  $seen = {"[$curr_sect]$variable" => undef} if !$seen;
   my @result = ("");
   my $level = 0;
   my $expanded = $self->{+EXPANDED};
   my $x_variable_name = $self->_x_var_name($curr_sect, $variable);
   return $value if exists($expanded->{$x_variable_name});
+  die("Recursive variable '", $x_variable_name, "' references itself")
+    if exists($seen->{$x_variable_name});
+  $seen->{$x_variable_name} = undef;
   foreach my $token (split(/(\$\(|\))/, $value)) {
     if ($token eq '$(') {
       ++$level;
     }
     elsif ($token eq ')' && $level) {
       my $ref_var = $result[$level];
-      my $x_varname = $self->_x_var_name($curr_sect, $ref_var);
-      die("Recursive variable '", $x_varname, "' references itself")
-        if exists($seen->{$x_varname});
-      $seen->{$x_varname} = undef;
       if ($ref_var eq '==') {
         $result[$level - 1] .= $variable;
       }
@@ -296,6 +299,7 @@ sub _expand_vars {
   die("unterminated variable reference") if $level;
   $value = $result[0];
   $expanded->{$x_variable_name} = undef if $top;
+  delete $seen->{$x_variable_name};
   return $value;
 }
 
