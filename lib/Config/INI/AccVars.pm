@@ -119,7 +119,7 @@ my $_parse_ini = sub {
 
 sub parse_ini {
   state $allowed_keys = {map {$_ => undef} qw(clone src src_name global
-                                              common_section)};
+                                              common_section common_vars)};
   state $dflt_src_name = "INI data";  ### our???
   my $self = shift;
   my %args = (clone => "", global => {},
@@ -131,9 +131,10 @@ sub parse_ini {
   delete @args{ grep { !defined($args{$_}) } keys(%args) };
   foreach my $scalar_arg (qw(clone src_name common_section)) {
      croak("'$scalar_arg': must not be a reference") if ref($args{$scalar_arg});
-  }
-  my $clone = delete $args{clone};
-  my $src   = delete($args{src}) // croak("'src': Missing mandatory argument");#####
+   }
+  my $common_vars = delete $args{common_vars};
+  my $clone       = delete $args{clone};
+  my $src         = delete($args{src}) // croak("'src': Missing mandatory argument");#####
   $self->{$Arg_Map{$_}} = $args{$_} for keys(%args);
 
   if (my $ref_src = ref($src)) {
@@ -174,7 +175,24 @@ sub parse_ini {
   $self->{+SECTIONS_H} = {};
   $self->{+VARIABLES}  = {};
   $self->{+EXPANDED}  = {};
+  if ($common_vars) {
+    croak("'common_vars': expected HASH ref") if ref($common_vars) ne 'HASH';
+    ### CLONE !!!
+##    my $variables = $self->{+VARIABLES}
+    while (my ($var, $value) = each(%$common_vars)) {
+      croak("'common_vars': value of '$var' is a ref, expected scalar") if ref($value);
+      if (!defined($value)) {
+        carp("'common_vars': removing '$var' since its value is undef");
+        delete $common_vars->{$var};
+      }
+      croak("'common_vars': variable '$var': value '$value' is not permitted")
+        if ($value =~ /^(?:=|;[^;])/ || $value =~ /^(?:\s*|[#;$])$/);
+    }
+    %{$self->{+VARIABLES}{$self->{+COMMON_SECTION}}} = %$common_vars;
+  }
+
   $self->$_parse_ini($src);
+
   while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
     while (my ($variable, $value) = each(%$variables)) {
       $variables->{$variable} = $self->_expand_vars($section, $variable, $value);
