@@ -10,6 +10,12 @@ use File::Spec::Functions;
 
 sub test_data_file { catfile(qw(t 02_data), $_[0]) }
 
+
+#
+# For heredocs containing INI data always use the single quote variant!
+#
+
+
 subtest 'predefined sections' => sub {
   is(Config::INI::AccVars::DFLT_COMMON_SECTION, "__COMMON__", "COMMON_SECTION default");
 };
@@ -177,6 +183,39 @@ subtest "common section" => sub {
 };
 
 
+subtest "assignment operators and weird names" => sub {
+  my $input = <<'EOT';
+[#;.! ! =]
+:+;-+*+!@^xy = hel
+:+;-+*+!@^xy.= lo
+:+;-+*+!@^xy+= world
+
+:+;-+*+!@^xy. = another variable
+
+foo. = bar
+foo.= baz
+
+abc? = 123
+abc?= 456
+abc?= 789
+EOT
+  my $obj = new_ok('Config::INI::AccVars');
+  $obj->parse_ini(src => $input);
+  is_deeply($obj->variables,
+            {'#;.! ! =' => {
+                            ':+;-+*+!@^xy' => 'hello world',
+                            ':+;-+*+!@^xy.' => 'another variable',
+                            'foo.' => 'bar',
+                            'foo' => 'baz',
+                            'abc?' => '123',
+                            'abc' => '456',
+                           }
+            },
+            'variables()') or diag explain $obj->variables;
+
+};
+
+
 subtest "arguments" => sub {
   my $obj = new_ok('Config::INI::AccVars');
   my $input = ["a=b",
@@ -190,7 +229,7 @@ subtest "arguments" => sub {
 
     $obj->parse_ini(src => $input, global => $global, clone => 1);
     is_deeply($obj->global, {}, "global() is {}");
-    isnt($obj->global, $global, "global is not cloned");
+    isnt($obj->global, $global, "global is cloned");
   };
 };
 

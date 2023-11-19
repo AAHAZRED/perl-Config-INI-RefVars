@@ -9,11 +9,14 @@ use File::Spec::Functions;
 
 sub test_data_file { catfile(qw(t 03_data), $_[0]) }
 
+
+note("Testing assignments with and without auto vars");
+
 #
 # For heredocs containing INI data always use the single quote variant!
 #
 
-subtest "basic assignments" => sub {
+subtest 'basic assignments' => sub {
   my $obj = Config::INI::AccVars->new;
   foreach my $file (test_data_file('basic.ini'), test_data_file('basic_spaces.ini')) {
     subtest $file => sub {
@@ -32,7 +35,7 @@ subtest "basic assignments" => sub {
   }
 };
 
-subtest "empty and one blank string" => sub {
+subtest 'empty and one blank string' => sub {
   my $obj = Config::INI::AccVars->new;
   my $src = <<'EOT';
 [the section]
@@ -50,8 +53,14 @@ blank-3 +=
 blank-4 = $(blank-3)
 blank-5 := $(blank-3)$()$()$()
 blank-5 ?= 98765421
+blank-6 .=
+blank-6 +=
+blank-7 .=
+blank-7 +=
+blank-7 .=
+blank-7 .=
+blank-7 .=
 EOT
-  #Don't append a semicolon to the line above!
   $obj->parse_ini(src => $src);
   is_deeply($obj->sections, ["the section"], "sections()");
   my $sec_vars = $obj->variables->{'the section'};
@@ -67,7 +76,100 @@ EOT
   }
 };
 
-#subtest "multiple blanks" => sub {};
+subtest 'more blanks' => sub {
+  my $obj = Config::INI::AccVars->new;
+  my $src = <<'EOT';
+[some section]
+blanks +=
+blanks +=
+blanks +=
+blanks +=
+blanks +=
+blanks +=
+EOT
+  $obj->parse_ini(src => $src);
+  is_deeply($obj->variables, { 'some section' => {blanks => ' ' x 5} },
+            'variables(), 5 blanks');
+};
+
+
+subtest 'trailing blanks' => sub {
+  my $obj = Config::INI::AccVars->new;
+  my $src = <<'EOT';
+[some section]
+4-trailing-blanks_1 = value    $()
+4-trailing-blanks_2 = value$(    )
+4-trailing-blanks_3 = value$(  )$(  )
+4-trailing-blanks_4 = value$()    $()
+4-trailing-blanks_5 = value$(    $())
+4-trailing-blanks_6 = value$(  $(  ))
+4-trailing-blanks_7 = value$($(  )$(  ))
+4-trailing-blanks_8 = value
+4-trailing-blanks_8+=
+4-trailing-blanks_8+=
+4-trailing-blanks_8+=
+4-trailing-blanks_8+=
+EOT
+  $obj->parse_ini(src => $src);
+  my $sec_vars = $obj->variables->{'some section'};
+  while (my ($var, $val) = each(%$sec_vars)) {
+    is($val, 'value    ', $var);
+  }
+};
+
+subtest 'heading blanks' => sub {
+  my $obj = Config::INI::AccVars->new;
+  my $src = <<'EOT';
+[some section]
+4-heading-blanks_1 = $()    value
+4-heading-blanks_2 = $(    )value
+4-heading-blanks_3 = $(  )$(  )value
+4-heading-blanks_4 = $()    $()value
+4-heading-blanks_5 = $(    $())value
+4-heading-blanks_6 = $(  $(  ))value
+4-heading-blanks_7 = $($(  )$(  ))value
+4-heading-blanks_8 =
+4-heading-blanks_8+=
+4-heading-blanks_8+=
+4-heading-blanks_8+=
+4-heading-blanks_8+= value
+EOT
+  $obj->parse_ini(src => $src);
+  my $sec_vars = $obj->variables->{'some section'};
+  while (my ($var, $val) = each(%$sec_vars)) {
+    is($val, '    value', $var);
+  }
+};
+
+
+subtest 'section name, variable name' => sub {
+  my $src = <<'EOT';
+[Sec-1]
+info = This is variable '$(==)' in section $(=).
+
+[Sec-2]
+info = This is variable '$(==)' in section $(=).
+
+[Sec-3]
+info = This is variable '$(==)' in section $(=).
+EOT
+  my $obj = Config::INI::AccVars->new->parse_ini(src => $src);
+  isa_ok($obj, 'Config::INI::AccVars');
+  is_deeply($obj->variables,
+            {
+             'Sec-3' => {
+                         info => "This is variable 'info' in section Sec-3."
+                        },
+             'Sec-2' => {
+                         info => "This is variable 'info' in section Sec-2."
+                        },
+             'Sec-1' => {
+                         info => "This is variable 'info' in section Sec-1."
+                        }
+
+            },
+            'variables()');
+};
 
 #==================================================================================================
 done_testing();
