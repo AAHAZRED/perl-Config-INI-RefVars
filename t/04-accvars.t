@@ -22,7 +22,8 @@ subtest 'section name, variable name' => sub {
 info = This is variable '$(==)' in section '$(=)'.
 foo = $(==) : $(info)
 bar = $($(X)$()$(X)): $(foo)
-X = =
+X = $(Y)
+Y= =
 EOT
   my $obj = Config::INI::AccVars->new->parse_ini(src => $src);
   isa_ok($obj, 'Config::INI::AccVars');
@@ -32,7 +33,8 @@ EOT
                        bar  => "bar: foo : This is variable 'info' in section 'SEC'.",
                        foo  => "foo : This is variable 'info' in section 'SEC'.",
                        info => "This is variable 'info' in section 'SEC'.",
-                       X    => '='
+                       X    => '=',
+                       Y    => '='
                       }
             },
             'variables()');
@@ -77,6 +79,64 @@ EOT
                               }
             },
             'variables()');
+};
+
+
+subtest "Nested variable referencing" => sub {
+  my $obj = Config::INI::AccVars->new;
+  subtest "empty" => sub {
+    my $src = <<'EOT';
+[the section]
+
+empty-1 = $()$($())$($($()))$($($($())))
+empty-2 = $($(x)$(y))
+x = em
+y = pty
+EOT
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables,
+              {
+               'the section' => {
+                                 'empty-1' => '',
+                                 'empty-2' => '',
+                                 'y'       => 'pty',
+                                 'x'       => 'em'
+                                }
+              },
+              'variables()');
+  };
+};
+
+subtest "not evaluated again" => sub {
+  my $obj = Config::INI::AccVars->new;
+  subtest "composed" => sub {
+    my $src = <<'EOT';
+[ the section ]
+dollar=$
+open=(
+close=)
+section=$(=)
+
+; The result looks like a reference but will not be evaluated again.
+; So does `make'.
+not evaluated again=$(dollar)$(open)$(section)$(close)
+same here = $(not evaluated again)
+
+EOT
+    $obj->parse_ini(src => $src);
+      is_deeply($obj->variables,
+                {
+                 'the section' => {
+                                   'dollar'              => '$',
+                                   'open'                => '(',
+                                   'close'               => ')',
+                                   'section'             => 'the section',
+                                   'not evaluated again' => '$(the section)',
+                                   'same here'           => '$(the section)',
+                                  }
+                },
+                'variables()');
+  };
 };
 
 
