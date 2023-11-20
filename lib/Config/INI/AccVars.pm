@@ -29,7 +29,9 @@ our %Arg_Map = map {$_ => (FLD_KEY_PREFIX . uc($_))} qw (common_section expanded
 
 sub new { bless {}, ref($_[0]) || $_[0] }
 
-
+my $_expand_value = sub {
+  return $_[0]->_expand_vars($_[1], undef, $_[2]);
+};
 
 my $_parse_ini = sub {
   my ($self, $src) = @_;
@@ -89,8 +91,9 @@ my $_parse_ini = sub {
       $line =~ /^(.*?)\s*([[:punct:]]*?)=(?:\s*)(.*)/ or
         croak("Neither section header not key definition at line ", $i + 1);
       my ($var_name, $modifier, $value) = ($1, $2, $3);
-      delete $expanded->{$self->_x_var_name($curr_section, #########################
-                                            $var_name)};       ## _expand_vars() my set this
+      # delete $expanded->{$self->_x_var_name($curr_section, #########################
+      #                                       $var_name)};       ## _expand_vars() my set this
+      my $exp_flag = $expanded->{$self->_x_var_name($curr_section, $var_name)};
       croak("Empty variable name at line ", $i + 1) if $var_name eq "";
       my $sect_vars = $variables->{$curr_section} //= {};
       if ($modifier eq "") {
@@ -101,17 +104,34 @@ my $_parse_ini = sub {
       }
       elsif ($modifier eq '+') {
         if (exists($sect_vars->{$var_name})) {
-          $sect_vars->{$var_name} .= " " . $value;
+          $sect_vars->{$var_name} .= " "
+            . ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value);
         }
         else {
           $sect_vars->{$var_name} = "";
         }
       }
       elsif ($modifier eq '.') {
-        $sect_vars->{$var_name} = ($sect_vars->{$var_name} // "") . $value;
+        $sect_vars->{$var_name} = ($sect_vars->{$var_name} // "")
+          . ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value);
       }
       elsif ($modifier eq ':') {
         $sect_vars->{$var_name} = $self->_expand_vars($curr_section, $var_name, $value);
+      }
+      elsif ($modifier eq '+>') {
+        if (exists($sect_vars->{$var_name})) {
+          $sect_vars->{$var_name} =
+            ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value)
+            . ' ' . $sect_vars->{$var_name};
+        }
+        else {
+          $sect_vars->{$var_name} = "";
+        }
+      }
+      elsif ($modifier eq '.>') {
+        $sect_vars->{$var_name} =
+          ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value)
+          . ($sect_vars->{$var_name} // "");
       }
       else {
         die("$modifier: unsupported modifier");
@@ -269,11 +289,14 @@ sub _expand_vars {
   my @result = ("");
   my $level = 0;
   my $expanded = $self->{+EXPANDED};
-  my $x_variable_name = $self->_x_var_name($curr_sect, $variable);
-  return $value if exists($expanded->{$x_variable_name});
-  die("Recursive variable '", $x_variable_name, "' references itself")
-    if exists($seen->{$x_variable_name});
-  $seen->{$x_variable_name} = undef;
+  my $x_variable_name;
+  if (defined($variable)) {
+    $x_variable_name = $self->_x_var_name($curr_sect, $variable);
+    return $value if exists($expanded->{$x_variable_name});
+    die("Recursive variable '", $x_variable_name, "' references itself")
+      if exists($seen->{$x_variable_name});
+    $seen->{$x_variable_name} = undef;
+  }
   foreach my $token (split(/(\$\(|\))/, $value)) {
     if ($token eq '$(') {
       ++$level;
@@ -298,8 +321,10 @@ sub _expand_vars {
   }
   die("unterminated variable reference") if $level;
   $value = $result[0];
-  $expanded->{$x_variable_name} = undef if $top;
-  delete $seen->{$x_variable_name};
+  if ($x_variable_name) {
+    $expanded->{$x_variable_name} = undef if $top;
+    delete $seen->{$x_variable_name};
+  }
   return $value;
 }
 

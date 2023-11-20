@@ -198,17 +198,24 @@ foo.= baz
 abc? = 123
 abc?= 456
 abc?= 789
+
+my-var  = ld
+my-var .>= or
+my-var .>= w
+my-var +>= hello
+my-var +>= And again:
 EOT
   my $obj = new_ok('Config::INI::AccVars');
   $obj->parse_ini(src => $input);
   is_deeply($obj->variables,
             {'#;.! ! =' => {
-                            ':+;-+*+!@^xy' => 'hello world',
+                            ':+;-+*+!@^xy'  => 'hello world',
                             ':+;-+*+!@^xy.' => 'another variable',
-                            'foo.' => 'bar',
-                            'foo' => 'baz',
-                            'abc?' => '123',
-                            'abc' => '456',
+                            'foo.'          => 'bar',
+                            'foo'           => 'baz',
+                            'abc?'          => '123',
+                            'abc'           => '456',
+                            'my-var'        => 'And again: hello world'
                            }
             },
             'variables()') or diag explain $obj->variables;

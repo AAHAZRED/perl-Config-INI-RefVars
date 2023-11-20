@@ -152,19 +152,20 @@ info = This is variable '$(==)' in section $(=).
 
 [Sec-3]
 info = This is variable '$(==)' in section $(=).
+xyz  = This is variable '$(==)' in section $(=).
 EOT
   my $obj = Config::INI::AccVars->new->parse_ini(src => $src);
   isa_ok($obj, 'Config::INI::AccVars');
   is_deeply($obj->variables,
-            {
-             'Sec-3' => {
-                         info => "This is variable 'info' in section Sec-3."
+            {'Sec-1' => {
+                         info => "This is variable 'info' in section Sec-1."
                         },
              'Sec-2' => {
                          info => "This is variable 'info' in section Sec-2."
                         },
-             'Sec-1' => {
-                         info => "This is variable 'info' in section Sec-1."
+             'Sec-3' => {
+                         info => "This is variable 'info' in section Sec-3.",
+                         xyz  => "This is variable 'xyz' in section Sec-3."
                         }
 
             },
