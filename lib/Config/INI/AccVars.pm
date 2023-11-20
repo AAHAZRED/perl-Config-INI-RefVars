@@ -373,6 +373,8 @@ Perhaps a little code snippet.
 
 Sections without any vars do not appear in 'variables' hash.
 
+https://stackoverflow.com/questions/11581893/prepend-to-simply-expanded-variable
+
 =head1 EXPORT
 
 A list of functions that can be exported.  You can delete this section
