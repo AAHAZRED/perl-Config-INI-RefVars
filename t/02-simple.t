@@ -186,7 +186,9 @@ subtest "common section" => sub {
 subtest "assignment operators and weird names" => sub {
   my $input = <<'EOT';
 [#;.! ! =]
-:+;-+*+!@^xy = hel
+
+; start with a '.=' for a variable that is not yet defined
+:+;-+*+!@^xy .= hel
 :+;-+*+!@^xy.= lo
 :+;-+*+!@^xy+= world
 
@@ -227,6 +229,7 @@ subtest "arguments" => sub {
   my $obj = new_ok('Config::INI::AccVars');
   my $input = ["a=b",
                "[]",
+               "A+=",           # '+=' for a variable that does not yet exist
                "A=B"];
   subtest "clone + global (empty)" => sub {
     my $global = {};
