@@ -5,8 +5,8 @@ use Test::More;
 
 use Config::INI::AccVars;
 
-use File::Spec::Functions;
-
+#use File::Spec::Functions;
+#
 #sub test_data_file { catfile(qw(t 04_data), $_[0]) }
 
 
