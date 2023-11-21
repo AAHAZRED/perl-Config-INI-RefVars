@@ -41,6 +41,29 @@ EOT
 };
 
 
+subtest 'section name, variable name' => sub {
+  my $src = <<'EOT';
+[SEC]
+info = This is variable '$(==)' in section '$(=)'.
+foo = $(==) : $(info)
+bar = $($(X)$()$(X)): $(foo)
+X = =
+EOT
+  my $obj = Config::INI::AccVars->new->parse_ini(src => $src);
+  isa_ok($obj, 'Config::INI::AccVars');
+  is_deeply($obj->variables,
+            {
+             'SEC' => {
+                       bar  => "bar: foo : This is variable 'info' in section 'SEC'.",
+                       foo  => "foo : This is variable 'info' in section 'SEC'.",
+                       info => "This is variable 'info' in section 'SEC'.",
+                       X    => '='
+                      }
+            },
+            'variables()');
+};
+
+
 subtest "simple, using .=, +=, .>=, +>=" => sub {
   my $src = <<'EOT';
 [the section]
@@ -124,18 +147,18 @@ same here = $(not evaluated again)
 
 EOT
     $obj->parse_ini(src => $src);
-      is_deeply($obj->variables,
-                {
-                 'the section' => {
-                                   'dollar'              => '$',
-                                   'open'                => '(',
-                                   'close'               => ')',
-                                   'section'             => 'the section',
-                                   'not evaluated again' => '$(the section)',
-                                   'same here'           => '$(the section)',
-                                  }
-                },
-                'variables()');
+    is_deeply($obj->variables,
+              {
+               'the section' => {
+                                 'dollar'              => '$',
+                                 'open'                => '(',
+                                 'close'               => ')',
+                                 'section'             => 'the section',
+                                 'not evaluated again' => '$(the section)',
+                                 'same here'           => '$(the section)',
+                                }
+              },
+              'variables()');
   };
 
   subtest 'assign using := and append+prepand later' => sub {
@@ -176,30 +199,43 @@ EOT
             },
             'variables()');
  };
-};
+  subtest "mixed" => sub {
+    my $src = <<'EOT';
+[the section]
+AX=x
+X=$(A$(empty)X)
+Y=y
+secvar = >$(=)<
+secvar .= />$(==)<
+store_secvar =$(secvar) 
+xy= secvar:
+xy+=$(secvar)
 
+; Access existing variables
+ref_xy_indirectly = $($()$($()X)$()$(Y$())$())
 
-subtest 'section name, variable name' => sub {
-  my $src = <<'EOT';
-[SEC]
-info = This is variable '$(==)' in section '$(=)'.
-foo = $(==) : $(info)
-bar = $($(X)$()$(X)): $(foo)
-X = =
+; Try to access non-existing variables
+empty = $($()$($()x)$()$(y$())$())
+
 EOT
-  my $obj = Config::INI::AccVars->new->parse_ini(src => $src);
-  isa_ok($obj, 'Config::INI::AccVars');
-  is_deeply($obj->variables,
-            {
-             'SEC' => {
-                       bar  => "bar: foo : This is variable 'info' in section 'SEC'.",
-                       foo  => "foo : This is variable 'info' in section 'SEC'.",
-                       info => "This is variable 'info' in section 'SEC'.",
-                       X    => '='
-                      }
-            },
-            'variables()');
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables,
+              {
+               'the section' => {
+                                 'AX'                => 'x',
+                                 'X'                 => 'x',
+                                 'Y'                 => 'y',
+                                 'secvar'            => '>the section</>secvar<',
+                                 'store_secvar'      => '>the section</>secvar<',
+                                 'xy'                => 'secvar: >the section</>secvar<',
+                                 'ref_xy_indirectly' => 'secvar: >the section</>secvar<',
+                                 'empty'             => '',
+                                }
+              },
+              'variables()');
+  };
 };
+
 
 
 #==================================================================================================
