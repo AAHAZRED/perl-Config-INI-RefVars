@@ -137,6 +137,45 @@ EOT
                 },
                 'variables()');
   };
+
+  subtest 'assign using := and append+prepand later' => sub {
+   my $src = <<'EOT';
+[section 1]
+this = 12345
+that := ||| this 1 $(this)
+this .= 6789
+that += this 2 $(this)
+this = abc
+that .= _this 3 $(this)
+this = DEF
+that +>= this -1 $(this)
+this = GHI
+that .>= this -2 $(this)_
+
+[section 2]
+this = 12345
+that := |||
+that .= $( )this 1 $(th$()is)
+this .= 6789
+that += this 2 $(this)
+this = abc
+that .= _this 3 $(this)
+this = DEF
+that +>= this -1 $(this)
+this = GHI
+that .>= this -2 $(this)_
+EOT
+  $obj->parse_ini(src => $src);
+  my $exp = {
+             'that' => 'this -2 GHI_this -1 DEF ||| this 1 12345 this 2 123456789_this 3 abc',
+             'this' => 'GHI'
+            };
+  is_deeply($obj->variables,
+            { 'section 2' => $exp,
+              'section 1' => $exp
+            },
+            'variables()');
+ };
 };
 
 

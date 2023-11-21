@@ -93,7 +93,7 @@ my $_parse_ini = sub {
       my ($var_name, $modifier, $value) = ($1, $2, $3);
       # delete $expanded->{$self->_x_var_name($curr_section, #########################
       #                                       $var_name)};       ## _expand_vars() my set this
-      my $exp_flag = $expanded->{$self->_x_var_name($curr_section, $var_name)};
+      my $exp_flag = exists($expanded->{$self->_x_var_name($curr_section, $var_name)});
       croak("Empty variable name at line ", $i + 1) if $var_name eq "";
       my $sect_vars = $variables->{$curr_section} //= {};
       if ($modifier eq "") {
