@@ -10,30 +10,63 @@ use File::Spec::Functions;
 sub test_data_file { catfile(qw(t 03_data), $_[0]) }
 
 
-note("Testing assignments with and without auto vars");
+note("Testing assignments with and without auto vars, simple variable referencing");
 
 #
 # For heredocs containing INI data always use the single quote variant!
 #
 
+use constant DFLT_COMMON_SECTION => Config::INI::AccVars::DFLT_COMMON_SECTION;
+
 subtest 'basic assignments' => sub {
   my $obj = Config::INI::AccVars->new;
-  foreach my $file (test_data_file('basic.ini'), test_data_file('basic_spaces.ini')) {
-    subtest $file => sub {
-      $obj->parse_ini(src => $file);
-      is_deeply($obj->sections, [Config::INI::AccVars::DFLT_COMMON_SECTION, "this section"],
-                "sections()");
-      is_deeply($obj->sections_h, { Config::INI::AccVars::DFLT_COMMON_SECTION => 0,
-                                    "this section"                            => 1 },
-                "sections_h()");
-      is_deeply($obj->variables, { Config::INI::AccVars::DFLT_COMMON_SECTION => {foo => 'foo_val'},
-                                   "this section" => {foo => 'foo_val',
-                                                      str => "hello world"}
-                                 },
-                "variables()");
-    };
-  }
+  subtest 'basic.ini' => sub {
+    foreach my $file (test_data_file('basic.ini'), test_data_file('basic_spaces.ini')) {
+      subtest $file => sub {
+        $obj->parse_ini(src => $file);
+        is_deeply($obj->sections,
+                  [+DFLT_COMMON_SECTION, "this section"],
+                  "sections()");
+        is_deeply($obj->sections_h, { (DFLT_COMMON_SECTION) => 0,
+                                      "this section"        => 1 },
+                  "sections_h()");
+        is_deeply($obj->variables, { (DFLT_COMMON_SECTION) => {foo => 'foo_val'},
+                                     "this section"        => {foo => 'foo_val',
+                                                               str => "hello world"}
+                                   },
+                  "variables()") or diag(explain($obj->variables));
+      };
+    }
+  };
+  subtest "other basic examples" => sub {
+    my $src = [
+               '[a section]',
+               ' 1 = value' ,
+               '2 = 1245',
+               '2 =$(1)',    # clobber old value
+               ' 3 = $(2)',
+               'X=xyz',
+               ' x_a += $(X)',
+               ' y_a .= $(X)',
+               ' x_b +>= $(X)',
+               ' y_b .>= $(X)',
+              ];
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables, { 'a section' => {
+                                                 '1'   => 'value',
+                                                 '2'   => 'value',
+                                                 '3'   => 'value',
+                                                 'X'   => 'xyz',
+                                                 'x_a' => 'xyz',
+                                                 'y_a' => 'xyz',
+                                                 'x_b' => 'xyz',
+                                                 'y_b' => 'xyz',
+                                                }},
+              "variables()") or diag(explain($obj->variables));
+
+  };
 };
+
 
 subtest 'empty and one blank string' => sub {
   my $obj = Config::INI::AccVars->new;

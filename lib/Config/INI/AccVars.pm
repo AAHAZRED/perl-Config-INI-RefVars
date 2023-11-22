@@ -26,6 +26,8 @@ use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
 our %Arg_Map = map {$_ => (FLD_KEY_PREFIX . uc($_))} qw (common_section expanded global sections
                                                          sections_h src_name variables);
 
+# Match punctuation chars, but not the underscores.
+my $Modifier_Char = '[^_[:^punct:]]';
 
 sub new { bless {}, ref($_[0]) || $_[0] }
 
@@ -88,7 +90,7 @@ my $_parse_ini = sub {
     else {
       # var = val
       $set_curr_section->($common_sec) if !defined($curr_section);
-      $line =~ /^(.*?)\s*([[:punct:]]*?)=(?:\s*)(.*)/ or
+      $line =~ /^(.*?)\s*($Modifier_Char*?)=(?:\s*)(.*)/ or
         croak("Neither section header not key definition at line ", $i + 1);
       my ($var_name, $modifier, $value) = ($1, $2, $3);
       # delete $expanded->{$self->_x_var_name($curr_section, #########################
@@ -108,7 +110,7 @@ my $_parse_ini = sub {
             . ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value);
         }
         else {
-          $sect_vars->{$var_name} = "";
+          $sect_vars->{$var_name} = $value;
         }
       }
       elsif ($modifier eq '.') {
@@ -125,7 +127,7 @@ my $_parse_ini = sub {
             . ' ' . $sect_vars->{$var_name};
         }
         else {
-          $sect_vars->{$var_name} = "";
+          $sect_vars->{$var_name} = $value;
         }
       }
       elsif ($modifier eq '.>') {

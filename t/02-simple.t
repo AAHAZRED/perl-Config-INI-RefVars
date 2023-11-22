@@ -187,6 +187,8 @@ subtest "assignment operators and weird names" => sub {
   my $input = <<'EOT';
 [#;.! ! =]
 
+_=_underscore_
+
 ; start with a '.=' for a variable that is not yet defined
 :+;-+*+!@^xy .= hel
 :+;-+*+!@^xy.= lo
@@ -211,6 +213,7 @@ EOT
   $obj->parse_ini(src => $input);
   is_deeply($obj->variables,
             {'#;.! ! =' => {
+                            '_'             => '_underscore_',
                             ':+;-+*+!@^xy'  => 'hello world',
                             ':+;-+*+!@^xy.' => 'another variable',
                             'foo.'          => 'bar',
