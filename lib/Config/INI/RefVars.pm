@@ -251,25 +251,28 @@ sub _look_up {
   state $vre = qr/^\[\s*(.*?)\s*\](.+)$/;
   my $matched = $variable =~ $vre;
   my ($v_section, $v_basename) = $matched ? ($1, $2) : ($curr_sect, $variable);
+  my $v_value = "";
   if ($v_basename !~ /\S/) {
-    return $v_basename;
+     $v_value =$v_basename;
   }
   elsif ($v_basename eq '=') {
-    return $v_section;
-  }
-  my $variables = $self->{+VARIABLES};
-  if ($matched) {
-    return "" if !exists($variables->{$v_section});
-    return "" if !exists($variables->{$v_section}{$v_basename});
-    return $variables->{$v_section}{$v_basename};
+    $v_value =$v_section;
   } else {
-    die("Internal error") if !exists($variables->{$v_section});
-    if (exists($variables->{$v_section}{$v_basename})) {
-      return $variables->{$v_section}{$v_basename};
+    my $variables = $self->{+VARIABLES};
+    if ($matched) {
+      if (exists($variables->{$v_section}) && exists($variables->{$v_section}{$v_basename})) {
+        $v_value = $variables->{$v_section}{$v_basename};
+      }
     } else {
-      return $self->{+GLOBAL}{$v_basename} // "";
+      die("Internal error") if !exists($variables->{$v_section});
+      if (exists($variables->{$v_section}{$v_basename})) {
+        $v_value = $variables->{$v_section}{$v_basename};
+      } else {
+        $v_value = $self->{+GLOBAL}{$v_basename} // "";
+      }
     }
   }
+  return ($v_section, $v_basename, $v_value);
 }
 
 # extended var name
@@ -310,9 +313,7 @@ sub _expand_vars {
       }
       else {
         $result[$level - 1] .=
-          $self->_expand_vars($curr_sect, $ref_var, ###$variable,
-                              $self->_look_up($curr_sect, $ref_var),
-                              $seen);
+          $self->_expand_vars($self->_look_up($curr_sect, $ref_var), $seen);
       }
       pop(@result);
       --$level;
