@@ -105,6 +105,53 @@ EOT
 };
 
 
+subtest "ref chain" => sub {
+  my $obj = Config::INI::RefVars->new;
+  my $src = <<'EOT';
+[a section]
+
+1 = value
+2 =$(1)
+3 = $(2)
+4 = $(3)
+5 = $(4)
+6 = $(5)
+7 = $(6)
+
+_2 =$(1)
+_3 += $(2)
+_4 += $(3)
+_5 += $(4)
+_6 += $(5)
+_7 += $(6)
+a +>= $(_7)
+b .>= $(_7)
+EOT
+  $obj->parse_ini(src => $src);
+  is_deeply($obj->variables,
+             {
+          'a section' => {
+                           '1'  => 'value',
+                           '2'  => 'value',
+                           '3'  => 'value',
+                           '4'  => 'value',
+                           '5'  => 'value',
+                           '6'  => 'value',
+                           '7'  => 'value',
+                           '_2' => 'value',
+                           '_3' => 'value',
+                           '_4' => 'value',
+                           '_5' => 'value',
+                           '_6' => 'value',
+                           '_7' => 'value',
+                           'a'  => 'value',
+                           'b'  => 'value',
+                         }
+        },
+            'variables()');
+};
+
+
 subtest "Nested variable referencing" => sub {
   my $obj = Config::INI::RefVars->new;
   subtest "empty" => sub {
