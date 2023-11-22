@@ -4,9 +4,9 @@ use strict;
 use warnings;
 use Test::More;
 
-use Config::INI::AccVars;
+use Config::INI::RefVars;
 
-ok(defined($Config::INI::AccVars::VERSION), '$VERSION is defined');
+ok(defined($Config::INI::RefVars::VERSION), '$VERSION is defined');
 
 foreach my $meth (qw(new
                      parse_ini
@@ -17,7 +17,7 @@ foreach my $meth (qw(new
                      global
                      common_section
                    )) {
-  ok(Config::INI::AccVars->can($meth), "$meth() exists");
+  ok(Config::INI::RefVars->can($meth), "$meth() exists");
 }
 
 #==================================================================================================

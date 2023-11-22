@@ -1,4 +1,4 @@
-Config-INI-AccVars
+Config-INI-RefVars
 
 The README is used to introduce the module and provide instructions on
 how to install the module, any machine dependencies it may have (for
@@ -26,18 +26,18 @@ SUPPORT AND DOCUMENTATION
 After installing, you can find documentation for this module with the
 perldoc command.
 
-    perldoc Config::INI::AccVars
+    perldoc Config::INI::RefVars
 
 You can also look for information at:
 
     RT, CPAN's request tracker (report bugs here)
-        https://rt.cpan.org/NoAuth/Bugs.html?Dist=Config-INI-AccVars
+        https://rt.cpan.org/NoAuth/Bugs.html?Dist=Config-INI-RefVars
 
     CPAN Ratings
-        https://cpanratings.perl.org/d/Config-INI-AccVars
+        https://cpanratings.perl.org/d/Config-INI-RefVars
 
     Search CPAN
-        https://metacpan.org/release/Config-INI-AccVars
+        https://metacpan.org/release/Config-INI-RefVars
 
 
 LICENSE AND COPYRIGHT

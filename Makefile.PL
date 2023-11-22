@@ -4,10 +4,10 @@ use warnings;
 use ExtUtils::MakeMaker;
 
 my %WriteMakefileArgs = (
-    NAME             => 'Config::INI::AccVars',
+    NAME             => 'Config::INI::RefVars',
     AUTHOR           => q{Abdul al Hazred <451@gmx.eu>},
-    VERSION_FROM     => 'lib/Config/INI/AccVars.pm',
-    ABSTRACT_FROM    => 'lib/Config/INI/AccVars.pm',
+    VERSION_FROM     => 'lib/Config/INI/RefVars.pm',
+    ABSTRACT_FROM    => 'lib/Config/INI/RefVars.pm',
     LICENSE          => 'perl_5',
     MIN_PERL_VERSION => '5.010',
     CONFIGURE_REQUIRES => {
@@ -22,7 +22,7 @@ my %WriteMakefileArgs = (
         #'Foo::Bar::Module' => '5.0401',
     },
     dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
-    clean => { FILES => 'Config-INI-AccVars-*' },
+    clean => { FILES => 'Config-INI-RefVars-*' },
 );
 
 # Compatibility with old versions of ExtUtils::MakeMaker

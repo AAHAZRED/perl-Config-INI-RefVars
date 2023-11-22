@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Test::More;
 
-use Config::INI::AccVars;
+use Config::INI::RefVars;
 
 #use File::Spec::Functions;
 #
@@ -25,8 +25,8 @@ bar = $($(X)$()$(X)): $(foo)
 X = $(Y)
 Y= =
 EOT
-  my $obj = Config::INI::AccVars->new->parse_ini(src => $src);
-  isa_ok($obj, 'Config::INI::AccVars');
+  my $obj = Config::INI::RefVars->new->parse_ini(src => $src);
+  isa_ok($obj, 'Config::INI::RefVars');
   is_deeply($obj->variables,
             {
              'SEC' => {
@@ -49,8 +49,8 @@ foo = $(==) : $(info)
 bar = $($(X)$()$(X)): $(foo)
 X = =
 EOT
-  my $obj = Config::INI::AccVars->new->parse_ini(src => $src);
-  isa_ok($obj, 'Config::INI::AccVars');
+  my $obj = Config::INI::RefVars->new->parse_ini(src => $src);
+  isa_ok($obj, 'Config::INI::RefVars');
   is_deeply($obj->variables,
             {
              'SEC' => {
@@ -87,8 +87,8 @@ foo-bar-5 = $(bar)
 foo-bar-5 +>= -
 foo-bar-5 +>= $(foo)
 EOT
-  my $obj = Config::INI::AccVars->new->parse_ini(src => $src);
-  isa_ok($obj, 'Config::INI::AccVars');
+  my $obj = Config::INI::RefVars->new->parse_ini(src => $src);
+  isa_ok($obj, 'Config::INI::RefVars');
   is_deeply($obj->variables,
             {
              'the section' => {
@@ -106,7 +106,7 @@ EOT
 
 
 subtest "Nested variable referencing" => sub {
-  my $obj = Config::INI::AccVars->new;
+  my $obj = Config::INI::RefVars->new;
   subtest "empty" => sub {
     my $src = <<'EOT';
 [the section]
@@ -131,7 +131,7 @@ EOT
 };
 
 subtest "not evaluated again" => sub {
-  my $obj = Config::INI::AccVars->new;
+  my $obj = Config::INI::RefVars->new;
   subtest "composed" => sub {
     my $src = <<'EOT';
 [ the section ]

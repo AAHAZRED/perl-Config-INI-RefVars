@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Test::More;
 
-use Config::INI::AccVars;
+use Config::INI::RefVars;
 
 use File::Spec::Functions;
 
@@ -16,10 +16,10 @@ note("Testing assignments with and without auto vars, simple variable referencin
 # For heredocs containing INI data always use the single quote variant!
 #
 
-use constant DFLT_COMMON_SECTION => Config::INI::AccVars::DFLT_COMMON_SECTION;
+use constant DFLT_COMMON_SECTION => Config::INI::RefVars::DFLT_COMMON_SECTION;
 
 subtest 'basic assignments' => sub {
-  my $obj = Config::INI::AccVars->new;
+  my $obj = Config::INI::RefVars->new;
   subtest 'basic.ini' => sub {
     foreach my $file (test_data_file('basic.ini'), test_data_file('basic_spaces.ini')) {
       subtest $file => sub {
@@ -69,7 +69,7 @@ subtest 'basic assignments' => sub {
 
 
 subtest 'empty and one blank string' => sub {
-  my $obj = Config::INI::AccVars->new;
+  my $obj = Config::INI::RefVars->new;
   my $src = <<'EOT';
 [the section]
 empty-1 =
@@ -110,7 +110,7 @@ EOT
 };
 
 subtest 'more blanks' => sub {
-  my $obj = Config::INI::AccVars->new;
+  my $obj = Config::INI::RefVars->new;
   my $src = <<'EOT';
 [some section]
 blanks +=
@@ -127,7 +127,7 @@ EOT
 
 
 subtest 'trailing blanks' => sub {
-  my $obj = Config::INI::AccVars->new;
+  my $obj = Config::INI::RefVars->new;
   my $src = <<'EOT';
 [some section]
 4-trailing-blanks_1 = value    $()
@@ -151,7 +151,7 @@ EOT
 };
 
 subtest 'heading blanks' => sub {
-  my $obj = Config::INI::AccVars->new;
+  my $obj = Config::INI::RefVars->new;
   my $src = <<'EOT';
 [some section]
 4-heading-blanks_1 = $()    value
@@ -187,8 +187,8 @@ info = This is variable '$(==)' in section $(=).
 info = This is variable '$(==)' in section $(=).
 xyz  = This is variable '$(==)' in section $(=).
 EOT
-  my $obj = Config::INI::AccVars->new->parse_ini(src => $src);
-  isa_ok($obj, 'Config::INI::AccVars');
+  my $obj = Config::INI::RefVars->new->parse_ini(src => $src);
+  isa_ok($obj, 'Config::INI::RefVars');
   is_deeply($obj->variables,
             {'Sec-1' => {
                          info => "This is variable 'info' in section Sec-1."

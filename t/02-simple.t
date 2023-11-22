@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Test::More;
 
-use Config::INI::AccVars;
+use Config::INI::RefVars;
 
 use File::Spec::Functions;
 
@@ -17,11 +17,11 @@ sub test_data_file { catfile(qw(t 02_data), $_[0]) }
 
 
 subtest 'predefined sections' => sub {
-  is(Config::INI::AccVars::DFLT_COMMON_SECTION, "__COMMON__", "COMMON_SECTION default");
+  is(Config::INI::RefVars::DFLT_COMMON_SECTION, "__COMMON__", "COMMON_SECTION default");
 };
 
 subtest 'before any parsing' => sub {
-  my $obj = new_ok('Config::INI::AccVars');
+  my $obj = new_ok('Config::INI::RefVars');
   foreach my $meth (qw(sections
                        sections_h
                        variables
@@ -35,7 +35,7 @@ subtest 'before any parsing' => sub {
 
 subtest 'empty input' => sub {
   subtest "string that only contains a line break" => sub {
-    my $obj = new_ok('Config::INI::AccVars');
+    my $obj = new_ok('Config::INI::RefVars');
     is($obj->parse_ini(src => "\n"), $obj, "parse_ini() returns obj");
     is_deeply($obj->sections,   [], 'sections(): empty array');
     is_deeply($obj->sections_h, {}, 'sections_h(): empty hash');
@@ -43,7 +43,7 @@ subtest 'empty input' => sub {
     check_other($obj);
   };
   subtest "empty array" => sub {
-    my $obj = new_ok('Config::INI::AccVars');
+    my $obj = new_ok('Config::INI::RefVars');
     $obj->parse_ini(src => []);
     is_deeply($obj->sections,   [], 'sections(): empty array');
     is_deeply($obj->sections_h, {}, 'sections_h(): empty hash');
@@ -51,7 +51,7 @@ subtest 'empty input' => sub {
     check_other($obj);
   };
   subtest "array containing an empty string" => sub {
-    my $obj = new_ok('Config::INI::AccVars');
+    my $obj = new_ok('Config::INI::RefVars');
     $obj->parse_ini(src => [""]);
     is_deeply($obj->sections,   [], 'sections(): empty array');
     is_deeply($obj->sections_h, {}, 'sections_h(): empty hash');
@@ -59,7 +59,7 @@ subtest 'empty input' => sub {
     check_other($obj);
   };
   subtest "empty file" => sub {
-    my $obj = new_ok('Config::INI::AccVars');
+    my $obj = new_ok('Config::INI::RefVars');
     my $empty_file = test_data_file("empty_file.ini");
     note("Input: $empty_file");
     $obj->parse_ini(src => $empty_file);
@@ -69,7 +69,7 @@ subtest 'empty input' => sub {
     check_other($obj, $empty_file);
   };
   subtest "file containing only spaces" => sub {
-    my $obj = new_ok('Config::INI::AccVars');
+    my $obj = new_ok('Config::INI::RefVars');
     my $spaces_file = test_data_file("only_spaces.ini");
     note("Input: $spaces_file");
     $obj->parse_ini(src => $spaces_file);
@@ -83,7 +83,7 @@ subtest 'empty input' => sub {
 
 subtest 'only comments' => sub {
   subtest "string that only contains comments" => sub {
-    my $obj = new_ok('Config::INI::AccVars');
+    my $obj = new_ok('Config::INI::RefVars');
     $obj->parse_ini(src => "; [a section]\n#foo=bar\n");
     is_deeply($obj->sections,   [], 'sections(): empty array');
     is_deeply($obj->sections_h, {}, 'sections_h(): empty hash');
@@ -91,7 +91,7 @@ subtest 'only comments' => sub {
     check_other($obj);
   };
   subtest "array containing only comments" => sub {
-    my $obj = new_ok('Config::INI::AccVars');
+    my $obj = new_ok('Config::INI::RefVars');
     $obj->parse_ini(src => ["; [a section]",
                             ";foo=bar"]);
     is_deeply($obj->sections,   [], 'sections(): empty array');
@@ -100,7 +100,7 @@ subtest 'only comments' => sub {
     check_other($obj);
   };
   subtest "file containing only comments" => sub {
-    my $obj = new_ok('Config::INI::AccVars');
+    my $obj = new_ok('Config::INI::RefVars');
     my $only_comments = test_data_file("only_comments.ini");
     note("Input: $only_comments");
     $obj->parse_ini(src => $only_comments);
@@ -112,7 +112,7 @@ subtest 'only comments' => sub {
 };
 
 subtest "simple content / reuse" => sub {
-  my $obj = new_ok('Config::INI::AccVars');
+  my $obj = new_ok('Config::INI::RefVars');
   subtest "string input" => sub {
     $obj->parse_ini(src => "[a section]\nfoo=bar\n");
     is_deeply($obj->sections,   ['a section'],      'sections()');
@@ -164,17 +164,17 @@ subtest "simple content / reuse" => sub {
 
 
 subtest "common section" => sub {
-  my $obj = new_ok('Config::INI::AccVars');
+  my $obj = new_ok('Config::INI::RefVars');
   my $input = ["a=b",
                "[blah]",
                "A=B"];
   is($obj->parse_ini(src => $input), $obj, "parse_ini() returns obj");
-  is_deeply($obj->sections, [Config::INI::AccVars::DFLT_COMMON_SECTION, "blah"],
+  is_deeply($obj->sections, [Config::INI::RefVars::DFLT_COMMON_SECTION, "blah"],
             "sections(): default and empty section");
-  is_deeply($obj->sections_h, { Config::INI::AccVars::DFLT_COMMON_SECTION => 0,
+  is_deeply($obj->sections_h, { Config::INI::RefVars::DFLT_COMMON_SECTION => 0,
                                 'blah'                                    => 1},
             'sections_h()');
-  is_deeply($obj->variables,  { Config::INI::AccVars::DFLT_COMMON_SECTION => {a => 'b'},
+  is_deeply($obj->variables,  { Config::INI::RefVars::DFLT_COMMON_SECTION => {a => 'b'},
                                 'blah'                                    => {A => 'B',
                                                                               a => 'b'},
                               },
@@ -209,7 +209,7 @@ my-var .>= w
 my-var +>= hello
 my-var +>= And again:
 EOT
-  my $obj = new_ok('Config::INI::AccVars');
+  my $obj = new_ok('Config::INI::RefVars');
   $obj->parse_ini(src => $input);
   is_deeply($obj->variables,
             {'#;.! ! =' => {
@@ -229,7 +229,7 @@ EOT
 
 
 subtest "arguments" => sub {
-  my $obj = new_ok('Config::INI::AccVars');
+  my $obj = new_ok('Config::INI::RefVars');
   my $input = ["a=b",
                "[]",
                "A+=",           # '+=' for a variable that does not yet exist
@@ -256,5 +256,5 @@ sub check_other {
   my $obj = shift;
   my $src_name = shift // "INI data";
   is_deeply($obj->global, {}, 'global()');
-  is($obj->common_section,  Config::INI::AccVars::DFLT_COMMON_SECTION, 'common_section()');
+  is($obj->common_section,  Config::INI::RefVars::DFLT_COMMON_SECTION, 'common_section()');
 }
