@@ -50,7 +50,7 @@ subtest "chains" => sub {
   subtest "[section 1] ... [section 7]" => sub {
     my $src = [
                '[section 1]',
-               'a= Variable $(==) in sectiom $(=)',
+               'a= Variable $(==) in section $(=)',
                'b=$([section 1]a)',
                # ---
                '[section 2]',
@@ -80,8 +80,8 @@ subtest "chains" => sub {
     $obj->parse_ini(src => $src);
     while (my ($sec, $val) = each(%{$obj->variables})) {
       is_deeply($val, {
-                       'a' => 'Variable a in sectiom section 1',
-                       'b' => 'Variable a in sectiom section 1'
+                       'a' => 'Variable a in section section 1',
+                       'b' => 'Variable a in section section 1'
                       },
                 "section '$sec'");
     }
@@ -101,7 +101,7 @@ subtest "chains" => sub {
   subtest "[section 1] ... [section 7] with := and .=" => sub {
     my $src = [
                '[section 1]',
-               'a= Variable $(==) in sectiom $(=)',
+               'a= Variable $(==) in section $(=)',
                'b:=$([section 1]a)',
                '',
                '[section 2]',
@@ -131,8 +131,8 @@ subtest "chains" => sub {
     $obj->parse_ini(src => $src);
     while (my ($sec, $val) = each(%{$obj->variables})) {
       is_deeply($val, {
-                       'a' => 'Variable a in sectiom section 1',
-                       'b' => 'Variable a in sectiom section 1'
+                       'a' => 'Variable a in section section 1',
+                       'b' => 'Variable a in section section 1'
                       },
                 "section '$sec'");
     }
