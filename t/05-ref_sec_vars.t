@@ -137,6 +137,71 @@ subtest "chains" => sub {
                 "section '$sec'");
     }
   };
+
+  subtest "[section 1] ... [section 7] with := and .=" => sub {
+    my $src = [
+               '[section 1]',
+               'a= $([section 5]a)',
+               'b:=$([section 5]a)',
+               '',
+               '[section 2]',
+               'a:=$([section 1]a)',
+               'b=$([section 1]a)',
+               '',
+               '[section 3]',
+               'a:=$([section 1]a)',
+               'b=$([section 2]a)',
+               '',
+               '[section 4]',
+               'a=$([section 1]a)',
+               'b:=$([section 3]a)',
+               '',
+               '[section 5]',
+               'a:=Variable $(==) in section $(=)',
+               'b=$([section 4]a)',
+               '',
+               '[section 6]',
+               'a=$([section 1]a)',
+               'b:=$([section 5]a)',
+               '',
+               '[section 7]',
+               'a.=$([section 1]a)',
+               'b.=$([section 6]a)',
+              ];
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables,
+              {
+               'section 1' => {
+                               'a' => 'Variable a in section section 5',
+                               'b' => ''
+                              },
+               'section 2' => {
+                               'a' => '',
+                               'b' => 'Variable a in section section 5'
+                              },
+               'section 3' => {
+                               'a' => '',
+                               'b' => ''
+                              },
+               'section 4' => {
+                               'a' => 'Variable a in section section 5',
+                               'b' => ''
+                              },
+               'section 5' => {
+                               'a' => 'Variable a in section section 5',
+                               'b' => 'Variable a in section section 5'
+                              },
+               'section 6' => {
+                               'a' => 'Variable a in section section 5',
+                               'b' => 'Variable a in section section 5'
+                              },
+               'section 7' => {
+                               'a' => 'Variable a in section section 5',
+                               'b' => 'Variable a in section section 5'
+                              }
+              },
+              "variables()");
+  };
 };
 
 #==================================================================================================
