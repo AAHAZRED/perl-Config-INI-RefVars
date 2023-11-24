@@ -97,6 +97,46 @@ subtest "chains" => sub {
               "sections_h"
               );
   };
+
+  subtest "[section 1] ... [section 7] with := and .=" => sub {
+    my $src = [
+               '[section 1]',
+               'a= Variable $(==) in sectiom $(=)',
+               'b:=$([section 1]a)',
+               '',
+               '[section 2]',
+               'a:=$([section 1]a)',
+               'b=$([section 1]a)',
+               '',
+               '[section 3]',
+               'a:=$([section 1]a)',
+               'b=$([section 2]a)',
+               '',
+               '[section 4]',
+               'a=$([section 1]a)',
+               'b:=$([section 3]a)',
+               '',
+               '[section 5]',
+               'a:=$([section 1]a)',
+               'b=$([section 4]a)',
+               '',
+               '[section 6]',
+               'a=$([section 1]a)',
+               'b:=$([section 5]a)',
+               '',
+               '[section 7]',
+               'a.=$([section 1]a)',
+               'b.=$([section 6]a)',
+              ];
+    $obj->parse_ini(src => $src);
+    while (my ($sec, $val) = each(%{$obj->variables})) {
+      is_deeply($val, {
+                       'a' => 'Variable a in sectiom section 1',
+                       'b' => 'Variable a in sectiom section 1'
+                      },
+                "section '$sec'");
+    }
+  };
 };
 
 #==================================================================================================
