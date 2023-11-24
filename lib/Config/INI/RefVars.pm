@@ -23,8 +23,10 @@ use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
               VARIABLES         => FLD_KEY_PREFIX . 'VARIABLES',
              };
 
-our %Arg_Map = map {$_ => (FLD_KEY_PREFIX . uc($_))} qw (common_section expanded global sections
-                                                         sections_h src_name variables);
+my %Arg_Map = map {$_ => (FLD_KEY_PREFIX . uc($_))} qw (common_section expanded global sections
+                                                        sections_h src_name variables);
+
+my %Globals;
 
 # Match punctuation chars, but not the underscores.
 my $Modifier_Char = '[^_[:^punct:]]';
@@ -163,6 +165,7 @@ sub parse_ini {
   my $common_vars = delete $args{common_vars};
   my $clone       = delete $args{clone};
   my $src         = delete($args{src}) // croak("'src': Missing mandatory argument");#####
+  my $global      = delete($args{global});
   $self->{$Arg_Map{$_}} = $args{$_} for keys(%args);
 
   if (my $ref_src = ref($src)) {
@@ -189,15 +192,12 @@ sub parse_ini {
       $self->{+SRC_NAME} = $dflt_src_name if !exists($self->{+SRC_NAME});
     }
   }
-  if (exists($self->{+GLOBAL})) {
-    croak("'global': must be a HASH ref") if ref($self->{+GLOBAL}) ne 'HASH';
-    while (my ($var, $val) = each(%{$self->{+GLOBAL}})) {
+  if (defined($global)) {
+    croak("'global': must be a HASH ref") if ref($global) ne 'HASH';
+    while (my ($var, $val) = each(%{$global})) {
       croak("'global': unexpected ref type for variable $var") if ref($val);
     }
-    $self->{+GLOBAL} = {%{$self->{+GLOBAL}}} if $clone;
-  }
-  else {
-    $self->{+GLOBAL} = {};
+    $self->{+GLOBAL} = $clone ? {%{$global}} : $global;
   }
   $self->{+SECTIONS}   = [];
   $self->{+SECTIONS_H} = {};
