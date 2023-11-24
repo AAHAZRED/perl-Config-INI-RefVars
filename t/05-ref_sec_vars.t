@@ -204,6 +204,73 @@ subtest "chains" => sub {
   };
 };
 
+subtest "mix" => sub {
+  subtest "simple mix 1" => sub {
+    my $src = [
+               '[sec 1]',
+               'sec2 = sec 2',
+               '',
+               '[sec 2]',
+               'foo = Var $(==) in section $(=)',
+               'bar := $([sec 3]var3)',
+               'baz = $([sec 3]var3)',
+               '',
+               '[sec 3]',
+               'var3 = $([$([sec 1]sec2)]foo)',
+              ];
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables,
+              {
+               'sec 1' => {
+                           'sec2' => 'sec 2'
+                          },
+               'sec 2' => {
+                           'bar' => '',
+                           'baz' => 'Var foo in section sec 2',
+                           'foo' => 'Var foo in section sec 2'
+                          },
+               'sec 3' => {
+                           'var3' => 'Var foo in section sec 2'
+                          }
+              },
+              "variables()");
+  };
+
+  subtest "simple mix 2" => sub {
+    my $src =
+      [
+       '[sec A]',
+       'secname = sec C',
+       'a=$([$(secname)]c)',
+       '',
+       '[sec B]',
+       'section = [sec A]',
+       'A=$($(section)a)',
+       'weird=-$([sec A]=)-$([sec B]=)-$([sec C]=)--$([sec A]==)-$([sec B]==)-$([sec C]==)',
+       '',
+       '[sec C]',
+       'c=A variable from section $(=)!',
+      ];
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables,
+              {
+               'sec A' => {
+                           'a' => 'A variable from section sec C!',
+                           'secname' => 'sec C'
+                          },
+               'sec B' => {
+                           'A' => 'A variable from section sec C!',
+                           'section' => '[sec A]',
+                           'weird' => '-sec A-sec B-sec C----'
+                          },
+               'sec C' => {
+                           'c' => 'A variable from section sec C!'
+                          }
+              },
+              "variables()");
+  };
+};
+
 #==================================================================================================
 done_testing();
 
