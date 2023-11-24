@@ -221,6 +221,7 @@ this = DEF
 that +>= this -1 $(this)
 this = GHI
 that .>= this -2 $(this)_
+this = ---
 
 [section 2]
 this = 12345
@@ -234,11 +235,12 @@ this = DEF
 that +>= this -1 $(this)
 this = GHI
 that .>= this -2 $(this)_
+this=---
 EOT
   $obj->parse_ini(src => $src);
   my $exp = {
              'that' => 'this -2 GHI_this -1 DEF ||| this 1 12345 this 2 123456789_this 3 abc',
-             'this' => 'GHI'
+             'this' => '---'
             };
   is_deeply($obj->variables,
             { 'section 2' => $exp,
@@ -246,6 +248,42 @@ EOT
             },
             'variables()');
  };
+
+  subtest ":= two times; :=, then =" => sub {
+    my $src = [
+               '[section 1]',
+               'some var = 1',
+               'no_exp   := $(some var)',
+               'some var = 2',
+               '',
+               'no_exp   :=  $(some var)',  #=, :=
+               '',
+               'some var = 3',
+               # ---
+               '[section 2]',
+               'some var = 1',
+               'no_exp   := $(some var)',
+               'some var = 2',
+               '',
+               'no_exp   =  $(some var)',  #=, :=
+               '',
+               'some var = 3',
+              ];
+    my $obj = Config::INI::RefVars->new->parse_ini(src => $src);
+    is_deeply($obj->variables,
+              {
+               'section 1' => {
+                               'some var' => '3',
+                               'no_exp'   => '2'
+                              },
+               'section 2' => {
+                               'some var' => '3',
+                               'no_exp'   => '3'
+                              },
+              },
+              'variables()') or diag explain $obj->variables;
+  };
+
   subtest "mixed" => sub {
     my $src = <<'EOT';
 [the section]

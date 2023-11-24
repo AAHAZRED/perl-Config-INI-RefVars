@@ -64,7 +64,7 @@ my $_parse_ini = sub {
     } else {
       $variables->{$curr_section} = {};
     }
-    $sections_h->{$curr_section} = @$sections;#undef;       #### index!!!!!!
+    $sections_h->{$curr_section} = @$sections; # Index!
     push(@$sections, $curr_section);
   };
 
@@ -93,12 +93,12 @@ my $_parse_ini = sub {
       $line =~ /^(.*?)\s*($Modifier_Char*?)=(?:\s*)(.*)/ or
         croak("Neither section header not key definition at line ", $i + 1);
       my ($var_name, $modifier, $value) = ($1, $2, $3);
-      # delete $expanded->{$self->_x_var_name($curr_section, #########################
-      #                                       $var_name)};       ## _expand_vars() my set this
-      my $exp_flag = exists($expanded->{$self->_x_var_name($curr_section, $var_name)});
+      my $x_var_name = $self->_x_var_name($curr_section, $var_name);
+      my $exp_flag = exists($expanded->{$x_var_name});
       croak("Empty variable name at line ", $i + 1) if $var_name eq "";
       my $sect_vars = $variables->{$curr_section} //= {};
       if ($modifier eq "") {
+        delete $expanded->{$x_var_name} if $exp_flag;
         $sect_vars->{$var_name} = $value;
       }
       elsif ($modifier eq '?') {
@@ -118,6 +118,7 @@ my $_parse_ini = sub {
           . ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value);
       }
       elsif ($modifier eq ':') {
+        delete $expanded->{$x_var_name} if $exp_flag; # Needed to make _expand_vars corectly!
         $sect_vars->{$var_name} = $self->_expand_vars($curr_section, $var_name, $value);
       }
       elsif ($modifier eq '+>') {
@@ -272,7 +273,7 @@ sub _look_up {
       }
     }
   }
-  return ($v_section, $v_basename, $v_value);
+  return wantarray ? ($v_section, $v_basename, $v_value) : $v_value;
 }
 
 # extended var name
@@ -288,16 +289,16 @@ sub _x_var_name {
   }
 }
 
+
 sub _expand_vars {
   my ($self, $curr_sect, $variable, $value, $seen) = @_;
   my $top = !$seen;
   my @result = ("");
   my $level = 0;
-  my $expanded = $self->{+EXPANDED};
   my $x_variable_name;
   if (defined($variable)) {
     $x_variable_name = $self->_x_var_name($curr_sect, $variable);
-    return $value if exists($expanded->{$x_variable_name});
+    return $self->_look_up($curr_sect, $variable) if exists($self->{+EXPANDED}{$x_variable_name});
     die("Recursive variable '", $x_variable_name, "' references itself")
       if exists($seen->{$x_variable_name});
     $seen->{$x_variable_name} = undef;
@@ -307,13 +308,13 @@ sub _expand_vars {
       ++$level;
     }
     elsif ($token eq ')' && $level) {
-      my $ref_var = $result[$level];
-      if ($ref_var eq '==') {
+      # Now $result[$level] contains the name of a referenced variable.
+      if ($result[$level] eq '==') {
         $result[$level - 1] .= $variable;
       }
       else {
         $result[$level - 1] .=
-          $self->_expand_vars($self->_look_up($curr_sect, $ref_var), $seen);
+          $self->_expand_vars($self->_look_up($curr_sect, $result[$level]), $seen);
       }
       pop(@result);
       --$level;
@@ -325,7 +326,7 @@ sub _expand_vars {
   die("unterminated variable reference") if $level;
   $value = $result[0];
   if ($x_variable_name) {
-    $expanded->{$x_variable_name} = undef if $top;
+    $self->{+EXPANDED}{$x_variable_name} = undef if $top;
     delete $seen->{$x_variable_name};
   }
   return $value;
