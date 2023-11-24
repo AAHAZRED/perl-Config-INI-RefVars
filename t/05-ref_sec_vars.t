@@ -18,11 +18,12 @@ my $obj = Config::INI::RefVars->new;
 
 
 subtest "basic sec refs" => sub {
-  subtest "very simpls, usinf = and ==" => sub {
+  subtest "very simple, using = and ==" => sub {
     my $src = <<'EOT';
 [sec A]
 X = Reference from other section: $([sec B]str)
 Y = From variable $(==) in section $(=)
+Z = >$([BLAH]blubb)<
 
 [sec B]
 X = Reference: $([sec A]Y)
@@ -33,12 +34,13 @@ EOT
               {
                'sec A' => {
                            # Note the value of Y: "... ---> sec B"!
-                           'X' => 'Reference from other section: huhu --->sec B',
-                           'Y' => 'From variable Y in section sec A'
+                           X => 'Reference from other section: huhu --->sec B',
+                           Y => 'From variable Y in section sec A',
+                           Z => '><'
                           },
                'sec B' => {
-                           'str' => 'huhu --->sec B',
-                           'X' => 'Reference: From variable Y in section sec A'
+                           str => 'huhu --->sec B',
+                           X   => 'Reference: From variable Y in section sec A'
                           }
               },
               'variables()');
