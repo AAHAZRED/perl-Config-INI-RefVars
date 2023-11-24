@@ -191,6 +191,7 @@ section=$(=)
 ; So does `make'.
 not evaluated again=$(dollar)$(open)$(section)$(close)
 same here = $(not evaluated again)
+and here := $(same here)
 
 EOT
     $obj->parse_ini(src => $src);
@@ -203,6 +204,7 @@ EOT
                                  'section'             => 'the section',
                                  'not evaluated again' => '$(the section)',
                                  'same here'           => '$(the section)',
+                                 'and here'            => '$(the section)',
                                 }
               },
               'variables()');
