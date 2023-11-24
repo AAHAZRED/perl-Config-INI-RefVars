@@ -13,8 +13,11 @@ use Config::INI::RefVars;
 # For heredocs containing INI data always use the single quote variant!
 #
 
+
+my $obj = Config::INI::RefVars->new;
+
+
 subtest "basic sec refs" => sub {
-  my $obj = Config::INI::RefVars->new;
   subtest "very simpls, usinf = and ==" => sub {
     my $src = <<'EOT';
 [sec A]
@@ -41,6 +44,59 @@ EOT
               'variables()');
   };
 #  subtest "sec name in variable"
+};
+
+subtest "chains" => sub {
+  subtest "[section 1] ... [section 7]" => sub {
+    my $src = [
+               '[section 1]',
+               'a= Variable $(==) in sectiom $(=)',
+               'b=$([section 1]a)',
+               # ---
+               '[section 2]',
+               'a=$([section 1]a)',
+               'b=$([section 1]a)',
+               # ---
+               '[section 3]',
+               'a=$([section 1]a)',
+               'b=$([section 2]a)',
+               # ---
+               '[section 4]',
+               'a=$([section 1]a)',
+               'b=$([section 3]a)',
+               # ---
+               '[section 5]',
+               'a=$([section 1]a)',
+               'b=$([section 4]a)',
+               # ---
+               '[section 6]',
+               'a=$([section 1]a)',
+               'b=$([section 5]a)',
+               # ---
+               '[section 7]',
+               'a=$([section 1]a)',
+               'b=$([section 6]a)',
+              ];
+    $obj->parse_ini(src => $src);
+    while (my ($sec, $val) = each(%{$obj->variables})) {
+      is_deeply($val, {
+                       'a' => 'Variable a in sectiom section 1',
+                       'b' => 'Variable a in sectiom section 1'
+                      },
+                "section '$sec'");
+    }
+    is_deeply($obj->sections_h, {
+                                 'section 1' => 0,
+                                 'section 2' => 1,
+                                 'section 3' => 2,
+                                 'section 4' => 3,
+                                 'section 5' => 4,
+                                 'section 6' => 5,
+                                 'section 7' => 6,
+                                },
+              "sections_h"
+              );
+  };
 };
 
 #==================================================================================================
