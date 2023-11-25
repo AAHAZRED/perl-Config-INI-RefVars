@@ -7,6 +7,8 @@ use Carp;
 
 use feature ":5.10";
 
+use File::Spec::Functions;
+
 our $VERSION = '0.01';
 
 use constant DFLT_COMMON_SECTION  => "__COMMON__";
@@ -16,6 +18,7 @@ use constant FLD_KEY_PREFIX => __PACKAGE__ . ' __ ';
 use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
 
               COMMON_SECTION    => FLD_KEY_PREFIX . 'COMMON_SECTION',
+              NOT_COMMON        => FLD_KEY_PREFIX . 'NOT_COMMON',
               GLOBAL            => FLD_KEY_PREFIX . 'GLOBAL',
               SECTIONS          => FLD_KEY_PREFIX . 'SECTIONS',
               SECTIONS_H        => FLD_KEY_PREFIX . 'SECTIONS_H',
@@ -26,7 +29,7 @@ use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
 my %Arg_Map = map {$_ => (FLD_KEY_PREFIX . uc($_))} qw (common_section expanded global sections
                                                         sections_h src_name variables);
 
-my %Globals;
+my %Globals = ('=:' => catdir("", ""));
 
 # Match punctuation chars, but not the underscores.
 my $Modifier_Char = '[^_[:^punct:]]';
@@ -36,6 +39,25 @@ sub new { bless {}, ref($_[0]) || $_[0] }
 my $_expand_value = sub {
   return $_[0]->_expand_vars($_[1], undef, $_[2]);
 };
+
+#
+# We assume that this is called when the target section is still empty and if
+# common vars exist.
+#
+my $_cp_common_vars = sub {
+  my ($self, $to_sect_name) = @_;
+  my $comm_sec   = $self->{+VARIABLES}{$self->{+COMMON_SECTION}} // die("no common vars");
+  my $not_common = $self->{+NOT_COMMON};
+  my $to_sec     = $self->{+VARIABLES}{$to_sect_name} //= {};
+  my $expanded   = $self->{+EXPANDED};
+  foreach my $comm_var (keys(%$comm_sec)) {
+    next if exists($not_common->{$comm_var});
+    $to_sec->{$comm_var} = $comm_sec->{$comm_var};
+    my $comm_x_var_name = "[$comm_sec]$comm_var";   # see _x_var_name()
+    $expanded->{"[$to_sect_name]$comm_var"} = undef if exists($expanded->{$comm_x_var_name});
+  }
+};
+
 
 my $_parse_ini = sub {
   my ($self, $src) = @_;
@@ -47,7 +69,11 @@ my $_parse_ini = sub {
   else {
     $src_name = $src;
     $src = [do { local (*ARGV); @ARGV = ($src_name); <> }];
+    my ($vol, $dirs, $file) = splitpath(rel2abs($src));
+    @{$self->{+GLOBAL}}{'=INIfile', '=INIdir'} = ($file,
+                                                  catdir(length($vol // "") ? $vol : (), $dirs));
   }
+  $self->{+GLOBAL}{'=INIname'} = $src_name // "";
   my $curr_section;
   my $sections    = $self->{+SECTIONS};
   my $sections_h  = $self->{+SECTIONS_H};
@@ -62,7 +88,7 @@ my $_parse_ini = sub {
       die("common section '$common_sec' must be first section") if @$sections;
       $common_vars = $variables->{$common_sec} = {} if !$common_vars;
     } elsif ($common_vars) {
-      %{$variables->{$curr_section}} = %{$common_vars};
+      $self->$_cp_common_vars($curr_section);
     } else {
       $variables->{$curr_section} = {};
     }
@@ -149,7 +175,7 @@ my $_parse_ini = sub {
 
 sub parse_ini {
   state $allowed_keys = {map {$_ => undef} qw(clone src src_name global
-                                              common_section common_vars)};
+                                              common_section common_vars not_common)};
   state $dflt_src_name = "INI data";  ### our???
   my $self = shift;
   my %args = (clone => "", global => {},
@@ -162,10 +188,11 @@ sub parse_ini {
   foreach my $scalar_arg (qw(clone src_name common_section)) {
      croak("'$scalar_arg': must not be a reference") if ref($args{$scalar_arg});
    }
-  my $common_vars = delete $args{common_vars};
   my $clone       = delete $args{clone};
   my $src         = delete($args{src}) // croak("'src': Missing mandatory argument");#####
   my $global      = delete($args{global});
+  my $common_vars = delete $args{common_vars};
+  my $not_common  = delete $args{not_common};
   $self->{$Arg_Map{$_}} = $args{$_} for keys(%args);
 
   if (my $ref_src = ref($src)) {
@@ -198,6 +225,11 @@ sub parse_ini {
       croak("'global': unexpected ref type for variable $var") if ref($val);
     }
     $self->{+GLOBAL} = $clone ? {%{$global}} : $global;
+  } else {
+    $self->{+GLOBAL} = {};
+  }
+  foreach my $gv (keys(%Globals)) {
+    $self->{+GLOBAL}{$gv} = $Globals{$gv} if !exists($self->{+GLOBAL}{$gv});
   }
   $self->{+SECTIONS}   = [];
   $self->{+SECTIONS_H} = {};
@@ -205,8 +237,7 @@ sub parse_ini {
   $self->{+EXPANDED}  = {};
   if ($common_vars) {
     croak("'common_vars': expected HASH ref") if ref($common_vars) ne 'HASH';
-    ### CLONE !!!
-##    my $variables = $self->{+VARIABLES}
+    $common_vars = { %$common_vars } if $clone;
     while (my ($var, $value) = each(%$common_vars)) {
       croak("'common_vars': value of '$var' is a ref, expected scalar") if ref($value);
       if (!defined($value)) {
@@ -216,7 +247,22 @@ sub parse_ini {
       croak("'common_vars': variable '$var': value '$value' is not permitted")
         if ($value =~ /^(?:=|;[^;])/ || $value =~ /^(?:\s*|[#;$])$/);
     }
-    %{$self->{+VARIABLES}{$self->{+COMMON_SECTION}}} = %$common_vars;
+    $self->{+VARIABLES}{$self->{+COMMON_SECTION}} = $common_vars;
+  }
+  if (defined($not_common)) {
+    my $ref = ref($not_common);
+    if ($ref eq 'ARRAY') {
+      foreach my $v (@$not_common) {
+        croak("not_common: undefined value in array") if !defined($v);
+        croak("not_common: unexpected ref value in array") if ref($v);
+      }
+      $not_common = {map {$_ => undef} @$not_common};
+    } elsif ($ref eq 'HASH') {
+      $not_common = %{$not_common} if $clone;
+    } else {
+      croak("not_common: unexpected ref type");
+    }
+    $self->{+NOT_COMMON}= $not_common;
   }
 
   $self->$_parse_ini($src);
@@ -284,7 +330,6 @@ sub _x_var_name {
     return "[$1]$2";
   }
   else {
-    croak("???? ", (caller)[2]) unless defined $curr_sect;
     return "[$curr_sect]$variable";
   }
 }

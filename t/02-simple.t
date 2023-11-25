@@ -237,11 +237,9 @@ subtest "arguments" => sub {
   subtest "clone + global (empty)" => sub {
     my $global = {};
     $obj->parse_ini(src => $input, global => $global);
-    is_deeply($obj->global, {}, "global() is {}");
     is($obj->global, $global, "global is not cloned");
 
     $obj->parse_ini(src => $input, global => $global, clone => 1);
-    is_deeply($obj->global, {}, "global() is {}");
     isnt($obj->global, $global, "global is cloned");
   };
 };
@@ -255,6 +253,6 @@ done_testing();
 sub check_other {
   my $obj = shift;
   my $src_name = shift // "INI data";
-  is_deeply($obj->global, {}, 'global()');
+  isa_ok($obj->global, 'HASH', 'global()');
   is($obj->common_section,  Config::INI::RefVars::DFLT_COMMON_SECTION, 'common_section()');
 }
