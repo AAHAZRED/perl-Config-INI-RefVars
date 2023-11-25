@@ -24,17 +24,34 @@ use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
               SECTIONS_H        => FLD_KEY_PREFIX . 'SECTIONS_H',
               SRC_NAME          => FLD_KEY_PREFIX . 'SRC_NAME',
               VARIABLES         => FLD_KEY_PREFIX . 'VARIABLES',
+              VREF_RE           => FLD_KEY_PREFIX . 'VREF_RE',
              };
 
-my %Arg_Map = map {$_ => (FLD_KEY_PREFIX . uc($_))} qw (common_section expanded global sections
-                                                        sections_h src_name variables);
+my %Arg_Map = map {$_ => (FLD_KEY_PREFIX . uc($_))} qw (expanded common_section not_common
+                                                        global sections sections_h src_name
+                                                        variables vref_re);
 
 my %Globals = ('=:' => catdir("", ""));
 
 # Match punctuation chars, but not the underscores.
 my $Modifier_Char = '[^_[:^punct:]]';
 
-sub new { bless {}, ref($_[0]) || $_[0] }
+sub new {
+  my $class = ref($_[0]) || $_[0];
+  shift;
+  my %args = @_;
+  my $self = {};
+  if (%args) {
+    croak("Unexected arg(s)") if (keys(%args) > 1 || !exists($args{separator}));
+    my $sep = $args{separator};
+    croak("separator: invalid value") if $sep !~ /^[\/:'#~%!=]+$/;
+    $self->{+VREF_RE} = qr/^(.*?)(?:\Q$sep\E(.*)$)/;
+  }
+  else {
+    $self->{+VREF_RE} = qr/^\[\s*(.*?)\s*\](.*)$/;
+  }
+  return bless($self, $class) ;
+}
 
 my $_expand_value = sub {
   return $_[0]->_expand_vars($_[1], undef, $_[2]);
@@ -87,9 +104,11 @@ my $_parse_ini = sub {
     if ($curr_section eq $common_sec) {
       die("common section '$common_sec' must be first section") if @$sections;
       $common_vars = $variables->{$common_sec} = {} if !$common_vars;
-    } elsif ($common_vars) {
+    }
+    elsif ($common_vars) {
       $self->$_cp_common_vars($curr_section);
-    } else {
+    }
+    else {
       $variables->{$curr_section} = {};
     }
     $sections_h->{$curr_section} = @$sections; # Index!
@@ -225,7 +244,8 @@ sub parse_ini {
       croak("'global': unexpected ref type for variable $var") if ref($val);
     }
     $self->{+GLOBAL} = $clone ? {%{$global}} : $global;
-  } else {
+  }
+  else {
     $self->{+GLOBAL} = {};
   }
   foreach my $gv (keys(%Globals)) {
@@ -257,9 +277,11 @@ sub parse_ini {
         croak("not_common: unexpected ref value in array") if ref($v);
       }
       $not_common = {map {$_ => undef} @$not_common};
-    } elsif ($ref eq 'HASH') {
+    }
+    elsif ($ref eq 'HASH') {
       $not_common = %{$not_common} if $clone;
-    } else {
+    }
+    else {
       croak("not_common: unexpected ref type");
     }
     $self->{+NOT_COMMON}= $not_common;
@@ -294,9 +316,7 @@ sub _fmt_err {
 
 sub _look_up {
   my ($self, $curr_sect, $variable) = @_;
-  #state $vre = qr{^(.*?)/(.*)$};
-  state $vre = qr/^\[\s*(.*?)\s*\](.+)$/;
-  my $matched = $variable =~ $vre;
+  my $matched = $variable =~ $self->{+VREF_RE};
   my ($v_section, $v_basename) = $matched ? ($1, $2) : ($curr_sect, $variable);
   my $v_value = "";
   if ($v_basename !~ /\S/) {
@@ -304,17 +324,20 @@ sub _look_up {
   }
   elsif ($v_basename eq '=') {
     $v_value =$v_section;
-  } else {
+  }
+  else {
     my $variables = $self->{+VARIABLES};
     if ($matched) {
       if (exists($variables->{$v_section}) && exists($variables->{$v_section}{$v_basename})) {
         $v_value = $variables->{$v_section}{$v_basename};
       }
-    } else {
+    }
+    else {
       die("Internal error") if !exists($variables->{$v_section});
       if (exists($variables->{$v_section}{$v_basename})) {
         $v_value = $variables->{$v_section}{$v_basename};
-      } else {
+      }
+      else {
         $v_value = $self->{+GLOBAL}{$v_basename} // "";
       }
     }
@@ -325,8 +348,8 @@ sub _look_up {
 # extended var name
 sub _x_var_name {
   my ($self, $curr_sect, $variable) = @_;
-  state $vre = qr/^\[\s*(.*?)\s*\](.+)$/;
-  if ($variable =~ $vre) {
+
+  if ($variable =~ $self->{+VREF_RE}) {
     return "[$1]$2";
   }
   else {
