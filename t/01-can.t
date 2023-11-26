@@ -14,7 +14,6 @@ foreach my $meth (qw(new
                      sections_h
                      variables
                      src_name
-                     global
                      common_section
                    )) {
   ok(Config::INI::RefVars->can($meth), "$meth() exists");

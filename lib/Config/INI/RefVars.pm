@@ -19,7 +19,6 @@ use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
 
               COMMON_SECTION    => FLD_KEY_PREFIX . 'COMMON_SECTION',
               NOT_COMMON        => FLD_KEY_PREFIX . 'NOT_COMMON',
-              GLOBAL            => FLD_KEY_PREFIX . 'GLOBAL',
               SECTIONS          => FLD_KEY_PREFIX . 'SECTIONS',
               SECTIONS_H        => FLD_KEY_PREFIX . 'SECTIONS_H',
               SRC_NAME          => FLD_KEY_PREFIX . 'SRC_NAME',
@@ -28,10 +27,9 @@ use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
              };
 
 my %Arg_Map = map {$_ => (FLD_KEY_PREFIX . uc($_))} qw (expanded common_section not_common
-                                                        global sections sections_h src_name
+                                                        sections sections_h src_name
                                                         variables vref_re);
 
-my %Globals = ();
 my %Common  = ('=:' => catdir("", ""));
 
 
@@ -192,11 +190,11 @@ my $_parse_ini = sub {
 
 
 sub parse_ini {
-  state $allowed_keys = {map {$_ => undef} qw(cleanup clone src src_name global
+  state $allowed_keys = {map {$_ => undef} qw(cleanup clone src src_name
                                               common_section common_vars not_common)};
   state $dflt_src_name = "INI data";  ### our???
   my $self = shift;
-  my %args = (cleanup => 1, clone => "", global => {},
+  my %args = (cleanup => 1, clone => "",
               common_section => DFLT_COMMON_SECTION,
               @_ );
   foreach my $key (keys(%args)) {
@@ -209,7 +207,6 @@ sub parse_ini {
   my $cleanup     = delete $args{cleanup};
   my $clone       = delete $args{clone};
   my $src         = delete($args{src}) // croak("'src': Missing mandatory argument");#####
-  my $global      = delete($args{global});
   my $common_vars = delete $args{common_vars};
   my $not_common  = delete $args{not_common};
   $self->{$Arg_Map{$_}} = $args{$_} for keys(%args);   # Set members!!!
@@ -248,19 +245,6 @@ sub parse_ini {
   }
   $common_sec_vars->{'=INIname'} = $self->{+SRC_NAME};
 
-  if (defined($global)) {
-    croak("'global': must be a HASH ref") if ref($global) ne 'HASH';
-    while (my ($var, $val) = each(%{$global})) {
-      croak("'global': unexpected ref type for variable $var") if ref($val);
-    }
-    $self->{+GLOBAL} = $clone ? {%{$global}} : $global;
-  }
-  else {
-    $self->{+GLOBAL} = {};
-  }
-  foreach my $gv (keys(%Globals)) {
-    $self->{+GLOBAL}{$gv} = $Globals{$gv} if !exists($self->{+GLOBAL}{$gv});
-  }
   if ($common_vars) {
     croak("'common_vars': expected HASH ref") if ref($common_vars) ne 'HASH';
     $common_vars = { %$common_vars } if $clone;
@@ -301,13 +285,12 @@ sub parse_ini {
     }
   }
   if ($cleanup) {
-    my $comm_sec = $self->{+COMMON_SECTION};
     while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
-      next if $section eq $comm_sec;
       foreach my $var (keys(%$variables)) {
         delete $variables->{$var} if substr($var, 0, 1) eq '=';
       }
     }
+    delete $self->{+VARIABLES}{$self->{+COMMON_SECTION}} if !%$common_sec_vars;
   } else {
     while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
       $variables->{'='} = $section;
@@ -321,7 +304,6 @@ sub sections        {$_[0]->{+SECTIONS}}
 sub sections_h      {$_[0]->{+SECTIONS_H}}
 sub variables       {$_[0]->{+VARIABLES}}
 sub src_name        {$_[0]->{+SRC_NAME}}
-sub global          {$_[0]->{+GLOBAL}}
 sub common_section  {$_[0]->{+COMMON_SECTION}}
 
 
@@ -357,7 +339,7 @@ sub _look_up {
         $v_value = $variables->{$v_section}{$v_basename};
       }
       else {
-        $v_value = $self->{+GLOBAL}{$v_basename} // "";
+        $v_value = "";
       }
     }
   }
@@ -384,6 +366,9 @@ sub _expand_vars {
   my $level = 0;
   my $x_variable_name;
   if (defined($variable)) {
+    if ($variable =~ /^=ENV:\s*(.*)$/) {
+      return $ENV{$1} // "";
+    }
     $x_variable_name = $self->_x_var_name($curr_sect, $variable);
     return $self->_look_up($curr_sect, $variable) if exists($self->{+EXPANDED}{$x_variable_name});
     die("Recursive variable '", $x_variable_name, "' references itself")
