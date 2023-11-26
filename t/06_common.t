@@ -17,7 +17,7 @@ use Config::INI::RefVars;
 my $obj = Config::INI::RefVars->new;
 
 subtest "basic" => sub {
-  subtest "first example" => sub {
+  subtest "first examples, with and without arg 'common_section'" => sub {
     my $src = [
                'a=1',
                '',
@@ -81,6 +81,39 @@ subtest "basic" => sub {
                'sec C' => {
                            'a' => '27'
                           }
+              },
+              'variables()');
+  };
+
+  subtest 'with $(=) and explicite [__COMMON__]' => sub {
+    my $src = [
+               '[__COMMON__]',
+               'theVar = Section: $(=)',
+               '',
+               '[A]',
+               '',
+               '[B]',
+               'a var=$([A]theVar), not $([C]sec)',
+               '[C]',
+               'sec=$(=)'
+              ];
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables,
+              {
+               'A' => {
+                       'theVar' => 'Section: A'
+                      },
+               'B' => {
+                       'a var' => 'Section: A, not C',
+                       'theVar' => 'Section: B'
+                      },
+               'C' => {
+                       'theVar' => 'Section: C',
+                       'sec'    => 'C'
+                      },
+               '__COMMON__' => {
+                                'theVar' => 'Section: __COMMON__'
+                               }
               },
               'variables()');
   };

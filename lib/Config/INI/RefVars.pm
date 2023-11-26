@@ -7,7 +7,7 @@ use Carp;
 
 use feature ":5.10";
 
-use File::Spec::Functions;
+use File::Spec::Functions qw(catdir rel2abs splitpath);
 
 our $VERSION = '0.01';
 
@@ -31,7 +31,9 @@ my %Arg_Map = map {$_ => (FLD_KEY_PREFIX . uc($_))} qw (expanded common_section 
                                                         global sections sections_h src_name
                                                         variables vref_re);
 
-my %Globals = ('=:' => catdir("", ""));
+my %Globals = ();
+my %Common  = ('=:' => catdir("", ""));
+
 
 # Match punctuation chars, but not the underscores.
 my $Modifier_Char = '[^_[:^punct:]]';
@@ -87,10 +89,7 @@ my $_parse_ini = sub {
     $src_name = $src;
     $src = [do { local (*ARGV); @ARGV = ($src_name); <> }];
     my ($vol, $dirs, $file) = splitpath(rel2abs($src));
-    @{$self->{+GLOBAL}}{'=INIfile', '=INIdir'} = ($file,
-                                                  catdir(length($vol // "") ? $vol : (), $dirs));
   }
-  $self->{+GLOBAL}{'=INIname'} = $src_name // "";
   my $curr_section;
   my $sections    = $self->{+SECTIONS};
   my $sections_h  = $self->{+SECTIONS_H};
@@ -193,12 +192,12 @@ my $_parse_ini = sub {
 
 
 sub parse_ini {
-  state $allowed_keys = {map {$_ => undef} qw(clone src src_name global
+  state $allowed_keys = {map {$_ => undef} qw(cleanup clone src src_name global
                                               common_section common_vars not_common)};
   state $dflt_src_name = "INI data";  ### our???
   my $self = shift;
-  my %args = (clone => "", global => {},
-            common_section => DFLT_COMMON_SECTION,
+  my %args = (cleanup => 1, clone => "", global => {},
+              common_section => DFLT_COMMON_SECTION,
               @_ );
   foreach my $key (keys(%args)) {
     croak("$key: Unsupported argument") if !exists($allowed_keys->{$key});
@@ -207,13 +206,19 @@ sub parse_ini {
   foreach my $scalar_arg (qw(clone src_name common_section)) {
      croak("'$scalar_arg': must not be a reference") if ref($args{$scalar_arg});
    }
+  my $cleanup     = delete $args{cleanup};
   my $clone       = delete $args{clone};
   my $src         = delete($args{src}) // croak("'src': Missing mandatory argument");#####
   my $global      = delete($args{global});
   my $common_vars = delete $args{common_vars};
   my $not_common  = delete $args{not_common};
-  $self->{$Arg_Map{$_}} = $args{$_} for keys(%args);
+  $self->{$Arg_Map{$_}} = $args{$_} for keys(%args);   # Set members!!!
 
+  $self->{+SECTIONS}   = [];
+  $self->{+SECTIONS_H} = {};
+  $self->{+VARIABLES}  = {};
+  $self->{+EXPANDED}  = {};
+  my $common_sec_vars = $self->{+VARIABLES}{$self->{+COMMON_SECTION}} = {%Common};
   if (my $ref_src = ref($src)) {
     $self->{+SRC_NAME} = $dflt_src_name if !exists($self->{+SRC_NAME});
     if ($ref_src eq 'ARRAY') {
@@ -229,15 +234,20 @@ sub parse_ini {
   }
   else {
     if (index($src, "\n") < 0) {
-      my $file = $src;
-      $src = [do { local (*ARGV); @ARGV = ($file); <> }];
-      $self->{+SRC_NAME} = $file if !exists($self->{+SRC_NAME});
+      my $path = $src;
+      $src = [do { local (*ARGV); @ARGV = ($path); <> }];
+      $self->{+SRC_NAME} = $path if !exists($self->{+SRC_NAME});
+      my ($vol, $dirs, $file) = splitpath(rel2abs($path));
+      @{$common_sec_vars}{'=INIfile', '=INIdir'} = ($file, catdir(length($vol // "") ? $vol : (),
+                                                                  $dirs));
     }
     else {
       $src = [split(/\n/, $src)];
       $self->{+SRC_NAME} = $dflt_src_name if !exists($self->{+SRC_NAME});
     }
   }
+  $common_sec_vars->{'=INIname'} = $self->{+SRC_NAME};
+
   if (defined($global)) {
     croak("'global': must be a HASH ref") if ref($global) ne 'HASH';
     while (my ($var, $val) = each(%{$global})) {
@@ -251,10 +261,6 @@ sub parse_ini {
   foreach my $gv (keys(%Globals)) {
     $self->{+GLOBAL}{$gv} = $Globals{$gv} if !exists($self->{+GLOBAL}{$gv});
   }
-  $self->{+SECTIONS}   = [];
-  $self->{+SECTIONS_H} = {};
-  $self->{+VARIABLES}  = {};
-  $self->{+EXPANDED}  = {};
   if ($common_vars) {
     croak("'common_vars': expected HASH ref") if ref($common_vars) ne 'HASH';
     $common_vars = { %$common_vars } if $clone;
@@ -265,9 +271,9 @@ sub parse_ini {
         delete $common_vars->{$var};
       }
       croak("'common_vars': variable '$var': value '$value' is not permitted")
-        if ($value =~ /^(?:=|;[^;])/ || $value =~ /^(?:\s*|[#;$])$/);
+        if ($value =~ /^\s*$/ || $value =~ /^[[=;]/);
     }
-    $self->{+VARIABLES}{$self->{+COMMON_SECTION}} = $common_vars;
+    @{$common_sec_vars}{keys(%$common_vars)} = values(%$common_vars);
   }
   if (defined($not_common)) {
     my $ref = ref($not_common);
@@ -292,6 +298,19 @@ sub parse_ini {
   while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
     while (my ($variable, $value) = each(%$variables)) {
       $variables->{$variable} = $self->_expand_vars($section, $variable, $value);
+    }
+  }
+  if ($cleanup) {
+    my $comm_sec = $self->{+COMMON_SECTION};
+    while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
+      next if $section eq $comm_sec;
+      foreach my $var (keys(%$variables)) {
+        delete $variables->{$var} if substr($var, 0, 1) eq '=';
+      }
+    }
+  } else {
+    while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
+      $variables->{'='} = $section;
     }
   }
   return $self;
