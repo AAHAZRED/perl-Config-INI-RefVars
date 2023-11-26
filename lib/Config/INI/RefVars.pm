@@ -45,7 +45,7 @@ sub new {
     croak("Unexected arg(s)") if (keys(%args) > 1 || !exists($args{separator}));
     my $sep = $args{separator};
     croak("separator: invalid value") if $sep !~ /^[\/:'#~%!=]+$/;
-    $self->{+VREF_RE} = qr/^(.*?)(?:\Q$sep\E(.*)$)/;
+    $self->{+VREF_RE} = qr/^(.*?)(?:\Q$sep\E)(.*)$/;
   }
   else {
     $self->{+VREF_RE} = qr/^\[\s*(.*?)\s*\](.*)$/;
