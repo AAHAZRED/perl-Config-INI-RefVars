@@ -252,6 +252,7 @@ subtest "mix" => sub {
        '',
        '[sec C]',
        'c=A variable from section $(=)!',
+       'd= $([Sec FOO]=)'       # Ref to non existing section!
       ];
     $obj->parse_ini(src => $src);
     is_deeply($obj->variables,
@@ -266,7 +267,8 @@ subtest "mix" => sub {
                            'weird' => '-sec A-sec B-sec C----'
                           },
                'sec C' => {
-                           'c' => 'A variable from section sec C!'
+                           'c' => 'A variable from section sec C!',
+                           'd' => ''
                           }
               },
               "variables()");

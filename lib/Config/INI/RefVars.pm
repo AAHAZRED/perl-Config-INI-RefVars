@@ -320,8 +320,11 @@ sub _look_up {
   my ($self, $curr_sect, $variable) = @_;
   my $matched = $variable =~ $self->{+VREF_RE};
   my ($v_section, $v_basename) = $matched ? ($1, $2) : ($curr_sect, $variable);
-  my $v_value = "";
-  if ($v_basename !~ /\S/) {
+  my $v_value;
+  my $variables = $self->{+VARIABLES};
+  if (!exists($variables->{$v_section})) {
+    $v_value = "";
+  } elsif ($v_basename !~ /\S/) {
     $v_value = $v_basename;
   }
   elsif ($v_basename eq '=') {
@@ -331,22 +334,13 @@ sub _look_up {
     $v_value = $ENV{$1} // "";
   }
   else {
-    my $variables = $self->{+VARIABLES};
-    if ($matched) {
-      if (exists($variables->{$v_section}) && exists($variables->{$v_section}{$v_basename})) {
-        $v_value = $variables->{$v_section}{$v_basename};
-      }
-    }
-    else {
-      die("Internal error") if !exists($variables->{$v_section});
-      if (exists($variables->{$v_section}{$v_basename})) {
-        $v_value = $variables->{$v_section}{$v_basename};
-      }
-      else {
-        $v_value = "";
-      }
+    if (exists($variables->{$v_section}{$v_basename})) {
+      $v_value = $variables->{$v_section}{$v_basename};
+    } else {
+      $v_value = "";
     }
   }
+  die("Internal error") if !defined($v_value);
   return wantarray ? ($v_section, $v_basename, $v_value) : $v_value;
 }
 
