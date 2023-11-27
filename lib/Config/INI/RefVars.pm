@@ -291,7 +291,8 @@ sub parse_ini {
       }
     }
     delete $self->{+VARIABLES}{$self->{+COMMON_SECTION}} if !%$common_sec_vars;
-  } else {
+  }
+  else {
     while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
       $variables->{'='} = $section;
     }
@@ -321,10 +322,13 @@ sub _look_up {
   my ($v_section, $v_basename) = $matched ? ($1, $2) : ($curr_sect, $variable);
   my $v_value = "";
   if ($v_basename !~ /\S/) {
-     $v_value =$v_basename;
+    $v_value = $v_basename;
   }
   elsif ($v_basename eq '=') {
     $v_value =$v_section;
+  }
+  elsif ($v_basename =~ /^=(?:ENV|env):\s*(.*)$/) {
+    $v_value = $ENV{$1} // "";
   }
   else {
     my $variables = $self->{+VARIABLES};
@@ -351,10 +355,10 @@ sub _x_var_name {
   my ($self, $curr_sect, $variable) = @_;
 
   if ($variable =~ $self->{+VREF_RE}) {
-    return "[$1]$2";
+    return ($2, "[$1]$2");
   }
   else {
-    return "[$curr_sect]$variable";
+    return ($variable, "[$curr_sect]$variable");
   }
 }
 
@@ -366,11 +370,9 @@ sub _expand_vars {
   my $level = 0;
   my $x_variable_name;
   if (defined($variable)) {
-    if ($variable =~ /^=ENV:\s*(.*)$/) {
-      return $ENV{$1} // "";
-    }
-    $x_variable_name = $self->_x_var_name($curr_sect, $variable);
-    return $self->_look_up($curr_sect, $variable) if exists($self->{+EXPANDED}{$x_variable_name});
+    ((my $var_basename), $x_variable_name) = $self->_x_var_name($curr_sect, $variable);
+    return $self->_look_up($curr_sect, $variable) if (exists($self->{+EXPANDED}{$x_variable_name})
+                                                      || $var_basename =~ /^=ENV:/);
     die("Recursive variable '", $x_variable_name, "' references itself")
       if exists($seen->{$x_variable_name});
     $seen->{$x_variable_name} = undef;
