@@ -23,23 +23,23 @@ use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
               SECTIONS_H        => FLD_KEY_PREFIX . 'SECTIONS_H',
               SRC_NAME          => FLD_KEY_PREFIX . 'SRC_NAME',
               VARIABLES         => FLD_KEY_PREFIX . 'VARIABLES',
-              VREF_RE           => FLD_KEY_PREFIX . 'VREF_RE',
+              GLOBAL_VARS       => FLD_KEY_PREFIX . 'GLOBAL_VARS',
+              VREF_RE           => FLD_KEY_PREFIX . 'VREF_RE'
              };
 
+# check!!!!!
 my %Arg_Map = map {$_ => (FLD_KEY_PREFIX . uc($_))} qw (expanded common_section not_common
                                                         sections sections_h src_name
                                                         variables vref_re);
 
-my %Common  = ('=:' => catdir("", ""));
+my %Globals = ('=:' => catdir("", ""));
 
 
 # Match punctuation chars, but not the underscores.
 my $Modifier_Char = '[^_[:^punct:]]';
 
 sub new {
-  my $class = ref($_[0]) || $_[0];
-  shift;
-  my %args = @_;
+  my ($class, %args) = @_;
   my $self = {};
   if (%args) {
     croak("Unexected arg(s)") if (keys(%args) > 1 || !exists($args{separator}));
@@ -215,7 +215,8 @@ sub parse_ini {
   $self->{+SECTIONS_H} = {};
   $self->{+VARIABLES}  = {};
   $self->{+EXPANDED}  = {};
-  my $common_sec_vars = $self->{+VARIABLES}{$self->{+COMMON_SECTION}} = {%Common};
+  my $global_vars = $self->{+GLOBAL_VARS} = {%Globals};
+  my $common_sec_vars = $self->{+VARIABLES}{$self->{+COMMON_SECTION}} = {};
   if (my $ref_src = ref($src)) {
     $self->{+SRC_NAME} = $dflt_src_name if !exists($self->{+SRC_NAME});
     if ($ref_src eq 'ARRAY') {
@@ -235,15 +236,15 @@ sub parse_ini {
       $src = [do { local (*ARGV); @ARGV = ($path); <> }];
       $self->{+SRC_NAME} = $path if !exists($self->{+SRC_NAME});
       my ($vol, $dirs, $file) = splitpath(rel2abs($path));
-      @{$common_sec_vars}{'=INIfile', '=INIdir'} = ($file, catdir(length($vol // "") ? $vol : (),
-                                                                  $dirs));
+      @{$global_vars}{'=INIfile', '=INIdir'} = ($file, catdir(length($vol // "") ? $vol : (),
+                                                              $dirs));
     }
     else {
       $src = [split(/\n/, $src)];
       $self->{+SRC_NAME} = $dflt_src_name if !exists($self->{+SRC_NAME});
     }
   }
-  $common_sec_vars->{'=INIname'} = $self->{+SRC_NAME};
+  $global_vars->{'=INIname'} = $self->{+SRC_NAME};
 
   if ($common_vars) {
     croak("'common_vars': expected HASH ref") if ref($common_vars) ne 'HASH';
@@ -295,6 +296,7 @@ sub parse_ini {
   else {
     while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
       $variables->{'='} = $section;
+      @{$variables}{keys(%$global_vars)} = values(%$global_vars);
     }
   }
   return $self;
@@ -328,10 +330,13 @@ sub _look_up {
     $v_value = $v_basename;
   }
   elsif ($v_basename eq '=') {
-    $v_value =$v_section;
+    $v_value = $v_section;
   }
   elsif ($v_basename =~ /^=(?:ENV|env):\s*(.*)$/) {
     $v_value = $ENV{$1} // "";
+  }
+  elsif (exists($self->{+GLOBAL_VARS}{$v_basename})) {
+    $v_value = $self->{+GLOBAL_VARS}{$v_basename};
   }
   else {
     if (exists($variables->{$v_section}{$v_basename})) {
