@@ -232,13 +232,13 @@ my $_parse_ini = sub {
 
 
 sub parse_ini {
-  state $allowed_keys = {map {$_ => undef} qw(cleanup clone src src_name
-                                              common_section common_vars not_common)};
-  state $dflt_src_name = "INI data";  ### our???
   my $self = shift;
   my %args = (cleanup => 1, clone => "",
               common_section => DFLT_COMMON_SECTION,
               @_ );
+  state $allowed_keys = {map {$_ => undef} qw(cleanup clone src src_name
+                                              common_section common_vars not_common)};
+  state $dflt_src_name = "INI data";  ### our???
   foreach my $key (keys(%args)) {
     croak("$key: Unsupported argument") if !exists($allowed_keys->{$key});
   }
