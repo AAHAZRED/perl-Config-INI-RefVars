@@ -38,6 +38,24 @@ my %Globals = ('=:' => catdir("", ""));
 # Match punctuation chars, but not the underscores.
 my $Modifier_Char = '[^_[:^punct:]]';
 
+my $_check_common_vars = sub {
+  my ($self, $common_vars, $clone, $set) = @_;
+  croak("'common_vars': expected HASH ref") if ref($common_vars) ne 'HASH';
+  $common_vars = { %$common_vars } if $clone;
+  while (my ($var, $value) = each(%$common_vars)) {
+    croak("'common_vars': value of '$var' is a ref, expected scalar") if ref($value);
+    if (!defined($value)) {
+      carp("'common_vars': removing '$var' since its value is undef");
+      delete $common_vars->{$var};
+    }
+    croak("'common_vars': variable '$var': value '$value' is not permitted")
+      if ($value =~ /^\s*$/ || $value =~ /^[[=;]/);
+  }
+  @{$self->{+VARIABLES}{$self->{+COMMON_SECTION}}}{keys(%$common_vars)} =
+    values(%$common_vars) if $set;
+  return $common_vars;
+};
+
 
 my $_check_not_common = sub {
   my ($self, $not_common, $clone, $set) = @_;
@@ -269,22 +287,8 @@ sub parse_ini {
     }
   }
   $global_vars->{'=INIname'} = $self->{+SRC_NAME};
-
-  if ($common_vars) {
-    croak("'common_vars': expected HASH ref") if ref($common_vars) ne 'HASH';
-    $common_vars = { %$common_vars } if $clone;
-    while (my ($var, $value) = each(%$common_vars)) {
-      croak("'common_vars': value of '$var' is a ref, expected scalar") if ref($value);
-      if (!defined($value)) {
-        carp("'common_vars': removing '$var' since its value is undef");
-        delete $common_vars->{$var};
-      }
-      croak("'common_vars': variable '$var': value '$value' is not permitted")
-        if ($value =~ /^\s*$/ || $value =~ /^[[=;]/);
-    }
-    @{$common_sec_vars}{keys(%$common_vars)} = values(%$common_vars);
-  }
-  $self->$_check_not_common($not_common, $clone, 1) if defined($not_common);
+  $self->$_check_common_vars($common_vars, $clone, 1) if $common_vars;
+  $self->$_check_not_common($not_common, $clone, 1) if $not_common;
 
   $self->$_parse_ini($src);
 
