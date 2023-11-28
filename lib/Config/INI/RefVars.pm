@@ -24,13 +24,9 @@ use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
               SRC_NAME          => FLD_KEY_PREFIX . 'SRC_NAME',
               VARIABLES         => FLD_KEY_PREFIX . 'VARIABLES',
               GLOBAL_VARS       => FLD_KEY_PREFIX . 'GLOBAL_VARS',
-              VREF_RE           => FLD_KEY_PREFIX . 'VREF_RE'
+              VREF_RE           => FLD_KEY_PREFIX . 'VREF_RE',
+              BACKUP            => FLD_KEY_PREFIX . 'BACKUP',
              };
-
-# check!!!!!
-my %Arg_Map = map {$_ => (FLD_KEY_PREFIX . uc($_))} qw (expanded common_section not_common
-                                                        sections sections_h src_name
-                                                        variables vref_re);
 
 my %Globals = ('=:' => catdir("", ""));
 
@@ -39,9 +35,9 @@ my %Globals = ('=:' => catdir("", ""));
 my $Modifier_Char = '[^_[:^punct:]]';
 
 my $_check_common_vars = sub {
-  my ($self, $common_vars, $clone, $set) = @_;
+  my ($self, $common_vars, $set) = @_;
   croak("'common_vars': expected HASH ref") if ref($common_vars) ne 'HASH';
-  $common_vars = { %$common_vars } if $clone;
+  $common_vars = { %$common_vars };
   while (my ($var, $value) = each(%$common_vars)) {
     croak("'common_vars': value of '$var' is a ref, expected scalar") if ref($value);
     if (!defined($value)) {
@@ -58,7 +54,7 @@ my $_check_common_vars = sub {
 
 
 my $_check_not_common = sub {
-  my ($self, $not_common, $clone, $set) = @_;
+  my ($self, $not_common, $set) = @_;
   my $ref = ref($not_common);
   if ($ref eq 'ARRAY') {
     foreach my $v (@$not_common) {
@@ -68,7 +64,7 @@ my $_check_not_common = sub {
     $not_common = {map {$_ => undef} @$not_common};
   }
   elsif ($ref eq 'HASH') {
-    $not_common = %{$not_common} if $clone;
+    $not_common = %{$not_common};
   }
   else {
     croak("not_common: unexpected ref type");
@@ -91,6 +87,7 @@ sub new {
   else {
     $self->{+VREF_RE} = qr/^\[\s*(.*?)\s*\](.*)$/;
   }
+  $self->{+COMMON_SECTION} = DFLT_COMMON_SECTION;
   return bless($self, $class) ;
 }
 
@@ -233,36 +230,52 @@ my $_parse_ini = sub {
 
 sub parse_ini {
   my $self = shift;
-  my %args = (cleanup => 1, clone => "",
-              common_section => DFLT_COMMON_SECTION,
+  my %args = (cleanup => 1,
               @_ );
-  state $allowed_keys = {map {$_ => undef} qw(cleanup clone src src_name
+  state $allowed_keys = {map {$_ => undef} qw(cleanup src src_name
                                               common_section common_vars not_common)};
-  state $dflt_src_name = "INI data";  ### our???
+  state $dflt_src_name = "INI data";
   foreach my $key (keys(%args)) {
     croak("$key: Unsupported argument") if !exists($allowed_keys->{$key});
   }
+
   delete @args{ grep { !defined($args{$_}) } keys(%args) };
-  foreach my $scalar_arg (qw(clone src_name common_section)) {
+  foreach my $scalar_arg (qw(src_name common_section)) {
      croak("'$scalar_arg': must not be a reference") if ref($args{$scalar_arg});
    }
-  my $cleanup     = delete $args{cleanup};
-  my $clone       = delete $args{clone};
-  my $src         = delete($args{src}) // croak("'src': Missing mandatory argument");#####
-  my $common_vars = delete $args{common_vars};
-  my $not_common  = delete $args{not_common};
-  $self->{$Arg_Map{$_}} = $args{$_} for keys(%args);   # Set members!!!
+  $self->{+SRC_NAME} = $args{src_name} if exists($args{src_name});
+  my (      $cleanup, $src, $common_section, $common_vars, $not_common) =
+    @args{qw(cleanup   src   common_section   common_vars   not_common)};
+
+  croak("'src': missing mandatory argument") if !defined($src);
+
+  my $backup = $self->{+BACKUP} //= {};
+  if (defined($common_section)) {
+    $backup->{common_section} = $self->{+COMMON_SECTION};
+    $self->{+COMMON_SECTION}  = $common_section;
+  }
+  else {
+    $common_section = $self->{+COMMON_SECTION};
+  }
+  if ($common_vars) {
+    $backup->{common_vars} = %{$self->{+VARIABLES}{$common_vars}};
+    @{$self->{+VARIABLES}{$common_vars}}{keys(%{$common_vars})} = values(%{$common_vars});
+  }
+  if ($not_common) {
+    $backup->{not_common} = $self->{+NOT_COMMON};
+    $self->{+NOT_COMMON}  = [@{$not_common}];
+  }
 
   $self->{+SECTIONS}   = [];
   $self->{+SECTIONS_H} = {};
   $self->{+VARIABLES}  = {};
   $self->{+EXPANDED}  = {};
   my $global_vars = $self->{+GLOBAL_VARS} = {%Globals};
-  my $common_sec_vars = $self->{+VARIABLES}{$self->{+COMMON_SECTION}} = {};
+  my $common_sec_vars = $self->{+VARIABLES}{$common_section} = {};
   if (my $ref_src = ref($src)) {
     $self->{+SRC_NAME} = $dflt_src_name if !exists($self->{+SRC_NAME});
     if ($ref_src eq 'ARRAY') {
-      $src = [@$src] if $clone;
+      $src = [@$src];
       for (my $i = 0; $i < @$src; ++$i) {
         croak(_fmt_err($self->{+SRC_NAME}, $i + 1, "Unexpected ref type.")) if ref($src->[$i]);
         $src->[$i] //= "";
@@ -287,8 +300,8 @@ sub parse_ini {
     }
   }
   $global_vars->{'=INIname'} = $self->{+SRC_NAME};
-  $self->$_check_common_vars($common_vars, $clone, 1) if $common_vars;
-  $self->$_check_not_common($not_common, $clone, 1) if $not_common;
+  $self->$_check_common_vars($common_vars, 1) if $common_vars;
+  $self->$_check_not_common($not_common, 1)   if $not_common;
 
   $self->$_parse_ini($src);
 
@@ -311,6 +324,10 @@ sub parse_ini {
       @{$variables}{keys(%$global_vars)} = values(%$global_vars);
     }
   }
+  $self->{+COMMON_SECTION} = $backup->{common_section}       if exists($backup->{common_section});
+  $self->{+VARIABLES}{$common_vars} = $backup->{common_vars} if exists($backup->{common_vars});
+  $self->{+NOT_COMMON} = $backup->{not_common}               if exists($backup->{not_common});
+  $backup = {};
   return $self;
 }
 
