@@ -38,6 +38,29 @@ my %Globals = ('=:' => catdir("", ""));
 # Match punctuation chars, but not the underscores.
 my $Modifier_Char = '[^_[:^punct:]]';
 
+
+my $_check_not_common = sub {
+  my ($self, $not_common, $clone, $set) = @_;
+  my $ref = ref($not_common);
+  if ($ref eq 'ARRAY') {
+    foreach my $v (@$not_common) {
+      croak("not_common: undefined value in array") if !defined($v);
+      croak("not_common: unexpected ref value in array") if ref($v);
+    }
+    $not_common = {map {$_ => undef} @$not_common};
+  }
+  elsif ($ref eq 'HASH') {
+    $not_common = %{$not_common} if $clone;
+  }
+  else {
+    croak("not_common: unexpected ref type");
+  }
+  $self->{+NOT_COMMON}= $not_common if $set;
+  return $not_common;
+};
+
+
+
 sub new {
   my ($class, %args) = @_;
   my $self = {};
@@ -52,6 +75,7 @@ sub new {
   }
   return bless($self, $class) ;
 }
+
 
 my $_expand_value = sub {
   return $_[0]->_expand_vars($_[1], undef, $_[2]);
@@ -260,23 +284,7 @@ sub parse_ini {
     }
     @{$common_sec_vars}{keys(%$common_vars)} = values(%$common_vars);
   }
-  if (defined($not_common)) {
-    my $ref = ref($not_common);
-    if ($ref eq 'ARRAY') {
-      foreach my $v (@$not_common) {
-        croak("not_common: undefined value in array") if !defined($v);
-        croak("not_common: unexpected ref value in array") if ref($v);
-      }
-      $not_common = {map {$_ => undef} @$not_common};
-    }
-    elsif ($ref eq 'HASH') {
-      $not_common = %{$not_common} if $clone;
-    }
-    else {
-      croak("not_common: unexpected ref type");
-    }
-    $self->{+NOT_COMMON}= $not_common;
-  }
+  $self->$_check_not_common($not_common, $clone, 1) if defined($not_common);
 
   $self->$_parse_ini($src);
 
