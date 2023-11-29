@@ -210,6 +210,33 @@ subtest "common, not common" => sub {
       is_deeply($obj->variables, $expected, 'variables()');
     };
   };
+  subtest 'with $(=)' => sub {
+    my $src = [
+               'foo=$([sec A]=)',
+               'bar=$(=)',
+               '',
+               '[sec A]',
+               '',
+               '[sec B]',
+              ];
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables,
+              {
+               '__COMMON__' => {
+                                'bar' => '__COMMON__',
+                                'foo' => 'sec A'
+                               },
+               'sec A' => {
+                           'bar' => 'sec A',
+                           'foo' => 'sec A'
+                          },
+               'sec B' => {
+                           'bar' => 'sec B',
+                           'foo' => 'sec A'
+                          }
+              },
+              'variables()');
+  };
   subtest "simple mix" => sub {
     my $src = [
                'a.=xyz',     # common section
