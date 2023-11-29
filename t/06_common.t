@@ -172,6 +172,77 @@ subtest "Environment variables" => sub {
   };
 };
 
+subtest "common, not common" => sub {
+  subtest "common" => sub {
+    my $expected = {
+                    '__COMMON__' => {
+                                     'a' => 'xyz',
+                                     'foo' => 'abcde'
+                                    },
+                    'sec A' => {
+                                'a' => 'xyz',
+                                'foo' => 'abcde'
+                               },
+                    'sec B' => {
+                                'a' => 'xyz',
+                                'foo' => 'abcde'
+                     }
+                   };
+    subtest "common section" => sub {
+      my $src = [
+                 'a=xyz',
+                 'foo=abcde',
+                 '',
+                 '[sec A]',
+                 '',
+                 '[sec B]',
+                ];
+      $obj->parse_ini(src => $src);
+      is_deeply($obj->variables, $expected, 'variables()');
+    };
+    subtest "common: 'common_vars' arg" => sub {
+      my $src = [
+                 '[sec A]',
+                 '',
+                 '[sec B]',
+                ];
+      $obj->parse_ini(src => $src, common_vars => {a => 'xyz', foo => 'abcde'});
+      is_deeply($obj->variables, $expected, 'variables()');
+    };
+  };
+  subtest "simple mix" => sub {
+    my $src = [
+               'a.=xyz',     # common section
+               '',
+               'foo=abcde',  # common section
+               '',
+               '[sec A]',
+               '',
+               '[sec B]',
+              ];
+    $obj->parse_ini(src => $src, common_vars => {a => 27, c => 42, d => "hello!!!"},
+                    not_common => [qw(c foo)]);
+    is_deeply($obj->variables,
+              {
+               '__COMMON__' => {
+                                'a' => '27xyz',
+                                'c' => '42',
+                                'd' => 'hello!!!',
+                                'foo' => 'abcde'
+                               },
+               'sec A' => {
+                           'a' => '27xyz',
+                           'd' => 'hello!!!'
+                          },
+               'sec B' => {
+                           'a' => '27xyz',
+                           'd' => 'hello!!!'
+                          }
+              },
+              'variables()');
+  };
+};
+
 #==================================================================================================
 done_testing();
 

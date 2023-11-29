@@ -18,6 +18,7 @@ use constant FLD_KEY_PREFIX => __PACKAGE__ . ' __ ';
 use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
 
               COMMON_SECTION    => FLD_KEY_PREFIX . 'COMMON_SECTION',
+              COMMON_VARS       => FLD_KEY_PREFIX . 'COMMON_VARS',
               NOT_COMMON        => FLD_KEY_PREFIX . 'NOT_COMMON',
               SECTIONS          => FLD_KEY_PREFIX . 'SECTIONS',
               SECTIONS_H        => FLD_KEY_PREFIX . 'SECTIONS_H',
@@ -258,8 +259,8 @@ sub parse_ini {
     $common_section = $self->{+COMMON_SECTION};
   }
   if ($common_vars) {
-    $backup->{common_vars} = %{$self->{+VARIABLES}{$common_vars}};
-    @{$self->{+VARIABLES}{$common_vars}}{keys(%{$common_vars})} = values(%{$common_vars});
+    $backup->{common_vars} = $self->{+COMMON_VARS};
+    $self->{+COMMON_VARS}  = {%{$common_vars}};
   }
   if ($not_common) {
     $backup->{not_common} = $self->{+NOT_COMMON};
@@ -270,8 +271,11 @@ sub parse_ini {
   $self->{+SECTIONS_H} = {};
   $self->{+VARIABLES}  = {};
   $self->{+EXPANDED}  = {};
+  $self->$_check_common_vars($common_vars, 1) if $common_vars;
+  $self->$_check_not_common($not_common, 1)   if $not_common;
+
   my $global_vars = $self->{+GLOBAL_VARS} = {%Globals};
-  my $common_sec_vars = $self->{+VARIABLES}{$common_section} = {};
+  my $common_sec_vars = $self->{+VARIABLES}{$common_section} //= {};
   if (my $ref_src = ref($src)) {
     $self->{+SRC_NAME} = $dflt_src_name if !exists($self->{+SRC_NAME});
     if ($ref_src eq 'ARRAY') {
@@ -300,8 +304,6 @@ sub parse_ini {
     }
   }
   $global_vars->{'=INIname'} = $self->{+SRC_NAME};
-  $self->$_check_common_vars($common_vars, 1) if $common_vars;
-  $self->$_check_not_common($not_common, 1)   if $not_common;
 
   $self->$_parse_ini($src);
 
@@ -324,9 +326,9 @@ sub parse_ini {
       @{$variables}{keys(%$global_vars)} = values(%$global_vars);
     }
   }
-  $self->{+COMMON_SECTION} = $backup->{common_section}       if exists($backup->{common_section});
-  $self->{+VARIABLES}{$common_vars} = $backup->{common_vars} if exists($backup->{common_vars});
-  $self->{+NOT_COMMON} = $backup->{not_common}               if exists($backup->{not_common});
+  $self->{+COMMON_SECTION} = $backup->{common_section} if exists($backup->{common_section});
+  $self->{+COMMON_VARS}    = $backup->{common_vars}    if exists($backup->{common_vars});
+  $self->{+NOT_COMMON}     = $backup->{not_common}     if exists($backup->{not_common});
   $backup = {};
   return $self;
 }
