@@ -70,7 +70,7 @@ subtest "basic" => sub {
     is_deeply($obj->variables,
               {
                ''      => {
-                             'a' => '1'
+                           'a' => '1'
                           },
                'sec A' => {
                            'a' => '1'

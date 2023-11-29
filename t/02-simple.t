@@ -25,9 +25,9 @@ subtest 'before any parsing' => sub {
   foreach my $meth (qw(sections
                        sections_h
                        variables
-                       src_name
-                       common_section)) {
+                       src_name)) {
     is($obj->$meth, undef, "$meth(): undef");
+    is($obj->common_section, Config::INI::RefVars::DFLT_COMMON_SECTION, "common_section()");
   }
 };
 
