@@ -237,7 +237,26 @@ subtest "common, not common" => sub {
               },
               'variables()');
   };
-  subtest "simple mix" => sub {
+  subtest "'common_section', section in input" => sub {
+    my $src = [
+               '[XY]',
+               'a=1',
+               '',
+               '[sec A]',
+              ];
+    $obj->parse_ini(src => $src, common_section => 'XY');
+    is_deeply($obj->variables,
+              {
+               'XY' => {
+                         'a' => '1'
+                        },
+               'sec A' => {
+                           'a' => '1'
+                          }
+              },
+              'variables()');
+  };
+  subtest "simple mix, with 'common_section'" => sub {
     my $src = [
                'a.=xyz',     # common section
                '',
@@ -248,15 +267,16 @@ subtest "common, not common" => sub {
                '[sec B]',
               ];
     $obj->parse_ini(src => $src, common_vars => {a => 27, c => 42, d => "hello!!!"},
+                    common_section => '_C_',
                     not_common => [qw(c foo)]);
     is_deeply($obj->variables,
               {
-               '__COMMON__' => {
-                                'a' => '27xyz',
-                                'c' => '42',
-                                'd' => 'hello!!!',
-                                'foo' => 'abcde'
-                               },
+               '_C_' => {
+                         'a' => '27xyz',
+                         'c' => '42',
+                         'd' => 'hello!!!',
+                         'foo' => 'abcde'
+                        },
                'sec A' => {
                            'a' => '27xyz',
                            'd' => 'hello!!!'
