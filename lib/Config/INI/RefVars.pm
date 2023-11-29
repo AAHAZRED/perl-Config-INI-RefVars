@@ -77,9 +77,11 @@ my $_check_not_common = sub {
 
 sub new {
   my ($class, %args) = @_;
+  state $allowed_keys = {map {$_ => undef} qw(common_section common_vars not_common
+                                              separator)};
+  _check_args(\%args, $allowed_keys);
   my $self = {};
-  if (%args) {
-    croak("Unexected arg(s)") if (keys(%args) > 1 || !exists($args{separator}));
+  if (exists($args{separator})) {
     my $sep = $args{separator};
     croak("separator: invalid value") if $sep !~ /^[\/:'#~%!=]+$/;
     $self->{+VREF_RE} = qr/^(.*?)(?:\Q$sep\E)(.*)$/;
@@ -87,7 +89,9 @@ sub new {
   else {
     $self->{+VREF_RE} = qr/^\[\s*(.*?)\s*\](.*)$/;
   }
-  $self->{+COMMON_SECTION} = DFLT_COMMON_SECTION;
+  $self->{+COMMON_SECTION} = $args{common_section} // DFLT_COMMON_SECTION;
+  $self->$_check_common_vars($args{common_vars}, 1) if exists($args{common_vars});
+  $self->$_check_not_common($args{not_common},   1) if exists($args{not_common});
   return bless($self, $class) ;
 }
 
@@ -235,11 +239,7 @@ sub parse_ini {
   state $allowed_keys = {map {$_ => undef} qw(cleanup src src_name
                                               common_section common_vars not_common)};
   state $dflt_src_name = "INI data";
-  foreach my $key (keys(%args)) {
-    croak("$key: Unsupported argument") if !exists($allowed_keys->{$key});
-  }
-
-  delete @args{ grep { !defined($args{$_}) } keys(%args) };
+  _check_args(\%args, $allowed_keys);
   foreach my $scalar_arg (qw(src_name common_section)) {
      croak("'$scalar_arg': must not be a reference") if ref($args{$scalar_arg});
    }
@@ -441,6 +441,14 @@ sub _error_msg {
   return sprintf("", @_)
 }
 
+
+sub _check_args {
+  my ($args, $allowed_args) = @_;
+  foreach my $key (keys(%$args)) {
+    croak("$key: Unsupported argument") if !exists($allowed_args->{$key});
+  }
+  delete @{$args}{ grep { !defined($args->{$_}) } keys(%$args) };
+}
 
 
 1; # End of Config::INI::RefVars
