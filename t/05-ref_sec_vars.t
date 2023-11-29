@@ -140,7 +140,7 @@ subtest "chains" => sub {
     }
   };
 
-  subtest "[section 1] ... [section 7] with := and .=" => sub {
+  subtest "[section 1] ... [section 7] with := and .= and 'foreward ref'" => sub {
     my $src = [
                '[section 1]',
                'a= $([section 5]a)',

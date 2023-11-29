@@ -119,6 +119,58 @@ subtest "basic" => sub {
   };
 };
 
+subtest "Environment variables" => sub {
+  subtest 'env and ENV and $( )' => sub {
+    my $src = [
+               '[sec Z]',
+               'x=$([sec A]=ENV:FOO)',
+               'y = $([sec XYY]=ENV:FOO)',
+               'z = $(=env:FOO)',
+               '',
+               '[sec A]',
+               'a=$(=ENV:NO_SUCH_VAR)$(=env:NO_SUCH_VAR)',
+              ];
+    local $ENV{FOO} = 'The FOO env variable$( )!';
+    local $ENV{NO_SUCH_VAR};
+    delete $ENV{NO_SUCH_VAR};
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables,
+              {
+               'sec A' => {
+                           'a' => ''
+                          },
+               'sec Z' => {
+                           'x' => 'The FOO env variable$( )!',
+                           'y' => '',
+                           'z' => 'The FOO env variable !'
+                          }
+              },
+              'variables()');
+  };
+  subtest "xxx" => sub {
+    my $src = [
+               '[sec Z]',
+               'x= $(=ENV:FOO)',
+               'y =$(=env:FOO)',
+               '',
+               '[sec A]',
+               'AVar=Variable \'$(==)\' of section \'$(=)\'!',
+              ];
+    local $ENV{FOO} = '$([sec A]AVar)';
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables,
+              {
+               'sec A' => {
+                           'AVar' => 'Variable \'AVar\' of section \'sec A\'!'
+                          },
+               'sec Z' => {
+                           'x' => '$([sec A]AVar)',
+                           'y' => 'Variable \'AVar\' of section \'sec A\'!'
+                          }
+              },
+              'variables()');
+  };
+};
 
 #==================================================================================================
 done_testing();
