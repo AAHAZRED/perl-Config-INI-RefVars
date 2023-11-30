@@ -48,8 +48,7 @@ my $_check_common_vars = sub {
     croak("'common_vars': variable '$var': value '$value' is not permitted")
       if ($value =~ /^\s*$/ || $value =~ /^[[=;]/);
   }
-  @{$self->{+VARIABLES}{$self->{+COMMON_SECTION}}}{keys(%$common_vars)} =
-    values(%$common_vars) if $set;
+  @{$self->{+COMMON_VARS}}{keys(%$common_vars)} = values(%$common_vars) if $set;
   return $common_vars;
 };
 
@@ -248,7 +247,6 @@ sub parse_ini {
     @args{qw(cleanup   src   common_section   common_vars   not_common)};
 
   croak("'src': missing mandatory argument") if !defined($src);
-
   my $backup = $self->{+BACKUP} //= {};
   if (defined($common_section)) {
     $backup->{common_section} = $self->{+COMMON_SECTION};
@@ -259,22 +257,18 @@ sub parse_ini {
   }
   if ($common_vars) {
     $backup->{common_vars} = $self->{+COMMON_VARS};
-    $self->{+COMMON_VARS}  = {%{$common_vars}};
+    $self->$_check_common_vars($common_vars, 1);
   }
   if ($not_common) {
     $backup->{not_common} = $self->{+NOT_COMMON};
-    $self->{+NOT_COMMON}  = [@{$not_common}];
+    $self->$_check_not_common($not_common, 1)
   }
-
   $self->{+SECTIONS}   = [];
   $self->{+SECTIONS_H} = {};
-  $self->{+VARIABLES}  = {};
   $self->{+EXPANDED}  = {};
-  $self->$_check_common_vars($common_vars, 1) if $common_vars;
-  $self->$_check_not_common($not_common, 1)   if $not_common;
-
+  $self->{+VARIABLES}  = {$common_section => ($self->{+COMMON_VARS} // {})};
   my $global_vars = $self->{+GLOBAL_VARS} = {%Globals};
-  my $common_sec_vars = $self->{+VARIABLES}{$common_section} //= {};
+  my $common_sec_vars = $self->{+VARIABLES}{$common_section};
   if (my $ref_src = ref($src)) {
     $self->{+SRC_NAME} = $dflt_src_name if !exists($self->{+SRC_NAME});
     if ($ref_src eq 'ARRAY') {
