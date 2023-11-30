@@ -83,8 +83,11 @@ sub new {
   _check_args(\%args, $allowed_keys);
   my $self = {};
   if (exists($args{separator})) {
+    state $allowed_sep_chars = ",:!.'/&%~";
     my $sep = $args{separator};
-    croak("separator: invalid value") if $sep !~ /^[\/:'#~%!=]+$/;
+    croak("'separator': unexpected reft type, must be a scalar") if ref($sep);
+    croak("'separator': invalid value. Allowed chars: $allowed_sep_chars")
+      if $sep !~ m{^[$allowed_sep_chars]+$};
     $self->{+VREF_RE} = qr/^(.*?)(?:\Q$sep\E)(.*)$/;
   }
   else {
