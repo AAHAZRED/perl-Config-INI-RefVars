@@ -59,8 +59,8 @@ my $_check_not_common = sub {
   my $ref = ref($not_common);
   if ($ref eq 'ARRAY') {
     foreach my $v (@$not_common) {
-      croak("not_common: undefined value in array") if !defined($v);
-      croak("not_common: unexpected ref value in array") if ref($v);
+      croak("'not_common': undefined value in array") if !defined($v);
+      croak("'not_common': unexpected ref value in array") if ref($v);
     }
     $not_common = {map {$_ => undef} @$not_common};
   }
@@ -68,7 +68,7 @@ my $_check_not_common = sub {
     $not_common = %{$not_common};
   }
   else {
-    croak("not_common: unexpected ref type");
+    croak("'not_common': unexpected ref type");
   }
   $self->{+NOT_COMMON}= $not_common if $set;
   return $not_common;
