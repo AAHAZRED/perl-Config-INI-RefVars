@@ -45,8 +45,8 @@ my $_check_common_vars = sub {
       carp("'common_vars': removing '$var' since its value is undef");
       delete $common_vars->{$var};
     }
-    croak("'common_vars': variable '$var': value '$value' is not permitted")
-      if ($value =~ /^\s*$/ || $value =~ /^[[=;]/);
+    croak("'common_vars': variable '$var': name is not permitted")
+      if ($var =~ /^\s*$/ || $var =~ /^[[=;]/);
   }
   #  @{$self->{+COMMON_VARS}}{keys(%$common_vars)} = values(%$common_vars) if $set;
   $self->{+COMMON_VARS} = {%$common_vars} if $set;
