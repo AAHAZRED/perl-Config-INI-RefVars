@@ -91,5 +91,38 @@ subtest "common_vars" => sub {
   };
 };
 
+
+subtest "not_common" => sub {
+  subtest 'new()' => sub {
+    like(exception { Config::INI::RefVars->new(not_common => 72) },
+         qr/'not_common': unexpected type: must be ARRAY or HASH ref/,
+         "not_common: the code died as expected");
+
+    like(exception { Config::INI::RefVars->new(not_common => ['a', undef, 'b']) },
+         qr/'not_common': undefined value in array/,
+         "not_common: the code died as expected");
+
+    like(exception { Config::INI::RefVars->new(not_common => ['a', [], 'b']) },
+         qr/'not_common': unexpected ref value in array/,
+         "not_common: the code died as expected");
+  };
+
+  subtest 'parse_ini()' => sub {
+    my $obj = Config::INI::RefVars->new();
+
+    like(exception { $obj->parse_ini(src => $Dummy_Src, not_common => 72) },
+         qr/'not_common': unexpected type: must be ARRAY or HASH ref/,
+         "not_common: the code died as expected");
+
+    like(exception { $obj->parse_ini(src => $Dummy_Src, not_common => ['a', undef, 'b']) },
+         qr/'not_common': undefined value in array/,
+         "not_common: the code died as expected");
+
+    like(exception { $obj->parse_ini(src => $Dummy_Src, not_common => ['a', [], 'b']) },
+         qr/'not_common': unexpected ref value in array/,
+         "not_common: the code died as expected");
+  };
+};
+
 #==================================================================================================
 done_testing();

@@ -68,7 +68,7 @@ my $_check_not_common = sub {
     $not_common = %{$not_common};
   }
   else {
-    croak("'not_common': unexpected ref type");
+    croak("'not_common': unexpected type: must be ARRAY or HASH ref");
   }
   $self->{+NOT_COMMON}= $not_common if $set;
   return $not_common;
