@@ -265,8 +265,10 @@ sub parse_ini {
   }
   $self->{+SECTIONS}   = [];
   $self->{+SECTIONS_H} = {};
-  $self->{+EXPANDED}  = {};
-  $self->{+VARIABLES}  = {$common_section => ($self->{+COMMON_VARS} // {})};
+  $self->{+EXPANDED}   = {};
+  $self->{+VARIABLES}  =
+    {$common_section => ($self->{+COMMON_VARS} ? {%{$self->{+COMMON_VARS}}} : {})};
+
   my $global_vars = $self->{+GLOBAL_VARS} = {%Globals};
   my $common_sec_vars = $self->{+VARIABLES}{$common_section};
   if (my $ref_src = ref($src)) {
