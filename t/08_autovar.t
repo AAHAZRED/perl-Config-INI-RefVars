@@ -72,6 +72,16 @@ subtest "not from file" => sub {
                 ];
       $obj->parse_ini(src => $src);
       is_deeply($obj->variables, $expected, 'variables()');
+
+      subtest 'src_name' => sub {
+        $obj->parse_ini(src => $src, src_name => "Some name");
+        my $vars = $obj->variables;
+        is($vars->{'section 1'}{'1a'}, "Some name", "1a");
+        is($vars->{'section 1'}{'2a'}, "Some name", "2a");
+        $vars->{'section 1'}{'1a'} = $vars->{'section 1'}{'2a'} = 'INI data';
+        is_deeply($vars, $expected, 'after changing 1a and 2a');
+      };
+
     };
     subtest "separator" => sub {
       my $obj = Config::INI::RefVars->new(separator => '#');

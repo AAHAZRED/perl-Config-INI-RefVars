@@ -130,7 +130,6 @@ my $_parse_ini = sub {
   else {
     $src_name = $src;
     $src = [do { local (*ARGV); @ARGV = ($src_name); <> }];
-    my ($vol, $dirs, $file) = splitpath(rel2abs($src));
   }
   my $curr_section;
   my $sections    = $self->{+SECTIONS};
