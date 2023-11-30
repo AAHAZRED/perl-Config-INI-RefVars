@@ -48,7 +48,8 @@ my $_check_common_vars = sub {
     croak("'common_vars': variable '$var': value '$value' is not permitted")
       if ($value =~ /^\s*$/ || $value =~ /^[[=;]/);
   }
-  @{$self->{+COMMON_VARS}}{keys(%$common_vars)} = values(%$common_vars) if $set;
+  #  @{$self->{+COMMON_VARS}}{keys(%$common_vars)} = values(%$common_vars) if $set;
+  $self->{+COMMON_VARS} = {%$common_vars} if $set;
   return $common_vars;
 };
 

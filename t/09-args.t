@@ -67,7 +67,31 @@ subtest "use all args of new()" => sub {
                              'foo' => 'sec:sec-B'
                             }
                 },
-                'variables()') or diag explain $obj->variables;
+                'variables()');
+    };
+    subtest "overwrite common_section, common_vars, not_common " => sub {
+      $obj->parse_ini(src => $src,
+                      common_section => 'HUHU',
+                      common_vars    => {a => 1, b => 2, c => 3},
+                      not_common     => ['a']
+                     );
+      is_deeply($obj->variables,
+                {
+                 'HUHU' => {
+                            'a' => '1',
+                            'b' => '2',
+                            'c' => '3'
+                           },
+                 'sec-A' => {
+                             'b' => '2',
+                             'c' => '3'
+                            },
+                 'sec-B' => {
+                             'b' => '2',
+                             'c' => '3'
+                            }
+                },
+                'variables()');
     };
   };
 };
