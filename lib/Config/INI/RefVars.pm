@@ -311,7 +311,7 @@ sub parse_ini {
   if ($cleanup) {
     while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
       foreach my $var (keys(%$variables)) {
-        delete $variables->{$var} if substr($var, 0, 1) eq '=';
+        delete $variables->{$var} if index($var, '=') >= 0;
       }
     }
     delete $self->{+VARIABLES}{$self->{+COMMON_SECTION}} if !%$common_sec_vars;
