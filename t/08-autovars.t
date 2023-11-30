@@ -88,7 +88,7 @@ subtest "not from file" => sub {
 
     };
     subtest "separator" => sub {
-      my $obj = Config::INI::RefVars->new(separator => '#');
+      my $obj = Config::INI::RefVars->new(separator => '~');
       my $src = [
                  '[section 1]',
                  '1a=$(=INIname)',
@@ -99,21 +99,21 @@ subtest "not from file" => sub {
                  '1f=$()',
                  '1g=$(  )',
 
-                 '2a=$(section 2#=INIname)',
-                 '2b=$(section 2#=INIfile)',
-                 '2c=$(section 2#=INIdir)',
-                 '2d=$(section 2#=:)',
-                 '2e=$(section 2#=)',
-                 '2f=$(section 2#x)',
-                 '2g=$(section 2#  )',
+                 '2a=$(section 2~=INIname)',
+                 '2b=$(section 2~=INIfile)',
+                 '2c=$(section 2~=INIdir)',
+                 '2d=$(section 2~=:)',
+                 '2e=$(section 2~=)',
+                 '2f=$(section 2~x)',
+                 '2g=$(section 2~  )',
 
-                 '3a=$(section 3#=INIname)',
-                 '3b=$(section 3#=INIfile)',
-                 '3c=$(section 3#=INIdir)',
-                 '3d=$(section 3#=:)',
-                 '3e=$(section 3#=)',
-                 '3f=$(section 3#)',
-                 '3g=$(section 3#  )',
+                 '3a=$(section 3~=INIname)',
+                 '3b=$(section 3~=INIfile)',
+                 '3c=$(section 3~=INIdir)',
+                 '3d=$(section 3~=:)',
+                 '3e=$(section 3~=)',
+                 '3f=$(section 3~)',
+                 '3g=$(section 3~  )',
 
                  '[section 2]',
                 ];
@@ -209,6 +209,55 @@ subtest "from file / with and without cleanup" => sub {
                                }
                },
               'variables()');
+
+    $obj->parse_ini(src => $src, cleanup => undef);
+    is_deeply($obj->variables,
+              {
+               '__COMMON__' => {
+                                '='  => '__COMMON__',
+                                '=:' => $Path_Sep,
+                                '=INIdir'  => $ini_dir,
+                                '=INIfile' => $ini_file,
+                                '=INIname' => $src
+                               },
+               'section 1' => {
+                                  '1a' => $src,
+                                  '1b' => $ini_file,
+                                  '1c' => $ini_dir,
+                                  '1d' => $Path_Sep,
+                                  '1e' => 'section 1',
+                                  '1f' => '',
+                                  '1g' => '  ',
+                                  '2a' => $src,
+                                  '2b' => $ini_file,
+                                  '2c' => $ini_dir,
+                                  '2d' => $Path_Sep,
+                                  '2e' => 'section 2',
+                                  '2f' => '',
+                                  '2g' => '  ',
+                                  '3a' => '',
+                                  '3b' => '',
+                                  '3c' => '',
+                                  '3d' => '',
+                                  '3e' => '',
+                                  '3f' => '',
+                                  '3g' => '',
+                                  '='  => 'section 1',
+                                  '=:' => $Path_Sep,
+                                  '=INIdir'  => $ini_dir,
+                                  '=INIfile' => $ini_file,
+                                  '=INIname' => $src
+
+                                 },
+                'section 2' => {
+                                '='  => 'section 2',
+                                '=:' => $Path_Sep,
+                                '=INIdir'  => $ini_dir,
+                                '=INIfile' => $ini_file,
+                                '=INIname' => $src
+                               }
+               },
+              'variables(): same result for cleanup => undef');
     };
 };
 
