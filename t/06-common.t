@@ -266,7 +266,11 @@ subtest "common, not common" => sub {
                '',
                '[sec B]',
               ];
-    $obj->parse_ini(src => $src, common_vars => {a => 27, c => 42, d => "hello!!!"},
+    $obj->parse_ini(src => $src,
+                    common_vars => {a => 27,
+                                    c => 42,
+                                    d => '$(x=y)!!!',
+                                    'x=y' => 'hello'},
                     common_section => '_C_',
                     not_common => [qw(c foo)]);
     is_deeply($obj->variables,
