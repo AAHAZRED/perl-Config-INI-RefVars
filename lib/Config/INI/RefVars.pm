@@ -334,9 +334,14 @@ sub parse_ini {
 }
 
 
-sub sections        {$_[0]->{+SECTIONS}}
-sub sections_h      {$_[0]->{+SECTIONS_H}}
-sub variables       {$_[0]->{+VARIABLES}}
+sub sections        { defined($_[0]->{+SECTIONS})   ? [@{$_[0]->{+SECTIONS}}]     : undef}
+
+sub sections_h      { defined($_[0]->{+SECTIONS_H}) ? { %{$_[0]->{+SECTIONS_H}} } : undef }
+
+sub variables       { my $vars = $_[0]->{+VARIABLES} // return undef;
+                      return  {map {$_ => {%{$vars->{$_}}}} keys(%$vars)};
+                    }
+
 sub src_name        {$_[0]->{+SRC_NAME}}
 sub common_section  {$_[0]->{+COMMON_SECTION}}
 
@@ -490,6 +495,17 @@ Perhaps a little code snippet.
 Sections without any vars do not appear in 'variables' hash.
 
 https://stackoverflow.com/questions/11581893/prepend-to-simply-expanded-variable
+
+Do not write something like
+
+   while (my ($sec, $val) = each(%{$ini_obj->variables})) {
+   # ...
+
+since this will result in an infinite loop. Instead, write:
+
+   my $vars = $ini_obj->variables;
+   while (my ($sec, $val) = each(%$vars)) {
+   # ...
 
 =head1 EXPORT
 

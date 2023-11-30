@@ -45,7 +45,33 @@ EOT
               },
               'variables()');
   };
-#  subtest "sec name in variable"
+  subtest "section in variable" => sub {
+    my $src = [
+               '[A]',
+               'the A variable = Variable in section $(=)',
+               'section = $(=)',
+               '[B]',
+               'sec A = [A]',
+               'ref A 1 = $($(sec A)the A variable)',
+               'ref A 2 = $([$([A]section)]the A variable)',
+               'ref A 3 = $([$($(sec A)section)]the A variable)',
+              ];
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables,
+              {
+          'A' => {
+                   'section' => 'A',
+                   'the A variable' => 'Variable in section A'
+                 },
+          'B' => {
+                   'ref A 1' => 'Variable in section A',
+                   'ref A 2' => 'Variable in section A',
+                   'ref A 3' => 'Variable in section A',
+                   'sec A' => '[A]'
+                 }
+              },
+              'variables()');
+  };
 };
 
 subtest "chains" => sub {
@@ -80,7 +106,8 @@ subtest "chains" => sub {
                'b=$([section 6]a)',
               ];
     $obj->parse_ini(src => $src);
-    while (my ($sec, $val) = each(%{$obj->variables})) {
+    my $vars = $obj->variables;
+    while (my ($sec, $val) = each(%$vars)) {
       is_deeply($val, {
                        'a' => 'Variable a in section section 1',
                        'b' => 'Variable a in section section 1'
@@ -131,7 +158,8 @@ subtest "chains" => sub {
                'b.=$([section 6]a)',
               ];
     $obj->parse_ini(src => $src);
-    while (my ($sec, $val) = each(%{$obj->variables})) {
+    my $vars = $obj->variables;
+    while (my ($sec, $val) = each(%$vars)) {
       is_deeply($val, {
                        'a' => 'Variable a in section section 1',
                        'b' => 'Variable a in section section 1'
