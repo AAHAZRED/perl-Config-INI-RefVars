@@ -454,7 +454,7 @@ sub _error_msg {
 sub _check_args {
   my ($args, $allowed_args) = @_;
   foreach my $key (keys(%$args)) {
-    croak("$key: Unsupported argument") if !exists($allowed_args->{$key});
+    croak("'$key': unsupported argument") if !exists($allowed_args->{$key});
   }
   delete @{$args}{ grep { !defined($args->{$_}) } keys(%$args) };
 }

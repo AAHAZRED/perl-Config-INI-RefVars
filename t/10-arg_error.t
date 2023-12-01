@@ -176,6 +176,18 @@ subtest "src (only possible in (parse_ini())" => sub {
 };
 
 
+subtest "Unsupported argument" => sub {
+  like(exception { Config::INI::RefVars->new(FOO => []) },
+       qr/'FOO': unsupported argument/,
+       "unsupported argument: the code died as expected");
+
+  my $obj = Config::INI::RefVars->new();
+  like(exception { $obj->parse_ini(src => $Dummy_Src, FOO => []) },
+       qr/'FOO': unsupported argument/,
+       "unsupported argument: the code died as expected");
+};
+
+
 subtest "warning: common_vars" => sub {
   subtest "new()" => sub {
     my $obj;
@@ -225,7 +237,31 @@ subtest "warning: common_vars" => sub {
                         }
               },
               'variables()');
-  }
+  };
+};
+
+
+subtest "no error" => sub {
+  my $obj;
+  warning_is( sub { $obj = Config::INI::RefVars->new(common_section => undef,
+                                                     common_vars    => undef,
+                                                     not_common     => undef,
+                                                     separator      => undef,
+                                                );
+              },
+              "",
+              "new() - no ");
+
+  # We do not test cleanup => undef here, as this is done somewhere else.
+  warning_is( sub { $obj->parse_ini(src            => [ '[sec]' ],
+                                    common_section => undef,
+                                    common_vars    => undef,
+                                    not_common     => undef,
+                                   )
+                  },
+              "",
+              "new() - no ");
+  is_deeply($obj->variables, { sec => {} }, 'variables()');
 };
 
 #==================================================================================================
