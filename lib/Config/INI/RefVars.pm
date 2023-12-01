@@ -279,12 +279,12 @@ sub parse_ini {
     if ($ref_src eq 'ARRAY') {
       $src = [@$src];
       for (my $i = 0; $i < @$src; ++$i) {
-        croak(_fmt_err($self->{+SRC_NAME}, $i + 1, "Unexpected ref type.")) if ref($src->[$i]);
-        $src->[$i] //= "";
+        croak("'src': unexpected ref type in array") if ref($src->[$i]);
+        $src->[$i] //= ""; #  WARN !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       }
     }
     else {
-      croak("$ref_src: ref type not allowed for argument 'src'");
+      croak("'src': $ref_src: ref type not allowed");
     }
   }
   else {

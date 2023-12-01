@@ -124,7 +124,7 @@ subtest "not_common" => sub {
   };
 };
 
-subtest "separator" => sub {
+subtest "separator (only possible in new())" => sub {
   my $dummy = "";
   like(exception { Config::INI::RefVars->new(separator => \$dummy) },
        qr/'separator': unexpected ref type, must be a scalar/,
@@ -133,6 +133,25 @@ subtest "separator" => sub {
   like(exception { Config::INI::RefVars->new(separator => '=') },
        qr/'separator': invalid value. Allowed chars: [[:punct:]]+/,
        "separator: the code died as expected");
+};
+
+### common_section
+
+subtest "src (only possible in (parse_ini())" => sub {
+  my $dummy = "";
+  my $obj = Config::INI::RefVars->new();
+
+  like(exception { $obj->parse_ini() },
+       qr/'src': missing mandatory argument/,
+       "src: the code died as expected");
+
+  like(exception { $obj->parse_ini(src => {}) },
+       qr/'src': HASH: ref type not allowed/,
+       "src: the code died as expected");
+
+  like(exception { $obj->parse_ini(src => ['a=1', [], '[sec]']) },
+       qr/'src': unexpected ref type in array/,
+       "src: the code died as expected");
 };
 
 #==================================================================================================
