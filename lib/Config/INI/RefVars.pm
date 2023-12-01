@@ -145,7 +145,7 @@ my $_parse_ini = sub {
   my $set_curr_section = sub {
     $curr_section = shift;
     if ($curr_section eq $common_sec) {
-      die("common section '$common_sec' must be first section") if @$sections;
+      croak("common section '$common_sec' must be first section") if @$sections;
       $common_vars = $variables->{$common_sec} = {} if !$common_vars;
     }
     elsif ($common_vars) {
@@ -227,7 +227,7 @@ my $_parse_ini = sub {
           . ($sect_vars->{$var_name} // "");
       }
       else {
-        die("$modifier: unsupported modifier");
+        croak("$modifier: unsupported modifier");
       }
     }
   }
@@ -410,7 +410,7 @@ sub _expand_vars {
     ((my $var_basename), $x_variable_name) = $self->_x_var_name($curr_sect, $variable);
     return $self->_look_up($curr_sect, $variable) if (exists($self->{+EXPANDED}{$x_variable_name})
                                                       || $var_basename =~ /^=ENV:/);
-    die("Recursive variable '", $x_variable_name, "' references itself")
+    croak("Recursive variable '", $x_variable_name, "' references itself")
       if exists($seen->{$x_variable_name});
     $seen->{$x_variable_name} = undef;
   }
@@ -434,7 +434,7 @@ sub _expand_vars {
       $result[$level] .= $token;
     }
   }
-  die("unterminated variable reference") if $level;
+  croak("unterminated variable reference") if $level;
   $value = $result[0];
   if ($x_variable_name) {
     $self->{+EXPANDED}{$x_variable_name} = undef if $top;
