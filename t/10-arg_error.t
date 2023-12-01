@@ -3,6 +3,8 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Fatal;
+use Test::Warn;
+
 
 use Config::INI::RefVars;
 
@@ -171,6 +173,59 @@ subtest "src (only possible in (parse_ini())" => sub {
   like(exception { $obj->parse_ini(src => ['a=1', [], '[sec]']) },
        qr/'src': unexpected ref type in array/,
        "src: the code died as expected");
+};
+
+
+subtest "warning: common_vars" => sub {
+  subtest "new()" => sub {
+    my $obj;
+    warning_like(sub {$obj = Config::INI::RefVars->new(common_vars => {a => 1,
+                                                                       b => undef,
+                                                                       c => 3})
+                    },
+                 qr/'common_vars': value 'b' is undef - treated as empty string/,
+                 "'common_vars': the code printed the warning as expected");
+    $obj->parse_ini(src => [ '[sec]' ]);
+    is_deeply($obj->variables,
+              {
+               '__COMMON__' => {
+                                'a' => '1',
+                                'b' => '',
+                                'c' => '3'
+                               },
+               'sec' => {
+                         'a' => '1',
+                         'b' => '',
+                         'c' => '3'
+                        }
+              },
+              'variables()');
+  };
+
+  subtest "parse_ini()" => sub {
+    my $obj = Config::INI::RefVars->new();
+    warning_like(sub {$obj->parse_ini(src         => [ '[sec]' ],
+                                      common_vars => {a => 1,
+                                                      b => undef,
+                                                      c => 3})
+                    },
+                 qr/'common_vars': value 'b' is undef - treated as empty string/,
+                 "'common_vars': the code printed the warning as expected");
+    is_deeply($obj->variables,
+              {
+               '__COMMON__' => {
+                                'a' => '1',
+                                'b' => '',
+                                'c' => '3'
+                               },
+               'sec' => {
+                         'a' => '1',
+                         'b' => '',
+                         'c' => '3'
+                        }
+              },
+              'variables()');
+  }
 };
 
 #==================================================================================================
