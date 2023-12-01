@@ -135,7 +135,26 @@ subtest "separator (only possible in new())" => sub {
        "separator: the code died as expected");
 };
 
-### common_section
+
+subtest "common_section" => sub {
+  like(exception { Config::INI::RefVars->new(common_section => []) },
+       qr/'common_section': must not be a reference/,
+       "separator: the code died as expected");
+
+  my $obj = Config::INI::RefVars->new();
+  like(exception { $obj->parse_ini(src => '[sec]', common_section => []) },
+       qr/'common_section': must not be a reference/,
+       "separator: the code died as expected");
+};
+
+
+subtest "src_name (only possible in parse_ini())" => sub {
+  my $obj = Config::INI::RefVars->new();
+  like(exception { $obj->parse_ini(src => '[sec]', src_name => []) },
+       qr/'src_name': must not be a reference/,
+       "separator: the code died as expected");
+};
+
 
 subtest "src (only possible in (parse_ini())" => sub {
   my $dummy = "";

@@ -81,6 +81,7 @@ sub new {
                                               separator)};
   _check_args(\%args, $allowed_keys);
   my $self = {};
+  croak("'common_section': must not be a reference") if ref($args{common_section});
   if (exists($args{separator})) {
     state $allowed_sep_chars = "!#%&',./:~";
     my $sep = $args{separator};
@@ -242,7 +243,7 @@ sub parse_ini {
                                               common_section common_vars not_common)};
   state $dflt_src_name = "INI data";
   _check_args(\%args, $allowed_keys);
-  foreach my $scalar_arg (qw(src_name common_section)) {
+  foreach my $scalar_arg (qw(common_section src_name)) {
      croak("'$scalar_arg': must not be a reference") if ref($args{$scalar_arg});
    }
   $self->{+SRC_NAME} = $args{src_name} if exists($args{src_name});
@@ -278,9 +279,12 @@ sub parse_ini {
     $self->{+SRC_NAME} = $dflt_src_name if !exists($self->{+SRC_NAME});
     if ($ref_src eq 'ARRAY') {
       $src = [@$src];
-      for (my $i = 0; $i < @$src; ++$i) {
-        croak("'src': unexpected ref type in array") if ref($src->[$i]);
-        $src->[$i] //= ""; #  WARN !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      foreach my $entry (@$src) {
+        croak("'src': unexpected ref type in array") if ref($entry);
+        if (!defined($entry)) {
+          carp("'src': undef entry - treated as empty string");
+          $entry = "";
+        }
       }
     }
     else {
