@@ -75,7 +75,6 @@ my $_check_not_common = sub {
 };
 
 
-
 sub new {
   my ($class, %args) = @_;
   state $allowed_keys = {map {$_ => undef} qw(common_section common_vars not_common
@@ -83,9 +82,9 @@ sub new {
   _check_args(\%args, $allowed_keys);
   my $self = {};
   if (exists($args{separator})) {
-    state $allowed_sep_chars = ",:!.'/&%~";
+    state $allowed_sep_chars = "!#%&',./:~";
     my $sep = $args{separator};
-    croak("'separator': unexpected reft type, must be a scalar") if ref($sep);
+    croak("'separator': unexpected ref type, must be a scalar") if ref($sep);
     croak("'separator': invalid value. Allowed chars: $allowed_sep_chars")
       if $sep !~ m{^[$allowed_sep_chars]+$};
     $self->{+VREF_RE} = qr/^(.*?)(?:\Q$sep\E)(.*)$/;
@@ -127,7 +126,7 @@ my $_parse_ini = sub {
   my ($self, $src) = @_;
   my $src_name;
   if (ref($src)) {
-    ref($src) eq 'ARRAY' or croak("Internal error");
+    croak("Internal error: argument is not an ARRAY ref") if ref($src) ne 'ARRAY';
     $src_name = $self->{+SRC_NAME};
   }
   else {

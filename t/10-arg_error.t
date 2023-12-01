@@ -124,5 +124,16 @@ subtest "not_common" => sub {
   };
 };
 
+subtest "separator" => sub {
+  my $dummy = "";
+  like(exception { Config::INI::RefVars->new(separator => \$dummy) },
+       qr/'separator': unexpected ref type, must be a scalar/,
+       "separator: the code died as expected");
+
+  like(exception { Config::INI::RefVars->new(separator => '=') },
+       qr/'separator': invalid value. Allowed chars: [[:punct:]]+/,
+       "separator: the code died as expected");
+};
+
 #==================================================================================================
 done_testing();
