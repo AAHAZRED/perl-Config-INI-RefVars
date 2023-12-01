@@ -42,8 +42,8 @@ my $_check_common_vars = sub {
   while (my ($var, $value) = each(%$common_vars)) {
     croak("'common_vars': value of '$var' is a ref, expected scalar") if ref($value);
     if (!defined($value)) {
-      carp("'common_vars': removing '$var' since its value is undef");
-      delete $common_vars->{$var};
+      carp("'common_vars': value '$var' is undef - treated as empty string");
+      $common_vars->{$var} = "";
     }
     croak("'common_vars': variable '$var': name is not permitted")
       if ($var =~ /^\s*$/ || $var =~ /^[[=;]/);
