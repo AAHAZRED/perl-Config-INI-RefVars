@@ -158,7 +158,10 @@ my $_parse_ini = sub {
     push(@$sections, $curr_section);
   };
 
-  for (my $i = 0; $i < @$src; ++$i) {
+  my $i;                        # index in for() loop
+  my $_fatal = sub { croak("'$src_name': ", $_[0], " at line ", $i + 1); };
+
+  for ($i = 0; $i < @$src; ++$i) {
     my $line = $src->[$i];
     if (index($line, ";!") == 0 || index($line, "=") == 0) {
       croak("'$src_name' Directives are not yet supported");
@@ -168,20 +171,20 @@ my $_parse_ini = sub {
     $line =~ s/\s+$//;
     # section header
     if (index($line, "[") == 0) {
-      croak("Invalid section header at line ", $i + 1) if index($line, "]") < 0;
+      $_fatal->("invalid section header") if index($line, "]") < 0;
       $line =~ s/\s*[#;][^\]]*$//;
       $line =~ /^\[\s*(.*?)\s*\]$/ or croak("Invalid section header at line ", $i + 1);
       $set_curr_section->($1);
       next;
     }
     if (index($line, "=") < 0) {
-      croak("Neither section header not key definition at line ", $i + 1)
+      $_fatal->("neither section header not key definition");
     }
     else {
       # var = val
       $set_curr_section->($common_sec) if !defined($curr_section);
       $line =~ /^(.*?)\s*($Modifier_Char*?)=(?:\s*)(.*)/ or
-        croak("Neither section header not key definition at line ", $i + 1);
+        croak("Neither section header not key definition at line ", $i + 1);  #### !!!!
       my ($var_name, $modifier, $value) = ($1, $2, $3);
       my $x_var_name = $self->_x_var_name($curr_section, $var_name);
       my $exp_flag = exists($expanded->{$x_var_name});
