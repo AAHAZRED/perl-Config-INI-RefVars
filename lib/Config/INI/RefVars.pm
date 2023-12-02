@@ -220,7 +220,7 @@ my $_parse_ini = sub {
         ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value)
         . ($sect_vars->{$var_name} // "");
     } else {
-      croak("$modifier: unsupported modifier");
+      $_fatal->("'$modifier': unsupported modifier");
     }
   }
   return $curr_section;
@@ -478,6 +478,44 @@ This module provides an INI file reader that allows INI variables and
 environment variables to be referenced within the INI file. It also supports
 some additional assignment operators.
 
+A line should not start with an C<=> or the sequence C<;!>. These are reserved
+for future extensions. Otherwise the parser throws a "Directives are not yet
+supported" exception. Apart from these special cases, the following rules apply:
+
+=over
+
+=item *
+
+Spaces at the beginning and end of each line are ignored.
+
+=item *
+
+If the first non-white character of a line is a C<;> or a C<#>, then the line
+is a comment line.
+
+=item *
+
+Comments can also be specified to the right of a section declaration (in this
+case, the comment must not contain closing square brackets).
+
+=item *
+
+In a section header declaration, spaces to the right of the opening square
+bracket and to the left of the closing square bracket are ignored, i.e. a
+section name always begins and ends with a non-white character.
+
+But: As a special case, the name of a section heading can be an empty
+character string.
+
+=item *
+
+A variable name cannot be empty.
+
+
+
+=back
+
+
 
 Sections without any vars do not appear in 'variables' hash.
 
@@ -494,11 +532,8 @@ since this will result in an infinite loop. Instead, write:
    while (my ($sec, $val) = each(%$vars)) {
    # ...
 
-B<Comments> If the first non-white character of a line is a ';' or a '#', then the line is a comment line. Comments can also be specified to the right of a section declaration (in this case, the comment must not contain closing square brackets).
+B<Comments>  Comments can also be specified to the right of a section declaration (in this case, the comment must not contain closing square brackets).
 
-A line should not start with an C<=> or the sequence C<;!>. These are reserved
-for future extensions. Otherwise the parser thrown a "Directives are not yet
-supported" exception.
 
 =head2 METHODS
 
@@ -534,17 +569,13 @@ You can also look for information at:
 
 L<https://rt.cpan.org/NoAuth/Bugs.html?Dist=Config-INI-RefVars>
 
-=item * CPAN Ratings
-
-L<https://cpanratings.perl.org/d/Config-INI-RefVars>
-
 =item * Search CPAN
 
 L<https://metacpan.org/release/Config-INI-RefVars>
 
 =item * GitHub Repository
 
-  XXXXXXXXX
+L<https://github.com/AAHAZRED/perl-Config-INI-RefVars>
 
 =back
 

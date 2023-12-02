@@ -169,14 +169,25 @@ subtest "no directives" => sub {
                                            '  ;!',
                                            '=a',
                                            ]) },
-         qr/'INI data': directives are not yet supported at line 3 /,
+         qr/'INI data': directives are not yet supported at line 3\b/,
          "no directives: the code died as expected");
 
   like(exception { $obj->parse_ini(src => [
                                            '[sec]',
                                            ';!',
                                            ]) },
-         qr/'INI data': directives are not yet supported at line 2 /,
+         qr/'INI data': directives are not yet supported at line 2\b/,
+         "no directives: the code died as expected");
+};
+
+
+subtest "unsupported modifier" => sub {
+  my $obj = Config::INI::RefVars->new();
+  like(exception { $obj->parse_ini(src => [
+                                           '[sec]',
+                                           'x++...!!!&&&&=a',
+                                           ]) },
+         qr/'INI data': '\+\+\.\.\.!!!&&&&': unsupported modifier at line 2\b/,
          "no directives: the code died as expected");
 };
 
