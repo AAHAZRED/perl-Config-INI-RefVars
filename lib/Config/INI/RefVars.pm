@@ -177,61 +177,48 @@ my $_parse_ini = sub {
       $set_curr_section->($1);
       next;
     }
-    if (index($line, "=") < 0) {
+
+    # var = val
+    $set_curr_section->($common_sec) if !defined($curr_section);
+    $line =~ /^(.*?)\s*($Modifier_Char*?)=(?:\s*)(.*)/ or
       $_fatal->("neither section header nor key definition");
-    }
-    else {
-      # var = val
-      $set_curr_section->($common_sec) if !defined($curr_section);
-      $line =~ /^(.*?)\s*($Modifier_Char*?)=(?:\s*)(.*)/ or
-        croak("Neither section header nor key definition at line ", $i + 1);  #### !!!!
-      my ($var_name, $modifier, $value) = ($1, $2, $3);
-      my $x_var_name = $self->_x_var_name($curr_section, $var_name);
-      my $exp_flag = exists($expanded->{$x_var_name});
-      croak("Empty variable name at line ", $i + 1) if $var_name eq "";
-      my $sect_vars = $variables->{$curr_section} //= {};
-      if ($modifier eq "") {
-        delete $expanded->{$x_var_name} if $exp_flag;
+    my ($var_name, $modifier, $value) = ($1, $2, $3);
+    my $x_var_name = $self->_x_var_name($curr_section, $var_name);
+    my $exp_flag = exists($expanded->{$x_var_name});
+    $_fatal->("empty variable name") if $var_name eq "";
+    my $sect_vars = $variables->{$curr_section} //= {};
+    if ($modifier eq "") {
+      delete $expanded->{$x_var_name} if $exp_flag;
+      $sect_vars->{$var_name} = $value;
+    } elsif ($modifier eq '?') {
+      $sect_vars->{$var_name} = $value if !exists($sect_vars->{$var_name});
+    } elsif ($modifier eq '+') {
+      if (exists($sect_vars->{$var_name})) {
+        $sect_vars->{$var_name} .= " "
+          . ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value);
+      } else {
         $sect_vars->{$var_name} = $value;
       }
-      elsif ($modifier eq '?') {
-        $sect_vars->{$var_name} = $value if !exists($sect_vars->{$var_name});
-      }
-      elsif ($modifier eq '+') {
-        if (exists($sect_vars->{$var_name})) {
-          $sect_vars->{$var_name} .= " "
-            . ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value);
-        }
-        else {
-          $sect_vars->{$var_name} = $value;
-        }
-      }
-      elsif ($modifier eq '.') {
-        $sect_vars->{$var_name} = ($sect_vars->{$var_name} // "")
-          . ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value);
-      }
-      elsif ($modifier eq ':') {
-        delete $expanded->{$x_var_name} if $exp_flag; # Needed to make _expand_vars corectly!
-        $sect_vars->{$var_name} = $self->_expand_vars($curr_section, $var_name, $value);
-      }
-      elsif ($modifier eq '+>') {
-        if (exists($sect_vars->{$var_name})) {
-          $sect_vars->{$var_name} =
-            ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value)
-            . ' ' . $sect_vars->{$var_name};
-        }
-        else {
-          $sect_vars->{$var_name} = $value;
-        }
-      }
-      elsif ($modifier eq '.>') {
+    } elsif ($modifier eq '.') {
+      $sect_vars->{$var_name} = ($sect_vars->{$var_name} // "")
+        . ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value);
+    } elsif ($modifier eq ':') {
+      delete $expanded->{$x_var_name} if $exp_flag; # Needed to make _expand_vars corectly!
+      $sect_vars->{$var_name} = $self->_expand_vars($curr_section, $var_name, $value);
+    } elsif ($modifier eq '+>') {
+      if (exists($sect_vars->{$var_name})) {
         $sect_vars->{$var_name} =
           ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value)
-          . ($sect_vars->{$var_name} // "");
+          . ' ' . $sect_vars->{$var_name};
+      } else {
+        $sect_vars->{$var_name} = $value;
       }
-      else {
-        croak("$modifier: unsupported modifier");
-      }
+    } elsif ($modifier eq '.>') {
+      $sect_vars->{$var_name} =
+        ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value)
+        . ($sect_vars->{$var_name} // "");
+    } else {
+      croak("$modifier: unsupported modifier");
     }
   }
   return $curr_section;
