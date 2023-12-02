@@ -165,7 +165,7 @@ my $_parse_ini = sub {
   for ($i = 0; $i < @$src; ++$i) {
     my $line = $src->[$i];
     if (index($line, ";!") == 0 || index($line, "=") == 0) {
-      croak("'$src_name' Directives are not yet supported");
+      $_fatal->("directives are not yet supported");
     }
     $line =~ s/^\s+//;
     next if $line eq "" || $line =~ /^[;#]/;
@@ -400,7 +400,7 @@ sub _expand_vars {
     ((my $var_basename), $x_variable_name) = $self->_x_var_name($curr_sect, $variable);
     return $self->_look_up($curr_sect, $variable) if (exists($self->{+EXPANDED}{$x_variable_name})
                                                       || $var_basename =~ /^=ENV:/);
-    croak("Recursive variable '", $x_variable_name, "' references itself")
+    croak("recursive variable '", $x_variable_name, "' references itself")
       if exists($seen->{$x_variable_name});
     $seen->{$x_variable_name} = undef;
   }
@@ -424,7 +424,7 @@ sub _expand_vars {
       $result[$level] .= $token;
     }
   }
-  croak("unterminated variable reference") if $level;
+  croak("'$x_variable_name': unterminated variable reference") if $level;
   $value = $result[0];
   if ($x_variable_name) {
     $self->{+EXPANDED}{$x_variable_name} = undef if $top;
