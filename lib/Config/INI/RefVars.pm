@@ -452,27 +452,32 @@ __END__
 
 =head1 NAME
 
-Config::INI::RefVars - The great new Config::INI::RefVars!
+Config::INI::RefVars - INI file reader, allows the referencing of INI and
+environment variables within the INI file.
+
 
 =head1 VERSION
 
 Version 0.01
 
-
-
 =head1 SYNOPSIS
-
-Quick summary of what the module does.
-
-Perhaps a little code snippet.
 
     use Config::INI::RefVars;
 
-    my $foo = Config::INI::RefVars->new();
-    ...
+    my $ini_reader = Config::INI::RefVars->new();
+    $ini_reader->parse_ini(src => $my_ini_file);
+    my $variables = $ini_reader->variables;
+    while (my ($section, $section_vars) = each(%$variables)) {
+        # ...
+    }
 
 
 =head1 DESCRIPTION
+
+This module provides an INI file reader that allows INI variables and
+environment variables to be referenced within the INI file. It also supports
+some additional assignment operators.
+
 
 Sections without any vars do not appear in 'variables' hash.
 
@@ -489,14 +494,15 @@ since this will result in an infinite loop. Instead, write:
    while (my ($sec, $val) = each(%$vars)) {
    # ...
 
-=head1 EXPORT
+B<Comments> If the first non-white character of a line is a ';' or a '#', then the line is a comment line. Comments can also be specified to the right of a section declaration (in this case, the comment must not contain closing square brackets).
 
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
+A line should not start with an C<=> or the sequence C<;!>. These are reserved
+for future extensions. Otherwise the parser thrown a "Directives are not yet
+supported" exception.
 
-=head1 SUBROUTINES/METHODS
+=head2 METHODS
 
-=head2 function1
+=head3 function1
 
 
 
