@@ -321,6 +321,28 @@ EOT
               },
               'variables()');
   };
+
+  subtest "empty header name" => sub {
+    $obj->parse_ini(src => [
+                            '[]',
+                            '',
+                            'a="a" from >$(=)< (empty)',
+                            '',
+                            '[foo]',
+                            '',
+                            'x=$([]a)',
+                           ]);
+    is_deeply($obj->variables,
+              {
+               '' => {
+                      'a' => '"a" from >< (empty)'
+                     },
+               'foo' => {
+                         'x' => '"a" from >< (empty)'
+                        }
+              },
+              'variables()');
+  };
 };
 
 
