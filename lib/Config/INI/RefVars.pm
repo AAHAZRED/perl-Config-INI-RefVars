@@ -178,13 +178,13 @@ my $_parse_ini = sub {
       next;
     }
     if (index($line, "=") < 0) {
-      $_fatal->("neither section header not key definition");
+      $_fatal->("neither section header nor key definition");
     }
     else {
       # var = val
       $set_curr_section->($common_sec) if !defined($curr_section);
       $line =~ /^(.*?)\s*($Modifier_Char*?)=(?:\s*)(.*)/ or
-        croak("Neither section header not key definition at line ", $i + 1);  #### !!!!
+        croak("Neither section header nor key definition at line ", $i + 1);  #### !!!!
       my ($var_name, $modifier, $value) = ($1, $2, $3);
       my $x_var_name = $self->_x_var_name($curr_section, $var_name);
       my $exp_flag = exists($expanded->{$x_var_name});
