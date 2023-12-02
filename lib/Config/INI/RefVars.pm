@@ -142,10 +142,13 @@ my $_parse_ini = sub {
   my $common_sec  = $self->{+COMMON_SECTION};
   my $common_vars = $variables->{$common_sec}; # hash key need not to exist!
 
+  my $i;                        # index in for() loop
+  my $_fatal = sub { croak("'$src_name': ", $_[0], " at line ", $i + 1); };
+
   my $set_curr_section = sub {
     $curr_section = shift;
     if ($curr_section eq $common_sec) {
-      croak("common section '$common_sec' must be first section") if @$sections;
+      $_fatal->("common section '$common_sec' must be first section") if @$sections;
       $common_vars = $variables->{$common_sec} = {} if !$common_vars;
     }
     elsif ($common_vars) {
@@ -154,12 +157,10 @@ my $_parse_ini = sub {
     else {
       $variables->{$curr_section} = {};
     }
+    $_fatal->("'$curr_section': duplicate header") if exists($sections_h->{$curr_section});
     $sections_h->{$curr_section} = @$sections; # Index!
     push(@$sections, $curr_section);
   };
-
-  my $i;                        # index in for() loop
-  my $_fatal = sub { croak("'$src_name': ", $_[0], " at line ", $i + 1); };
 
   for ($i = 0; $i < @$src; ++$i) {
     my $line = $src->[$i];
@@ -171,9 +172,8 @@ my $_parse_ini = sub {
     $line =~ s/\s+$//;
     # section header
     if (index($line, "[") == 0) {
-      $_fatal->("invalid section header") if index($line, "]") < 0;
       $line =~ s/\s*[#;][^\]]*$//;
-      $line =~ /^\[\s*(.*?)\s*\]$/ or croak("Invalid section header at line ", $i + 1);
+      $line =~ /^\[\s*(.*?)\s*\]$/ or $_fatal->("invalid section header");
       $set_curr_section->($1);
       next;
     }
