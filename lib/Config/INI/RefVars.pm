@@ -35,6 +35,8 @@ my %Globals = ('=:' => catdir("", ""));
 # Match punctuation chars, but not the underscores.
 my $Modifier_Char = '[^_[:^punct:]]';
 
+my ($_look_up, $_x_var_name, $_expand_vars);
+
 my $_check_common_vars = sub {
   my ($self, $common_vars, $set) = @_;
   croak("'common_vars': expected HASH ref") if ref($common_vars) ne 'HASH';
@@ -101,7 +103,7 @@ sub new {
 
 
 my $_expand_value = sub {
-  return $_[0]->_expand_vars($_[1], undef, $_[2]);
+  return $_[0]->$_expand_vars($_[1], undef, $_[2]);
 };
 
 #
@@ -183,7 +185,7 @@ my $_parse_ini = sub {
     $line =~ /^(.*?)\s*($Modifier_Char*?)=(?:\s*)(.*)/ or
       $_fatal->("neither section header nor key definition");
     my ($var_name, $modifier, $value) = ($1, $2, $3);
-    my $x_var_name = $self->_x_var_name($curr_section, $var_name);
+    my $x_var_name = $self->$_x_var_name($curr_section, $var_name);
     my $exp_flag = exists($expanded->{$x_var_name});
     $_fatal->("empty variable name") if $var_name eq "";
     my $sect_vars = $variables->{$curr_section} //= {};
@@ -204,7 +206,7 @@ my $_parse_ini = sub {
         . ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value);
     } elsif ($modifier eq ':') {
       delete $expanded->{$x_var_name} if $exp_flag; # Needed to make _expand_vars corectly!
-      $sect_vars->{$var_name} = $self->_expand_vars($curr_section, $var_name, $value);
+      $sect_vars->{$var_name} = $self->$_expand_vars($curr_section, $var_name, $value);
     } elsif ($modifier eq '+>') {
       if (exists($sect_vars->{$var_name})) {
         $sect_vars->{$var_name} =
@@ -301,7 +303,7 @@ sub parse_ini {
 
   while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
     while (my ($variable, $value) = each(%$variables)) {
-      $variables->{$variable} = $self->_expand_vars($section, $variable, $value);
+      $variables->{$variable} = $self->$_expand_vars($section, $variable, $value);
     }
   }
   if ($cleanup) {
@@ -338,15 +340,7 @@ sub src_name        {$_[0]->{+SRC_NAME}}
 sub common_section  {$_[0]->{+COMMON_SECTION}}
 
 
-#
-# _fmt_err(SRC, LINE_NO, MSG)
-#
-sub _fmt_err {
-  return sprintf("%s at line %d: %s", @_);
-}
-
-
-sub _look_up {
+$_look_up = sub {
   my ($self, $curr_sect, $variable) = @_;
   my $matched = $variable =~ $self->{+VREF_RE};
   my ($v_section, $v_basename) = $matched ? ($1, $2) : ($curr_sect, $variable);
@@ -375,10 +369,10 @@ sub _look_up {
   }
   die("Internal error") if !defined($v_value);
   return wantarray ? ($v_section, $v_basename, $v_value) : $v_value;
-}
+};
 
 # extended var name
-sub _x_var_name {
+$_x_var_name = sub {
   my ($self, $curr_sect, $variable) = @_;
 
   if ($variable =~ $self->{+VREF_RE}) {
@@ -387,19 +381,19 @@ sub _x_var_name {
   else {
     return ($variable, "[$curr_sect]$variable");
   }
-}
+};
 
 
-sub _expand_vars {
+$_expand_vars = sub {
   my ($self, $curr_sect, $variable, $value, $seen) = @_;
   my $top = !$seen;
   my @result = ("");
   my $level = 0;
   my $x_variable_name;
   if (defined($variable)) {
-    ((my $var_basename), $x_variable_name) = $self->_x_var_name($curr_sect, $variable);
-    return $self->_look_up($curr_sect, $variable) if (exists($self->{+EXPANDED}{$x_variable_name})
-                                                      || $var_basename =~ /^=ENV:/);
+    ((my $var_basename), $x_variable_name) = $self->$_x_var_name($curr_sect, $variable);
+    return $self->$_look_up($curr_sect, $variable) if (exists($self->{+EXPANDED}{$x_variable_name})
+                                                       || $var_basename =~ /^=ENV:/);
     croak("recursive variable '", $x_variable_name, "' references itself")
       if exists($seen->{$x_variable_name});
     $seen->{$x_variable_name} = undef;
@@ -415,7 +409,7 @@ sub _expand_vars {
       }
       else {
         $result[$level - 1] .=
-          $self->_expand_vars($self->_look_up($curr_sect, $result[$level]), $seen);
+          $self->$_expand_vars($self->$_look_up($curr_sect, $result[$level]), $seen);
       }
       pop(@result);
       --$level;
@@ -431,16 +425,12 @@ sub _expand_vars {
     delete $seen->{$x_variable_name};
   }
   return $value;
-}
+};
+
 
 #
-# _error_msg(FILE, LINE_NO, MSG)
+# This is a function, not a method!
 #
-sub _error_msg {
-  return sprintf("", @_)
-}
-
-
 sub _check_args {
   my ($args, $allowed_args) = @_;
   foreach my $key (keys(%$args)) {
