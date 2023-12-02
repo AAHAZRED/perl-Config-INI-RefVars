@@ -102,6 +102,83 @@ subtest "var def" => sub {
 };
 
 
+subtest "var refs" => sub {
+  my $obj = Config::INI::RefVars->new();
+
+  subtest "unterminated variable reference" => sub {
+    like(exception { $obj->parse_ini(src => [
+                                             '[sec]',
+                                             'a.=$(b'
+                                            ]) },
+         qr/'\[sec\]a': unterminated variable reference/,
+         "var ref: the code died as expected");
+
+    like(exception { $obj->parse_ini(src => [
+                                             '[sec]',
+                                             'a.=$()$(f($(o)$(b)$(x$($(foobar$(=)))',
+                                             'b=42'
+                                            ]) },
+         qr/'\[sec\]a': unterminated variable reference/,
+         "var ref: the code died as expected");
+  };
+
+  subtest "variable references itself" => sub {
+    like(exception { $obj->parse_ini(src => [
+                                             '[sec]',
+                                             'a.=$(a)'
+                                            ]) },
+         qr/recursive variable '\[sec\]a' references itself/,
+         "var ref: the code died as expected");
+
+    like(exception { $obj->parse_ini(src => [
+                                             '[sec]',
+                                             '',
+                                             'x=$(y)',
+                                             'y=$(z)',
+                                             'z=$(x)',
+                                            ]) },
+         qr/recursive variable '\[sec\][xyz]' references itself/,
+         "var ref: the code died as expected");
+
+    like(exception { $obj->parse_ini(src => [
+                                             '[000]',
+                                             'a:=$(z)',
+                                             'z:=$([001]x)',
+                                             '',
+                                             '[001]',
+                                             'x=$([002]x)',
+                                             '',
+                                             '[002]',
+                                             'x=$([001]x)',
+                                            ]) },
+         qr/recursive variable '\[00[12]\]x' references itself/,
+         "var ref: the code died as expected");
+  };
+};
+
+
+
+subtest "no directives" => sub {
+  note(
+       "TEST MUST BE REMOVED OR CHANGED AS SOON AS THE FIRST DIRECTIVES ARE IMPLEMENTED"
+      );
+  my $obj = Config::INI::RefVars->new();
+
+  like(exception { $obj->parse_ini(src => [
+                                           '[sec]',
+                                           '  ;!',
+                                           '=a',
+                                           ]) },
+         qr/'INI data': directives are not yet supported at line 3 /,
+         "no directives: the code died as expected");
+
+  like(exception { $obj->parse_ini(src => [
+                                           '[sec]',
+                                           ';!',
+                                           ]) },
+         qr/'INI data': directives are not yet supported at line 2 /,
+         "no directives: the code died as expected");
+};
 
 
 #==================================================================================================
