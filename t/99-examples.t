@@ -43,5 +43,17 @@ subtest "COMMENTS" => sub {
            );
 };
 
+subtest "HEADERS" => sub {
+  my $obj = Config::INI::RefVars->new();
+  my $src = [
+             '[section]',
+             '[]',
+            ];
+
+  $obj->parse_ini(src => $src);
+  is_deeply($obj->sections, ['section', ''], 'sections()');
+};
+
+
 #==================================================================================================
 done_testing();

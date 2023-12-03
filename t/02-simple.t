@@ -123,15 +123,21 @@ subtest "simple content / reuse" => sub {
   subtest "file input" => sub {
     my $file = test_data_file('simple_content.ini');
     $obj->parse_ini(src => $file);
-    is_deeply($obj->sections, ['first section',
-                               'second section',
-                               'empty section'],
+    my $sections = $obj->sections;
+    is_deeply($sections, ['first section',
+                          'second section',
+                          'empty section'],
               'sections()');
-    is_deeply($obj->sections_h, { 'first section'  => 0,
-                                  'second section' => 1,
-                                  'empty section'  => 2,
-                                },
+    isnt($obj->sections, $sections, "second call to sections()");
+
+    my $sections_h = $obj->sections_h;
+    is_deeply($sections_h, { 'first section'  => 0,
+                             'second section' => 1,
+                             'empty section'  => 2,
+                           },
               'sections_h()');
+    isnt($obj->sections_h, $sections_h, "second call to sections_h()");
+
     is_deeply($obj->variables,  {'first section'  => {var_1 => 'val_1',
                                                       var_2 => 'val_2'},
                                  'second section' => {this => 'that'},
@@ -210,8 +216,8 @@ my-var +>= And again:
 EOT
   my $obj = new_ok('Config::INI::RefVars');
   $obj->parse_ini(src => $input);
-  is_deeply($obj->variables,
-            {'#;.! ! =' => {
+  my $variables = $obj->variables;
+  my $expected = {'#;.! ! =' => {
                             '_'             => '_underscore_',
                             ':+;-+*+!@^xy'  => 'hello world',
                             ':+;-+*+!@^xy.' => 'another variable',
@@ -221,9 +227,13 @@ EOT
                             'abc'           => '456',
                             'my-var'        => 'And again: hello world'
                            }
-            },
-            'variables()') or diag explain $obj->variables;
-
+                 };
+  is_deeply($variables, $expected, 'variables()');
+  my $variables_2 = $obj->variables;
+  isnt($variables_2, $variables, 'second call to variables()');
+  $variables->{foo} = {};
+  $variables->{'#;.! ! ='}{_bar_} = 'abc';
+  is_deeply($variables_2, $expected, 'variables() - unchanged')
 };
 
 
