@@ -478,9 +478,13 @@ This module provides an INI file reader that allows INI variables and
 environment variables to be referenced within the INI file. It also supports
 some additional assignment operators.
 
-A line should not start with an C<=> or the sequence C<;!>. These are reserved
-for future extensions. Otherwise the parser throws a "Directives are not yet
-supported" exception. Apart from these special cases, the following rules apply:
+=head2 INTRDUCTION
+
+
+A line in an INI file should not start with an C<=> or the sequence
+C<;!>. These are reserved for future extensions. Otherwise the parser throws a
+"Directives are not yet supported" exception. Apart from these special cases,
+the following rules apply:
 
 =over
 
@@ -510,6 +514,14 @@ character string.
 =item *
 
 A variable name cannot be empty.
+
+=item *
+
+A sequence of the sequence C<$(...)> is used to reference INI variables or
+environment variables.
+
+=item *
+
 
 
 
