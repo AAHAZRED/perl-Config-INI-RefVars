@@ -25,5 +25,23 @@ subtest "SYNOPSIS" => sub {
   }
 };
 
+subtest "COMMENTS" => sub {
+  my $obj = Config::INI::RefVars->new();
+  my $src = [
+             '[section]  ; My fancy section',
+             '# This is a comment',
+             '; This is also a comment',
+             '    ;! a comment, but: avoid ";!" at the very beginning of a line!',
+             'var = value ; this is not a comment but part of the value.',
+            ];
+  $ini_reader->parse_ini(src => $src);
+  is_deeply($obj->variables,
+            {
+             section => {var => 'value ; this is not a comment but part of the value.'}
+            },
+            'variables()'
+           );
+};
+
 #==================================================================================================
 done_testing();

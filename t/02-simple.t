@@ -8,7 +8,7 @@ use Config::INI::RefVars;
 use File::Spec::Functions;
 
 
-sub test_data_file { catfile(qw(t 02_data), $_[0]) }
+sub test_data_file { catfile(qw(t 02-data), $_[0]) }
 
 
 #
