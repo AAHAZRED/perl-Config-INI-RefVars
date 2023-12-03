@@ -14,10 +14,20 @@ my %WriteMakefileArgs = (
         'ExtUtils::MakeMaker' => '0',
     },
     TEST_REQUIRES => {
+        'strict' => 0,
+        'warnings' => 0,
+        'constant' => 0,
+        'File::Spec::Functions' => 0,
         'Test::Simple' => '0.98',
         'TAP::Harness' => '3.26'
     },
     PREREQ_PM => {
+        'strict' => 0,
+        'warnings' => 0,
+        'feature'  => 0,
+        'constant' => 0,
+        'Carp'     => 0,
+        'File::Spec::Functions' => 0,
         #'ABC'              => '1.6',
         #'Foo::Bar::Module' => '5.0401',
     },
