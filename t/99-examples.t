@@ -55,5 +55,161 @@ subtest "HEADERS" => sub {
 };
 
 
+subtest "VARIABLES AND ASSIGNMENT OPERATORS" => sub {
+  subtest ".=" => sub {
+    my $obj = Config::INI::RefVars->new();
+    my $src = [
+               '[section 1]',
+               'var=abc',
+               'var.=123',
+               '[section 2]',
+               'var.=123',
+              ];
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables,
+              {
+               'section 1' => { var => 'abc123'},
+               'section 2' => { var => '123'},
+              },
+              'variables()');
+  };
+
+  subtest "+=" => sub {
+    my $obj = Config::INI::RefVars->new();
+    my $src = [
+               '[section 1]',
+               'var=abc',
+               'var+=123',
+               '[section 2]',
+               'var+=123',
+               '[section 3]',
+               'var=abc',
+               'var+=',
+               '[section 4]',
+               'var+=',
+              ];
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables,
+              {
+               'section 1' => { var => 'abc 123'},
+               'section 2' => { var => '123'},
+               'section 3' => { var => 'abc '},
+               'section 4' => { var => ''},
+              },
+              'variables()');
+  };
+
+  subtest ".>=" => sub {
+    my $obj = Config::INI::RefVars->new();
+    my $src = [
+               '[section 1]',
+               'var=abc',
+               'var.>=123',
+               '[section 2]',
+               'var.>=123',
+               '[section 3]',
+               'var.>=',
+              ];
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables,
+              {
+               'section 1' => { var => '123abc'},
+               'section 2' => { var => '123'},
+               'section 3' => { var => ''},
+              },
+              'variables()');
+  };
+
+  subtest "+>=" => sub {
+    my $obj = Config::INI::RefVars->new();
+    my $src = [
+               '[section 1]',
+               'var=abc',
+               'var+>=123',
+               '[section 2]',
+               'var+>=123',
+               '[section 3]',
+               'var=abc',
+               'var+>=',
+               '[section 4]',
+               'var+>=',
+              ];
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables,
+              {
+               'section 1' => { var => '123 abc'},
+               'section 2' => { var => '123'},
+               'section 3' => { var => ' abc'},
+               'section 4' => { var => ''},
+              },
+              'variables()');
+  };
+};
+
+
+subtest "REFERENCING VARIABLES" => sub {
+  my $obj = Config::INI::RefVars->new();
+  $obj->parse_ini(src => [
+                          '[sec1]',
+                          'a=hello',
+                          'b=world',
+                          'c=$(a) $(b)',
+
+                          '[sec2]',
+                          'c=$(a) $(b)',
+                          'a=hello',
+                          'b=world',
+
+                          '[sec3]',
+                          'c:=$(a) $(b)',
+                          'a=hello',
+                          'b=world',
+                         ]);
+  is_deeply($obj->variables,
+            {
+             sec1 => {a => 'hello', b => 'world', c => 'hello world'},
+             sec2 => {a => 'hello', b => 'world', c => 'hello world'},
+             sec3 => {a => 'hello', b => 'world', c => ' '}
+            },
+            'variables()');
+
+  my $src = <<'EOT';
+  [sec]
+   foo=the foo value
+   var 1=fo
+   var 2=o
+   bar=$($(var 1)$(var 2))
+EOT
+
+  $obj->parse_ini(src => $src);
+  is_deeply($obj->variables,
+            {
+             sec => {
+                     'foo'   => 'the foo value',
+                     'var 1' => 'fo',
+                     'var 2' => 'o',
+                     'bar'    => 'the foo value',
+                    }
+            },
+            'variables()');
+
+  $src = <<'EOT';
+   [sec A]
+   foo=Referencing a variable from section: $([sec B]bar)
+
+   [sec B]
+   bar=Referenced!
+EOT
+  $obj->parse_ini(src => $src);
+  is_deeply($obj->variables,
+            {
+             'sec A' => {foo => 'Referencing a variable from section: Referenced!'},
+             'sec B' => {bar => 'Referenced!'}
+            },
+            'variables()');
+
+};
+
+
 #==================================================================================================
 done_testing();
