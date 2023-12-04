@@ -197,5 +197,36 @@ subtest "use all args of new()" => sub {
   };
 };
 
+
+subtest "backup / restore" => sub {
+  my $orig_common_section = "!all!";
+  my $src = ['[sec]'];
+  my $orig_expected = {
+                       $orig_common_section => {
+                                                'a' => '1',
+                                                'b' => '2',
+                                                'c' => '3',
+                                                'd' => '4'
+                                               },
+                       'sec' => {
+                                 'a' => '1',
+                                 'b' => '2',
+                                 'd' => '4'
+                                }
+                      };
+  my $obj = Config::INI::RefVars->new(common_section => $orig_common_section,
+                                      common_vars    => { a => 1,
+                                                          b => 2,
+                                                          c => 3
+                                                        },
+                                      not_common     => ['c']
+                                     );
+  is($obj->common_section, $orig_common_section, 'common_section() / after new()');
+
+  $obj->parse_ini(src => $src);
+  is_deeply($obj->variables, $orig_expected, 'variables(), orig');
+  
+};
+
 #==================================================================================================
 done_testing();
