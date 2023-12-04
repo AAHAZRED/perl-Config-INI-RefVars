@@ -564,6 +564,131 @@ your INI file.
 
 =head2 VARIABLES AND ASSIGNMENT OPERATORS
 
+There are several assignment operators, the basic one is the C<=>, the others
+are formed by a C<=> preceded by one or more punctuation characters. Thus, if
+you want to define a variable whose name ends with an punctuation character,
+there must be at least one space between the variable name and the assignment
+operator.
+
+B<Note>: Since the use of the underscore in identifiers is so common, it is
+not treated as a punctuation character here.
+
+=over
+
+=item C<=>
+
+The standard assignment operator.
+
+=item C<?=>
+
+Works like the corresponding operator of GNU Make: the assignment is only
+executed if the variable is not yet defined.
+
+=item C<:=>
+
+Works like the corresponding operator of GNU Make: all references to other
+variables are expanded when the variable is defined. See section L</"REFERENCING VARIABLES">
+
+=item C<.=>
+
+The right-hand side is appended to the value of the variable. If the variable
+is not yet defined, this does the same as a simple C<=>.
+
+Example:
+
+  var=abc
+  var.=123
+
+Now C<var> has the value C<abc123>.
+
+=item C<+=>
+
+Works like the corresponding operator of GNU Make: the right-hand side is
+appended to the value of the variable, separated by a space. If the right-hand
+side is empty, a space is appended. If the variable is not yet defined, this
+has the same effect as a simple C<=>.
+
+Example:
+
+   var=abc
+   var+=123
+
+Now C<var> has the value C<abc 123>.
+
+
+=item C<<.>=>>
+
+The right-hand side is placed in front of the value of the variable. If the
+variable is not yet defined, this has the same effect as a simple C<=>.
+
+Example:
+
+  var=abc
+  var.>=123
+
+Now C<var> has the value C<123abc>.
+
+=item C<<+>=>>
+
+The right-hand side is placed in front the value of the variable, separated by
+a space. If the right-hand side is empty, a space is placed in front of the
+variable value. If the variable is not yet defined, this has the same effect
+as a simple C<=>.
+
+=back
+
+
+=head2 REFERENCING VARIABLES
+
+=head3 Basic referencing
+
+The referencing of variables is similar but not identical to that in B<make>,
+you use C<$(I<VARIABLE>)>. Example:
+
+   a=hello
+   b=world
+   c=$(a) $(b)
+
+Variable C<c> has the value C<hello world>. As with B<make>, lazy evaluation
+is used, i.e. you would achieve exactly the same result with this:
+
+   c=$(a) $(b)
+   a=hello
+   b=world
+
+But the following would result in C<c> containing only one space:
+
+   c:=$(a) $(b)
+   a=hello
+   b=world
+
+Unlike in B<make>, the round brackets cannot be omitted for variables with a letter!
+
+You can nest variable references:
+
+   foo=the foo value
+   var 1=fo
+   var 2=o
+   bar=$($(var 1)$(var 2))
+
+A reference to a non-existent variable is always expanded to an empty
+character string.
+
+
+=head3 Referencing variables of other sections
+
+By default, you can reference a variable in another section by writing the
+name of the section in square brackets, followed by the name of the variable:
+
+   [sec A]
+   foo=Referencing a variable from section: $([sec B]bar)
+
+   [sec B]
+   bar=Referenced!
+
+You can switch to a different notation by specifying the constructor argument
+C<separator>.
+
 
 
 
@@ -590,13 +715,8 @@ a comment to the right of a header declaration:
 B<Attention>: if you do this, the comment must not contain a C<]> character!
 
 
-=head2 REFERENCING VARIABLES
-
-
 
    -------------------------------------
-
-NOT TRUE: Sections without any vars do not appear in 'variables' hash.
 
 https://stackoverflow.com/questions/11581893/prepend-to-simply-expanded-variable
 
