@@ -7,7 +7,7 @@ use Config::INI::RefVars;
 
 #use File::Spec::Functions;
 #
-#sub test_data_file { catfile(qw(t 05_data), $_[0]) }
+#sub test_data_file { catfile(qw(t 07-data), $_[0]) }
 
 #
 # For heredocs containing INI data always use the single quote variant!

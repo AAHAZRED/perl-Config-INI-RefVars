@@ -7,7 +7,7 @@ use Config::INI::RefVars;
 
 # use File::Spec::Functions qw(catdir catfile rel2abs splitpath);
 #
-#sub test_data_file { catfile(qw(t 08_data), $_[0]) }
+#sub test_data_file { catfile(qw(t 09-data), $_[0]) }
 
 #
 # For heredocs containing INI data always use the single quote variant!

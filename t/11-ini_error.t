@@ -10,9 +10,14 @@ use Config::INI::RefVars;
 
 # use File::Spec::Functions qw(catdir catfile rel2abs splitpath);
 #
-# sub test_data_file { catfile(qw(t 08_data), $_[0]) }
+# sub test_data_file { catfile(qw(t 11-data), $_[0]) }
 #
 # For heredocs containing INI data always use the single quote variant!
+#
+
+#
+# Do not reuse the object in these tests, as it may be in an inconsistent
+# state after the exception has been thrown!
 #
 
 subtest "section header" => sub {
@@ -27,26 +32,29 @@ subtest "section header" => sub {
        qr/'my INI': invalid section header at line 3\b/,
        "section header: the code died as expected");
 
+  $obj = Config::INI::RefVars->new();
   like(exception { $obj->parse_ini(src_name => "my INI",
                                    src      => [
                                                 '[sec1 ; ]  ; comment',
                                                 '[sec2 # ] # comment',
                                                 '',
-                                                '[sec3 ; ] ; ] comment'
+                                                '[sec3 ; ] ; ] comment'  # sec3: invalid
                                                ]) },
        qr/'my INI': invalid section header at line 4\b/,
        "section header: the code died as expected");
 
+  $obj = Config::INI::RefVars->new();
   like(exception { $obj->parse_ini(src_name => "my INI",
                                    src      => [
                                                 '[sec1 ; ]  ; comment',
                                                 '[sec2 # ] # comment',
                                                 '',
-                                                '[sec1 ; ] ; comment'
+                                                '[sec1 ; ] ; comment'  # valid but duplicate
                                                ]) },
        qr/'my INI': 'sec1 ;': duplicate header at line 4\b/,
        "section header: the code died as expected");
 
+  $obj = Config::INI::RefVars->new();
   like(exception { $obj->parse_ini(src_name => "my INI",
                                    src      => [
                                                 'a=b',
@@ -55,14 +63,17 @@ subtest "section header" => sub {
        qr/'my INI': common section '__COMMON__' must be first section at line 2\b/,
        "section header: the code died as expected");
 
-  like(exception { $obj->parse_ini(src_name => "my INI",
-                                   src      => [
-                                                'a=b',
-                                                '[__COMMON__]',
-                                               ]) },
-       qr/'my INI': common section '__COMMON__' must be first section at line 2\b/,
+  $obj = Config::INI::RefVars->new();
+  like(exception { $obj->parse_ini(src_name       => "my INI",
+                                   common_section => 'CommSec',
+                                   src            => [
+                                                      'a=b',
+                                                      '[CommSec]',
+                                                     ]) },
+       qr/'my INI': common section 'CommSec' must be first section at line 2\b/,
        "section header: the code died as expected");
 
+  $obj = Config::INI::RefVars->new();
   like(exception { $obj->parse_ini(src_name => "my INI",
                                    src      => [
                                                 '[sec]',
@@ -84,6 +95,7 @@ subtest "var def" => sub {
        qr/'INI data': neither section header nor key definition at line 2\b/,
        "var def: the code died as expected");
 
+  $obj = Config::INI::RefVars->new();
   like(exception { $obj->parse_ini(src => [
                                            '[sec]',
                                            '.?()+. = a value',
@@ -92,6 +104,7 @@ subtest "var def" => sub {
        qr/'INI data': empty variable name at line 3\b/,
        "var def: the code died as expected");
 
+  $obj = Config::INI::RefVars->new();
   like(exception { $obj->parse_ini(src => [
                                            '[sec]',
                                            '.?()+. = a value',
@@ -113,6 +126,7 @@ subtest "var refs" => sub {
          qr/'\[sec\]a': unterminated variable reference/,
          "var ref: the code died as expected");
 
+    $obj = Config::INI::RefVars->new();
     like(exception { $obj->parse_ini(src => [
                                              '[sec]',
                                              'a.=$()$(f($(o)$(b)$(x$($(foobar$(=)))',
@@ -122,6 +136,7 @@ subtest "var refs" => sub {
          "var ref: the code died as expected");
   };
 
+  $obj = Config::INI::RefVars->new();
   subtest "variable references itself" => sub {
     like(exception { $obj->parse_ini(src => [
                                              '[sec]',
@@ -130,6 +145,7 @@ subtest "var refs" => sub {
          qr/recursive variable '\[sec\]a' references itself/,
          "var ref: the code died as expected");
 
+    $obj = Config::INI::RefVars->new();
     like(exception { $obj->parse_ini(src => [
                                              '[sec]',
                                              '',
@@ -140,6 +156,7 @@ subtest "var refs" => sub {
          qr/recursive variable '\[sec\][xyz]' references itself/,
          "var ref: the code died as expected");
 
+    $obj = Config::INI::RefVars->new();
     like(exception { $obj->parse_ini(src => [
                                              '[000]',
                                              'a:=$(z)',
@@ -172,6 +189,7 @@ subtest "no directives" => sub {
          qr/'INI data': directives are not yet supported at line 3\b/,
          "no directives: the code died as expected");
 
+  $obj = Config::INI::RefVars->new();
   like(exception { $obj->parse_ini(src => [
                                            '[sec]',
                                            ';!',

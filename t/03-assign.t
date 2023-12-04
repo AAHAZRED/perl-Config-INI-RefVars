@@ -7,7 +7,7 @@ use Config::INI::RefVars;
 
 use File::Spec::Functions;
 
-sub test_data_file { catfile(qw(t 03_data), $_[0]) }
+sub test_data_file { catfile(qw(t 03-data), $_[0]) }
 
 
 note("Testing assignments with and without auto vars, simple variable referencing");

@@ -471,14 +471,13 @@ Version 0.01
         # ...
     }
 
-
 =head1 DESCRIPTION
 
 This module provides an INI file reader that allows INI variables and
 environment variables to be referenced within the INI file. It also supports
 some additional assignment operators.
 
-=head2 INTRDUCTION
+=head2 INTRODUCTION
 
 
 A line in an INI file should not start with an C<=> or the sequence
@@ -504,12 +503,14 @@ case, the comment must not contain closing square brackets).
 
 =item *
 
-In a section header declaration, spaces to the right of the opening square
+In a section header, spaces to the right of the opening square
 bracket and to the left of the closing square bracket are ignored, i.e. a
-section name always begins and ends with a non-white character.
+section name always begins and ends with a non-white character. B<But>: As a
+special case, the name of a section heading can be an empty character string.
 
-But: As a special case, the name of a section heading can be an empty
-character string.
+=item *
+
+Section name must be unique.
 
 =item *
 
@@ -522,12 +523,78 @@ environment variables.
 
 =item *
 
+Spaces around the assignment operator are ignored. Note that there are several
+assignment operators, not just C<=>.
 
+=item *
 
+If you want to define a variable whose name ends with an punctuation character other
+than an underscore, there must be at least one space between the variable name
+and the assignment operator.
 
 =back
 
+You will find further details in the following sections.
 
+
+=head2 SECTIONS
+
+A section begins with a section header:
+
+  [section]
+
+A line contains a section heading if the first non-blank character is a C<[>
+and the last non-blank character is a C<]>. The character string in between is
+the name of the section, whereby spaces to the right of C<[> and to the left
+of C<]> are ignored.
+
+   [   The name of the section   ]
+
+This sets the section name to C<The name of the section>. As a special case,
+C<[]> or C<[ ]> are permitted, which results in a section name that is just an
+empty string.
+
+Section names must be unique.
+
+An INI file does not have to start with a section header, it can also start
+with variable definitions. In this case, the variables are added to the
+I<common section> (default name: C<__COMMON__>). You can explicitly specify
+the common section heading, but then this must be the first active line in
+your INI file.
+
+=head2 VARIABLES AND ASSIGNMENT OPERATORS
+
+
+
+
+=head2 COMMENTS
+
+As said, if the first non-white character of a line is a C<;> or a C<#>, then the line
+is a comment line.
+
+   # This is a comment
+   ; This is also a comment
+       ;! a comment, but: avoid ";!" at the very beginning of a line!
+   var = value ; this is not a comment but part of the value.
+
+Avoid C<;!> at the very beginning of a line, otherwise you will get an
+error. The reason for this is that this sequence is reserved for future
+extensions. However, you can use it if you precede it with spaces.
+
+You cannot append a comment to the right of a variable definition, as your
+comment would otherwise become part of the variable value. But you can append
+a comment to the right of a header declaration:
+
+   [section]  ; My fancy section
+
+B<Attention>: if you do this, the comment must not contain a C<]> character!
+
+
+=head2 REFERENCING VARIABLES
+
+
+
+   -------------------------------------
 
 Sections without any vars do not appear in 'variables' hash.
 
@@ -545,6 +612,8 @@ since this will result in an infinite loop. Instead, write:
    # ...
 
 B<Comments>  Comments can also be specified to the right of a section declaration (in this case, the comment must not contain closing square brackets).
+
+
 
 
 =head2 METHODS
