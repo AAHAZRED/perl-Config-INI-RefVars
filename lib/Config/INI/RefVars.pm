@@ -596,7 +596,7 @@ B<Attention>: if you do this, the comment must not contain a C<]> character!
 
    -------------------------------------
 
-Sections without any vars do not appear in 'variables' hash.
+NOT TRUE: Sections without any vars do not appear in 'variables' hash.
 
 https://stackoverflow.com/questions/11581893/prepend-to-simply-expanded-variable
 

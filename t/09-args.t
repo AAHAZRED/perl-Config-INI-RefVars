@@ -5,6 +5,8 @@ use Test::More;
 
 use Config::INI::RefVars;
 
+use Storable qw(dclone);
+
 # use File::Spec::Functions qw(catdir catfile rel2abs splitpath);
 #
 #sub test_data_file { catfile(qw(t 09-data), $_[0]) }
@@ -217,15 +219,92 @@ subtest "backup / restore" => sub {
   my $obj = Config::INI::RefVars->new(common_section => $orig_common_section,
                                       common_vars    => { a => 1,
                                                           b => 2,
-                                                          c => 3
+                                                          c => 3,
+                                                          d => 4
                                                         },
                                       not_common     => ['c']
                                      );
   is($obj->common_section, $orig_common_section, 'common_section() / after new()');
 
-  $obj->parse_ini(src => $src);
-  is_deeply($obj->variables, $orig_expected, 'variables(), orig');
-  
+  subtest "parse_ini() without further args" => sub {
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables, $orig_expected, 'variables(), orig');
+  };
+
+  my $other_common_section = "COMMON SECTION";
+
+  subtest "parse_ini() with common_section" => sub {
+    my $expected = {
+                    $other_common_section => dclone($orig_expected->{$orig_common_section}),
+                    'sec'                 => dclone($orig_expected->{sec})
+                   };
+    $obj->parse_ini(src => $src, common_section => $other_common_section);
+    is($obj->common_section, $orig_common_section, 'common_section() restored by parse_ini()');
+    is_deeply($obj->variables, $expected, 'variables(), changed common section name');
+
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables, $orig_expected, 'variables(), back to orig');
+  };
+
+  subtest "parse_ini() with common_vars" => sub {
+    $obj->parse_ini(src => $src, common_vars => {c => "c-value", x => "x-value"});
+    is_deeply($obj->variables,
+              {
+               '!all!' => {
+                           'c' => 'c-value',
+                           'x' => 'x-value'
+                          },
+               'sec' => {
+                         'x' => 'x-value'
+                        }
+              },
+              'variables(), changed common vars');
+
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables, $orig_expected, 'variables(), back to orig');
+  };
+
+  subtest "parse_ini() with not_common" => sub {
+    $obj->parse_ini(src => $src, not_common => [qw(a b)]);
+    is_deeply($obj->variables,
+              {
+               '!all!' => {
+                           'a' => '1',
+                           'b' => '2',
+                           'c' => '3',
+                           'd' => '4'
+                          },
+               'sec' => {
+                         'c' => '3',
+                         'd' => '4'
+                        }
+              },
+              'variables(), changed not common vars');
+
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables, $orig_expected, 'variables(), back to orig');
+  };
+
+  subtest "parse_ini() with common_section,not_common,not_common" => sub {
+    $obj->parse_ini(src => $src,
+                    common_section => $other_common_section,
+                    common_vars    => {c => "c-value", d => "d-value"},
+                    not_common     => [qw(a b c)]);
+    is_deeply($obj->variables,
+              {
+               'COMMON SECTION' => {
+                                    'c' => 'c-value',
+                                    'd' => 'd-value'
+                                   },
+               'sec' => {
+                         'd' => 'd-value'
+                        }
+              },
+              'variables(), changed common_section,not_common,not_common');
+
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables, $orig_expected, 'variables(), back to orig');
+  };
 };
 
 #==================================================================================================
