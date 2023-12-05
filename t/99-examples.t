@@ -194,6 +194,14 @@ EOT
             'variables()');
 
   $src = <<'EOT';
+   [section]
+   var = $$()(FOO)
+EOT
+  $obj->parse_ini(src => $src);
+  is_deeply($obj->variables, { 'section' => { 'var' => '$(FOO)' } }, 'variables()');
+
+
+  $src = <<'EOT';
    [sec A]
    foo=Referencing a variable from section: $([sec B]bar)
 
@@ -208,6 +216,32 @@ EOT
             },
             'variables()');
 
+  $src = <<'EOT';
+   [A]
+   a var = 1234567
+
+   [B]
+   b var = a var
+   nested = $([$([C]c var)]$(b var))
+
+   [C]
+   c var = A
+EOT
+  $obj->parse_ini(src => $src);
+  is_deeply($obj->variables,
+            {
+             'A' => {
+                     'a var' => '1234567'
+                    },
+             'B' => {
+                     'b var' => 'a var',
+                     'nested' => '1234567'
+                    },
+             'C' => {
+                     'c var' => 'A'
+                    }
+            },
+            'variables()');
 };
 
 

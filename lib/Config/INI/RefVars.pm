@@ -1,5 +1,4 @@
 package Config::INI::RefVars;
-#use Object::InsideOut;
 use 5.010;
 use strict;
 use warnings;
@@ -532,6 +531,10 @@ If you want to define a variable whose name ends with an punctuation character o
 than an underscore, there must be at least one space between the variable name
 and the assignment operator.
 
+=item *
+
+There is no escape character.
+
 =back
 
 You will find further details in the following sections.
@@ -561,6 +564,7 @@ with variable definitions. In this case, the variables are added to the
 I<common section> (default name: C<__COMMON__>). You can explicitly specify
 the common section heading, but then this must be the first active line in
 your INI file.
+
 
 =head2 VARIABLES AND ASSIGNMENT OPERATORS
 
@@ -616,7 +620,7 @@ Example:
 Now C<var> has the value C<abc 123>.
 
 
-=item C<<.>=>>
+=item C<< .>= >>
 
 The right-hand side is placed in front of the value of the variable. If the
 variable is not yet defined, this has the same effect as a simple C<=>.
@@ -628,12 +632,20 @@ Example:
 
 Now C<var> has the value C<123abc>.
 
-=item C<<+>=>>
+=item C<< +>= >>
 
 The right-hand side is placed in front the value of the variable, separated by
 a space. If the right-hand side is empty, a space is placed in front of the
 variable value. If the variable is not yet defined, this has the same effect
 as a simple C<=>.
+
+Example:
+
+  var=abc
+  var+>=123
+
+Now C<var> has the value C<123 abc>.
+
 
 =back
 
@@ -662,7 +674,8 @@ But the following would result in C<c> containing only one space:
    a=hello
    b=world
 
-Unlike in B<make>, the round brackets cannot be omitted for variables with a letter!
+Unlike in B<make>, the round brackets cannot be omitted for variables with
+only one letter!
 
 You can nest variable references:
 
@@ -671,8 +684,18 @@ You can nest variable references:
    var 2=o
    bar=$($(var 1)$(var 2))
 
+Now the variable C<bar> has the value C<the foo value>.
+
 A reference to a non-existent variable is always expanded to an empty
 character string.
+
+If you need a literal C<$(...)> sequence, e.g. C<$(FOO)>, as part of a
+variable value, you can write:
+
+   var = $$()(FOO)
+
+This results in the variable C<var> having the value C<$(FOO)>. It works
+because C<$()> always expands to an empty string.
 
 
 =head3 Referencing variables of other sections
@@ -689,7 +712,19 @@ name of the section in square brackets, followed by the name of the variable:
 You can switch to a different notation by specifying the constructor argument
 C<separator>.
 
+A more complex example:
 
+   [A]
+   a var = 1234567
+
+   [B]
+   b var = a var
+   nested = $([$([C]c var)]$(b var))
+
+   [C]
+   c var = A
+
+Variable C<nested> in section C<B> has the value C<1234567>.
 
 
 =head2 COMMENTS
