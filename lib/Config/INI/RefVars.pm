@@ -143,6 +143,8 @@ my $_parse_ini = sub {
   my $common_sec  = $self->{+COMMON_SECTION};
   my $common_vars = $variables->{$common_sec}; # hash key need not to exist!
 
+  my $common_sec_declared;
+
   my $i;                        # index in for() loop
   my $_fatal = sub { croak("'$src_name': ", $_[0], " at line ", $i + 1); };
 
@@ -151,6 +153,7 @@ my $_parse_ini = sub {
     if ($curr_section eq $common_sec) {
       $_fatal->("common section '$common_sec' must be first section") if @$sections;
       $common_vars = $variables->{$common_sec} = {} if !$common_vars;
+      $common_sec_declared = 1;
     }
     elsif ($common_vars) {
       $self->$_cp_common_vars($curr_section);
@@ -222,7 +225,7 @@ my $_parse_ini = sub {
       $_fatal->("'$modifier': unsupported modifier");
     }
   }
-  return $curr_section;
+  return ($common_sec_declared, $curr_section);
 };
 
 
@@ -298,7 +301,7 @@ sub parse_ini {
   }
   $global_vars->{'=INIname'} = $self->{+SRC_NAME};
 
-  $self->$_parse_ini($src);
+  my ($common_sec_declared, undef) = $self->$_parse_ini($src);
 
   while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
     while (my ($variable, $value) = each(%$variables)) {
@@ -311,7 +314,8 @@ sub parse_ini {
         delete $variables->{$var} if index($var, '=') >= 0;
       }
     }
-    delete $self->{+VARIABLES}{$self->{+COMMON_SECTION}} if !%$common_sec_vars;
+    delete $self->{+VARIABLES}{$self->{+COMMON_SECTION}} if (!$common_sec_declared &&
+                                                             !%$common_sec_vars);
   }
   else {
     while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
@@ -655,7 +659,7 @@ Now C<var> has the value C<abc 123>.
 =item C<< .>= >>
 
 The right-hand side is placed in front of the value of the variable. If the
-variable is not yet defined, this has the same effect as a simple C<=>.
+variable is not yet defined, this has thgit config user.name AAHAZREDe same effect as a simple C<=>.
 
 Example:
 
@@ -678,13 +682,12 @@ Example:
 
 Now C<var> has the value C<123 abc>.
 
-
 =back
 
 
 =head2 REFERENCING VARIABLES
 
-=head3 Basic referencing
+=head3 Basic Referencing
 
 The referencing of variables is similar but not identical to that in B<make>,
 you use C<$(I<VARIABLE>)>. Example:
@@ -731,7 +734,7 @@ because C<$()> always expands to an empty string (see section L</"PREDEFINED
 VARIABLES">).
 
 
-=head3 Referencing variables of other sections
+=head3 Referencing Variables of other Sections
 
 By default, you can reference a variable in another section by writing the
 name of the section in square brackets, followed by the name of the variable:
@@ -759,9 +762,11 @@ A more complex example:
 
 Variable C<nested> in section C<B> has the value C<1234567>.
 
+
+
 =head2 PREDEFINED VARIABLES
 
-There are a number of predefined or automatic variables:
+=head3 Variables related to Section and Variable Names
 
 =over
 
@@ -798,6 +803,61 @@ The hash returned by the C<variables> method is then:
             }
    }
 
+
+=head3 Variables related to the Source:
+
+=over
+
+=item C<=INIname>
+
+Name of the INI source. If the source is a file, this corresponds to the value
+that you have passed to C<parse_ini> via the C<src> argument, otherwise it is
+set to "INI data". The value can be overwritten with the argument C<src_name>.
+
+=item C<=INIdir>, C<=INIfile>
+
+Directory (absolute path) and file name of the INI file. These variables are
+only present if the source is a file, otherwise they are not defined.
+
+=back
+
+
+=head3 Space Variables
+
+C<$()> always expands to an empty string, C<$( )>, C<$( )> with any number of
+spaces within the parens expands to exactly these spaces. So there are several
+ways to define variables with heading or trailing spaces:
+
+   foo = abc   $()
+   bar = $(   )abc
+
+The value of C<foo> has three spaces at the end, the value of C<bar> has three
+spaces at the beginning. A special use case for C<$()> is the avoidance of
+unwanted extensions:
+
+   var=hello!
+   x=$(var)
+   y=$$()(var)
+
+With these settings, C<x> has the value C<Hello!>, but C<y> has the value
+C<$(var)>.
+
+
+=head3 Custom predefined Variables
+
+Currently, custom predefined variables. But you can do something very similar, see argument C<common_vars> (of C<new> and C<parse_ini>), see also L</"THE I<COMMON> SECTION">.
+
+
+=head3 Predefined Variables in resulting Hash
+
+
+
+
+
+=head2 ACCESSING ENVIRONMENT VARIABLES
+
+
+
 =head2 THE I<COMMON> SECTION
 
 
@@ -826,7 +886,9 @@ a comment to the right of a header declaration:
 B<Attention>: if you do this, the comment must not contain a C<]> character!
 
 
-
+   -------------------------------------
+  sections and sections_h refer to what was contained in the INI input.
+  so variables may contain __COMMON__ but sections and sections_h not
    -------------------------------------
 
 https://stackoverflow.com/questions/11581893/prepend-to-simply-expanded-variable
@@ -842,14 +904,41 @@ since this will result in an infinite loop. Instead, write:
    while (my ($sec, $val) = each(%$vars)) {
    # ...
 
-B<Comments>  Comments can also be specified to the right of a section declaration (in this case, the comment must not contain closing square brackets).
-
-
 
 
 =head2 METHODS
 
-=head3 function1
+=head3 new
+
+The constructor takes the following optional named arguments:
+
+=over
+
+=item 
+
+=back
+
+
+
+
+=head3 common_section
+
+=head3 parse_ini
+
+=over
+
+=item 
+
+=back
+
+
+=head3 sections
+
+=head3 sections_h
+
+=head3 src_name
+
+=head3 variables
 
 
 

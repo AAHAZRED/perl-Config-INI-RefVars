@@ -246,6 +246,7 @@ EOT
 
 subtest "PREDEFINED VARIABLES" => sub {
   my $obj = Config::INI::RefVars->new();
+
   my $src = <<'EOT';
    [A]
    foo=variable $(==) of section $(=)
@@ -269,6 +270,27 @@ EOT
             },
             'variables()');
 
+  $src = <<'EOT';
+   [sec]
+   foo = abc   $()
+   bar = $(   )abc
+
+   var=hello!
+   x=$(var)
+   y=$$()(var)
+EOT
+  $obj->parse_ini(src => $src);
+  is_deeply($obj->variables,
+            {
+             'sec' => {
+                       'bar' => '   abc',
+                       'foo' => 'abc   ',
+                       'var' => 'hello!',
+                       'x' => 'hello!',
+                       'y' => '$(var)'
+                      }
+            },
+            'variables()');
 };
 
 

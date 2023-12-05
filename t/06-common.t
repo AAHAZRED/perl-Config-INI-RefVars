@@ -18,6 +18,48 @@ my $obj = Config::INI::RefVars->new;
 
 subtest "basic" => sub {
   subtest "first examples, with and without arg 'common_section'" => sub {
+    subtest 'no explicite [__COMMON__]' => sub {
+      my $src = [
+                 '[A]',
+                 'a=b'
+                ];
+      $obj->parse_ini(src => $src);
+      is_deeply($obj->variables,  {A => {a => 'b'}}, 'variables()');
+      is_deeply($obj->sections_h, {A => 0}, 'sections_h()');
+      is_deeply($obj->sections,   ['A'], 'sections()');
+
+      $obj->parse_ini(src => $src, common_vars => {'a=b' => 1});
+      is_deeply($obj->variables,  {A => {a => 'b'}}, 'variables()');
+      is_deeply($obj->sections_h, {A => 0}, 'sections_h()');
+      is_deeply($obj->sections,   ['A'], 'sections()');
+
+      $obj->parse_ini(src => $src, common_vars => {'ab' => 1});
+      is_deeply($obj->variables,
+                {
+                 '__COMMON__' => {
+                                  'ab' => '1'
+                                 },
+                 A => {a  => 'b',
+                       ab => '1'
+                      }
+                },
+                'variables()');
+      is_deeply($obj->sections_h, {A => 0}, 'sections_h()');
+      is_deeply($obj->sections,   ['A'], 'sections()');
+    };
+
+    subtest 'with explicite [__COMMON__]' => sub {
+      my $src = [
+                 '[__COMMON__]',  # explicite common section (but empty)
+                 '[A]',
+                 'a=b'
+                ];
+      $obj->parse_ini(src => $src);
+      is_deeply($obj->variables,  {__COMMON__ => {}, A => {a => 'b'}}, 'variables()');
+      is_deeply($obj->sections_h, {__COMMON__ => 0, A => 1}, 'sections_h()');
+      is_deeply($obj->sections,   [qw(__COMMON__ A)], 'sections()');
+    };
+
     my $src = [
                'a=1',
                '',
