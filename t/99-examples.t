@@ -244,6 +244,33 @@ EOT
             'variables()');
 };
 
+subtest "PREDEFINED VARIABLES" => sub {
+  my $obj = Config::INI::RefVars->new();
+  my $src = <<'EOT';
+   [A]
+   foo=variable $(==) of section $(=)
+   ref=Reference to foo of section B: $([B]foo)
+
+   [B]
+   foo=variable $(==) of section $(=)
+   bar=$(foo)
+EOT
+  $obj->parse_ini(src => $src);
+  is_deeply($obj->variables,
+            {
+             'A' => {
+                     'foo' => 'variable foo of section A',
+                     'ref' => 'Reference to foo of section B: variable foo of section B'
+                    },
+             'B' => {
+                     'bar' => 'variable foo of section B',
+                     'foo' => 'variable foo of section B'
+                    }
+            },
+            'variables()');
+
+};
+
 
 #==================================================================================================
 done_testing();

@@ -470,14 +470,36 @@ Version 0.01
         # ...
     }
 
+If the INI file contains:
+
+   [sec A]
+   foo=this value
+   bar=that value
+
+   [sec B]
+   baz = yet another value
+
+then C<< $ini_reader->variables >> returns:
+
+   {
+       'sec A' => {
+                    'bar' => 'that value',
+                    'foo' => 'this value'
+                  },
+       'sec B' => {
+                    'baz' => 'yet another value'
+                  }
+   }
+
+
 =head1 DESCRIPTION
 
 This module provides an INI file reader that allows INI variables and
 environment variables to be referenced within the INI file. It also supports
 some additional assignment operators.
 
-=head2 INTRODUCTION
 
+=head2 INTRODUCTION
 
 A line in an INI file should not start with an C<=> or the sequence
 C<;!>. These are reserved for future extensions. Otherwise the parser throws a
@@ -513,6 +535,11 @@ Section name must be unique.
 
 =item *
 
+The order of the sections is retained: The C<sections> method returns an array
+of sections in the order in which they appear in the INI file.
+
+=item *
+
 A variable name cannot be empty.
 
 =item *
@@ -530,6 +557,11 @@ assignment operators, not just C<=>.
 If you want to define a variable whose name ends with an punctuation character other
 than an underscore, there must be at least one space between the variable name
 and the assignment operator.
+
+=item *
+
+The source to be parsed (argument C<src> of the method C<parse_ini>) does not
+have to be a file, but can also be a string or an array.
 
 =item *
 
@@ -695,7 +727,8 @@ variable value, you can write:
    var = $$()(FOO)
 
 This results in the variable C<var> having the value C<$(FOO)>. It works
-because C<$()> always expands to an empty string.
+because C<$()> always expands to an empty string (see section L</"PREDEFINED
+VARIABLES">).
 
 
 =head3 Referencing variables of other sections
@@ -725,6 +758,49 @@ A more complex example:
    c var = A
 
 Variable C<nested> in section C<B> has the value C<1234567>.
+
+=head2 PREDEFINED VARIABLES
+
+There are a number of predefined or automatic variables:
+
+=over
+
+=item C<=>
+
+C<$(=)> expands to the name of the current section.
+
+=item C<==>
+
+C<$(==)> expands to the name of the variable that is currently being defined.
+
+=back
+
+Example:
+
+   [A]
+   foo=variable $(==) of section $(=)
+   ref=Reference to foo of section B: $([B]foo)
+
+   [B]
+   foo=variable $(==) of section $(=)
+   bar=$(foo)
+
+The hash returned by the C<variables> method is then:
+
+   {
+     'A' => {
+             'foo' => 'variable foo of section A',
+             'ref' => 'Reference to foo of section B: variable foo of section B'
+            },
+     'B' => {
+             'bar' => 'variable foo of section B',
+             'foo' => 'variable foo of section B'
+            }
+   }
+
+=head2 THE I<COMMON> SECTION
+
+
 
 
 =head2 COMMENTS
