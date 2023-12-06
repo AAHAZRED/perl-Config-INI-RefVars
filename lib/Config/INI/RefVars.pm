@@ -845,17 +845,41 @@ C<$(var)>.
 
 =head3 Custom predefined Variables
 
-Currently, custom predefined variables. But you can do something very similar, see argument C<common_vars> (of C<new> and C<parse_ini>), see also L</"THE I<COMMON> SECTION">.
+Currently, custom predefined variables. But you can do something very similar,
+see argument C<common_vars> (of C<new> and C<parse_ini>), see also L</"THE
+I<COMMON> SECTION">. With this argument you can also define variables whose
+names contain a C<=>, which is obviously impossible in an INI file.
 
 
 =head3 Predefined Variables in resulting Hash
 
-
-
+By default, all variables whose names contain a C<=> are removed from the
+resulting hash. This means that the variables discussed above are not normally
+included in the result. This behavior can be changed with the C<parse_ini>
+argument C<cleanup>. The variable C<==> can of course not be included in the
+result.
 
 
 =head2 ACCESSING ENVIRONMENT VARIABLES
 
+You can access environment variables with this C<$(=ENV:...)> or this
+C<$(=env:...)> notation. Example:
+
+   path = $(=ENV:PATH)
+
+C<path> now contains the content of your environment variable C<PATH>.
+
+The results of C<$(=ENV:...)> and C<$(=env:...)> are almost always the
+same. The difference is that the parser always leaves the value of
+C<$(=ENV:...)> unchanged, but tries to expand the value of C<$(=env:...)>.
+For example, let's assume you have an environment variable C<FOO> with the
+value C<$(var)> and you write this in your INI file:
+
+   var=hello!
+   x=$(=ENV:FOO)
+   y=$(=env:FOO)
+
+This results in C<x> having the value C<$(var)>, while C<y> has the value C<hello!>.
 
 
 =head2 THE I<COMMON> SECTION

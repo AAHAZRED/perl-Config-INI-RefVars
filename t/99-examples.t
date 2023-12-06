@@ -294,5 +294,31 @@ EOT
 };
 
 
+subtest "ACCESSING ENVIRONMENT VARIABLES" => sub {
+  my $obj = Config::INI::RefVars->new();
+  $obj->parse_ini(src => [
+                          '[A]',
+                          'path = $(=ENV:PATH)'
+                         ]);
+  is_deeply($obj->variables, { A => { path => $ENV{PATH} } }, 'variables()');
+  local $ENV{FOO} = '$(var)';
+  my $src = <<'EOT';
+   [sec]
+   var=hello!
+   x=$(=ENV:FOO)
+   y=$(=env:FOO)
+EOT
+  $obj->parse_ini(src => $src);
+  is_deeply($obj->variables,
+            {
+             sec => {
+                     var => 'hello!',
+                     x   => '$(var)',
+                     y   => 'hello!',
+                    }
+            },
+            'variables()');
+};
+
 #==================================================================================================
 done_testing();
