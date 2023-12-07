@@ -291,7 +291,7 @@ sub parse_ini {
       $src = [do { local (*ARGV); @ARGV = ($path); <> }];
       $self->{+SRC_NAME} = $path if !exists($self->{+SRC_NAME});
       my ($vol, $dirs, $file) = splitpath(rel2abs($path));
-      @{$global_vars}{'=INIfile', '=INIdir'} = ($file, catdir(length($vol // "") ? $vol : (),
+      @{$global_vars}{'=srcfile', '=srcdir'} = ($file, catdir(length($vol // "") ? $vol : (),
                                                               $dirs));
     }
     else {
@@ -299,7 +299,7 @@ sub parse_ini {
       $self->{+SRC_NAME} = $dflt_src_name if !exists($self->{+SRC_NAME});
     }
   }
-  $global_vars->{'=INIname'} = $self->{+SRC_NAME};
+  $global_vars->{'=srcname'} = $self->{+SRC_NAME};
 
   my ($tocopy_sec_declared, undef) = $self->$_parse_ini($src);
 
@@ -808,13 +808,13 @@ The hash returned by the C<variables> method is then:
 
 =over
 
-=item C<=INIname>
+=item C<=srcname>
 
 Name of the INI source. If the source is a file, this corresponds to the value
 that you have passed to C<parse_ini> via the C<src> argument, otherwise it is
 set to "INI data". The value can be overwritten with the argument C<src_name>.
 
-=item C<=INIdir>, C<=INIfile>
+=item C<=srcdir>, C<=srcfile>
 
 Directory (absolute path) and file name of the INI file. These variables are
 only present if the source is a file, otherwise they are not defined.
