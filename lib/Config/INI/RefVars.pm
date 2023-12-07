@@ -333,7 +333,7 @@ sub parse_ini {
 
 sub sections        { defined($_[0]->{+SECTIONS})   ? [@{$_[0]->{+SECTIONS}}]     : undef}
 
-sub sections_h      { defined($_[0]->{+SECTIONS_H}) ? { %{$_[0]->{+SECTIONS_H}} } : undef }
+sub sections_h      { defined($_[0]->{+SECTIONS_H}) ? +{ %{$_[0]->{+SECTIONS_H}} } : undef }
 
 sub variables       { my $vars = $_[0]->{+VARIABLES} // return undef;
                       return  {map {$_ => {%{$vars->{$_}}}} keys(%$vars)};
@@ -617,7 +617,8 @@ not treated as a punctuation character here.
 
 =item C<=>
 
-The standard assignment operator.
+The standard assignment operator. Note: A second assignment to the same
+variable simply overwrites the first.
 
 =item C<?=>
 
@@ -763,7 +764,6 @@ A more complex example:
 Variable C<nested> in section C<B> has the value C<1234567>.
 
 
-
 =head2 PREDEFINED VARIABLES
 
 =head3 Variables related to Section and Variable Names
@@ -884,7 +884,62 @@ This results in C<x> having the value C<$(var)>, while C<y> has the value C<hell
 
 =head2 THE I<COMMON> SECTION
 
+If specified, the C<parse_ini> method copies the variables of the I<common
+section> to every other section when the INI file is read. For example this
 
+   [__COMMON__]
+   some var=some value
+   section info=$(=)
+
+   [A]
+
+   [B]
+
+is exactly the same as this:
+
+   [__COMMON__]
+   some var=some
+   section info=$(=)
+
+   [A]
+   some var=some
+   section info=$(=)
+
+   [B]
+   some var=some
+   section info=$(=)
+
+Of course, you can change or overwrite a variable copied from the C<common>
+section locally within a section at any time without any side effects.
+
+You can exclude variables with the argument C<not_common> from copying
+(methods C<new> and C<parse_ini>), but there is currently no notation to do
+this in the INI file.
+
+The I<common section> is optional. If it is specified, it must be the first
+section. By default, its name is C<__COMMON__>, this can be changed with the
+argument C<common_section> (methods C<new> and C<parse_ini>). You can omit the
+C<[__COMMON__]> header and simply start your INI file with variable
+definitions. These then simply become the I<common section>. So this:
+
+  [__COMMON__]
+  a=this
+  b=that
+
+  [sec]
+  x=y
+
+is exactly the same as this:
+
+  a=this
+  b=that
+
+  [sec]
+  x=y
+
+You can also add common variables via the argument C<common_vars> (methods
+C<new> and C<parse_ini>), these are treated as if they were at the very
+beginning of the common section.
 
 
 =head2 COMMENTS
@@ -908,6 +963,9 @@ a comment to the right of a header declaration:
    [section]  ; My fancy section
 
 B<Attention>: if you do this, the comment must not contain a C<]> character!
+
+
+=head2 PITFALLS
 
 
    -------------------------------------
@@ -938,32 +996,104 @@ The constructor takes the following optional named arguments:
 
 =over
 
-=item 
+=item C<common_section>
+
+Optional, a string. Specifies a different name for the common section. Default
+is C<__COMMON__>. See accessor C<common_section>.
+
+=item C<common_vars>
+
+Optional, a hash reference. If specified, its keys become variables of the
+common section, the hash values become the corresponding variable values. This
+allows you to specify variables that you cannot specify in the INI file,
+e.g. variables with a C<=> in the name.
+
+Keys with C<=> or C<;> as the first character are not permitted.
+
+Default is C<undef>.
+
+=item C<not_common>
+
+Optional, a reference to a hash or an array of strings. The hash keys or array
+entries specify a list of variables that should not be copied from the common
+section to the other sections. It does not matter whether these variables
+actually occur in the common section or not.
+
+Default is C<undef>.
+
+=item C<separator>
+
+Optional, a string.
 
 =back
 
 
 
-
 =head3 common_section
+
+Returns the name of the common section that will be used as the default for
+the next call to C<parse_ini>.
+
 
 =head3 parse_ini
 
 =over
 
-=item 
+=item C<src>
+
+Mandatory, a string or an array reference. This specifies the source to
+parse. If it is a character string that does not contain a newline character,
+it is treated as the name of an INI file. Otherwise, its content is parsed
+directly.
+
+=item C<cleanup>
+
+Optional, a boolean.
+
+Default is 1 (I<true)>
+
+=item C<common_section>
+
+Optional, a string. Specifies a different name for the common section for this
+run only. The previous value is restored before the method returns. Default is
+the string returned by accessor C<common_section>.
+
+=item C<common_vars>
+
+Optional,
+
+=item C<not_common>
+
+Optional,
+
+=item C<src_name>
+
+Optional,
 
 =back
 
 
 =head3 sections
 
+Returns a reference to an array of section names from the INI source, in the
+order in which they appear there.
+
 =head3 sections_h
+
+Returns a reference to a hash whose keys are the section names from the INI
+source, the values are the corresponding indices in the array returned by
+C<sections>.
 
 =head3 src_name
 
+Returns the name of the INI source (file name that you have passed to
+C<parse_ini> via the argument C<src>, or the one that you have passed via the
+argument C<src_name>, or "C<INI data>", see section L</"Variables in relation
+to the source">.
+
 =head3 variables
 
+Returns a reference to a hash of 
 
 
 =head1 AUTHOR

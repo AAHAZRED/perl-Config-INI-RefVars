@@ -320,5 +320,71 @@ EOT
             'variables()');
 };
 
+subtest "THE COMMON SECTION" => sub {
+  my $obj = Config::INI::RefVars->new();
+
+  subtest "common and manual copying" => sub {
+    my $src = <<'EOT';
+     [__COMMON__]
+     some var=some value
+     section info=$(=)
+
+     [A]
+
+     [B]
+EOT
+    my $expected = {
+                    __COMMON__ => { 'some var' => 'some value', 'section info' => '__COMMON__'},
+                    A => { 'some var' => 'some value', 'section info' => 'A'},
+                    B => { 'some var' => 'some value', 'section info' => 'B'},
+                   };
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables, $expected, 'variables()');
+
+    $src = <<'EOT';
+     [__COMMON__]
+     some var=some value
+     section info=$(=)
+
+     [A]
+     some var=some value
+     section info=$(=)
+
+     [B]
+     some var=some value
+     section info=$(=)
+EOT
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables, $expected, 'variables()');
+  };
+  subtest "with and without explicite __COMMON__" => sub {
+    my $obj = Config::INI::RefVars->new();
+    my $src = <<'EOT';
+     [__COMMON__]
+     a=this
+     b=that
+
+     [sec]
+      x=y
+EOT
+    my $expected = {
+                    __COMMON__ => {a => 'this', b => 'that'},
+                    sec        => {a => 'this', b => 'that', x => 'y'},
+                   };
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables, $expected, 'variables()');
+
+    $src = <<'EOT';
+     a=this
+     b=that
+
+     [sec]
+      x=y
+EOT
+    $obj->parse_ini(src => $src);
+    is_deeply($obj->variables, $expected, 'variables()');
+  };
+};
+
 #==================================================================================================
 done_testing();
