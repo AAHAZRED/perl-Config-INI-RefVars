@@ -598,7 +598,7 @@ Section names must be unique.
 An INI file does not have to start with a section header, it can also start
 with variable definitions. In this case, the variables are added to the
 I<tocopy section> (default name: C<__TOCOPY__>). You can explicitly specify
-the tocopy section heading, but then this must be the first active line in
+the I<tocopy> section heading, but then this must be the first active line in
 your INI file.
 
 
@@ -610,7 +610,7 @@ you want to define a variable whose name ends with an punctuation character,
 there must be at least one space between the variable name and the assignment
 operator.
 
-B<Note>: Since the use of the underscore in identifiers is so tocopy, it is
+B<Note>: Since the use of the underscore in identifiers is so common, it is
 not treated as a punctuation character here.
 
 =over
@@ -937,9 +937,9 @@ is exactly the same as this:
   [sec]
   x=y
 
-You can also add tocopy variables via the argument C<tocopy_vars> (methods
+You can also add I<tocopy> variables via the argument C<tocopy_vars> (methods
 C<new> and C<parse_ini>), these are treated as if they were at the very
-beginning of the tocopy section.
+beginning of the C<tocopy> section.
 
 
 =head2 COMMENTS
@@ -998,13 +998,13 @@ The constructor takes the following optional named arguments:
 
 =item C<tocopy_section>
 
-Optional, a string. Specifies a different name for the tocopy section. Default
-is C<__TOCOPY__>. See accessor C<tocopy_section>.
+Optional, a string. Specifies a different name for the I<tocopy>
+section. Default is C<__TOCOPY__>. See accessor C<tocopy_section>.
 
 =item C<tocopy_vars>
 
 Optional, a hash reference. If specified, its keys become variables of the
-tocopy section, the hash values become the corresponding variable values. This
+I<tocopy> section, the hash values become the corresponding variable values. This
 allows you to specify variables that you cannot specify in the INI file,
 e.g. variables with a C<=> in the name.
 
@@ -1015,9 +1015,9 @@ Default is C<undef>.
 =item C<not_tocopy>
 
 Optional, a reference to a hash or an array of strings. The hash keys or array
-entries specify a list of variables that should not be copied from the tocopy
+entries specify a list of variables that should not be copied from the I<tocopy>
 section to the other sections. It does not matter whether these variables
-actually occur in the tocopy section or not.
+actually occur in the I<tocopy> section or not.
 
 Default is C<undef>.
 
@@ -1031,7 +1031,7 @@ Optional, a string.
 
 =head3 tocopy_section
 
-Returns the name of the tocopy section that will be used as the default for
+Returns the name of the I<tocopy> section that will be used as the default for
 the next call to C<parse_ini>.
 
 
@@ -1054,9 +1054,9 @@ Default is 1 (I<true)>
 
 =item C<tocopy_section>
 
-Optional, a string. Specifies a different name for the tocopy section for this
-run only. The previous value is restored before the method returns. Default is
-the string returned by accessor C<tocopy_section>.
+Optional, a string. Specifies a different name for the I<tocopy> section for
+this run only. The previous value is restored before the method
+returns. Default is the string returned by accessor C<tocopy_section>.
 
 =item C<tocopy_vars>
 
