@@ -21,108 +21,108 @@ my $Dummy_Src = [
                  'The Variable=007'
                 ];
 
-subtest "common_vars" => sub {
+subtest "tocopy_vars" => sub {
   subtest 'new()' => sub {
-    like(exception { Config::INI::RefVars->new(common_vars => 72) },
-         qr/'common_vars': expected HASH ref/,
-         "common_vars: the code died as expected");
+    like(exception { Config::INI::RefVars->new(tocopy_vars => 72) },
+         qr/'tocopy_vars': expected HASH ref/,
+         "tocopy_vars: the code died as expected");
 
-    like(exception { Config::INI::RefVars->new(common_vars => []) },
-         qr/'common_vars': expected HASH ref/,
-         "common_vars: the code died as expected");
+    like(exception { Config::INI::RefVars->new(tocopy_vars => []) },
+         qr/'tocopy_vars': expected HASH ref/,
+         "tocopy_vars: the code died as expected");
 
-    like(exception { Config::INI::RefVars->new(common_vars => {
+    like(exception { Config::INI::RefVars->new(tocopy_vars => {
                                                                x => 'huhu',
                                                                y => {},
                                                                z => 23
                                                               }) },
-         qr/'common_vars': value of 'y' is a ref, expected scalar/,
-         "common_vars: the code died as expected");
+         qr/'tocopy_vars': value of 'y' is a ref, expected scalar/,
+         "tocopy_vars: the code died as expected");
 
-    like(exception { Config::INI::RefVars->new(common_vars => {
+    like(exception { Config::INI::RefVars->new(tocopy_vars => {
                                                                x      => 'huhu',
                                                                '=foo' => '',
                                                                z      => 23
                                                               }) },
-         qr/'common_vars': variable '=foo': name is not permitted/,
-         "common_vars: the code died as expected");
+         qr/'tocopy_vars': variable '=foo': name is not permitted/,
+         "tocopy_vars: the code died as expected");
 
-    like(exception { Config::INI::RefVars->new(common_vars => {
+    like(exception { Config::INI::RefVars->new(tocopy_vars => {
                                                                x      => 'huhu',
                                                                ';foo' => '',
                                                                z      => 23
                                                               }) },
-         qr/'common_vars': variable ';foo': name is not permitted/,
-         "common_vars: the code died as expected");
+         qr/'tocopy_vars': variable ';foo': name is not permitted/,
+         "tocopy_vars: the code died as expected");
   };
 
   subtest 'parse_ini()' => sub {
     my $obj = Config::INI::RefVars->new();
 
-    like(exception { $obj->parse_ini(src => $Dummy_Src, common_vars => 72) },
-         qr/'common_vars': expected HASH ref/,
-         "common_vars: the code died as expected");
+    like(exception { $obj->parse_ini(src => $Dummy_Src, tocopy_vars => 72) },
+         qr/'tocopy_vars': expected HASH ref/,
+         "tocopy_vars: the code died as expected");
 
-    like(exception { $obj->parse_ini(src => $Dummy_Src, common_vars => []) },
-         qr/'common_vars': expected HASH ref/,
-         "common_vars: the code died as expected");
+    like(exception { $obj->parse_ini(src => $Dummy_Src, tocopy_vars => []) },
+         qr/'tocopy_vars': expected HASH ref/,
+         "tocopy_vars: the code died as expected");
 
-    like(exception { $obj->parse_ini(src => $Dummy_Src, common_vars => {
+    like(exception { $obj->parse_ini(src => $Dummy_Src, tocopy_vars => {
                                                                         x => 'huhu',
                                                                         y => {},
                                                                         z => 23
                                                                        }) },
-         qr/'common_vars': value of 'y' is a ref, expected scalar/,
-         "common_vars: the code died as expected");
+         qr/'tocopy_vars': value of 'y' is a ref, expected scalar/,
+         "tocopy_vars: the code died as expected");
 
-    like(exception { $obj->parse_ini(src => $Dummy_Src, common_vars => {
+    like(exception { $obj->parse_ini(src => $Dummy_Src, tocopy_vars => {
                                                                         x      => 'huhu',
                                                                         '=foo' => '',
                                                                         z      => 23
                                                               }) },
-         qr/'common_vars': variable '=foo': name is not permitted/,
-         "common_vars: the code died as expected");
+         qr/'tocopy_vars': variable '=foo': name is not permitted/,
+         "tocopy_vars: the code died as expected");
 
-    like(exception { $obj->parse_ini(src => $Dummy_Src, common_vars => {
+    like(exception { $obj->parse_ini(src => $Dummy_Src, tocopy_vars => {
                                                                         x      => 'huhu',
                                                                         ';foo' => '',
                                                                         z      => 23
                                                                        }) },
-         qr/'common_vars': variable ';foo': name is not permitted/,
-         "common_vars: the code died as expected");
+         qr/'tocopy_vars': variable ';foo': name is not permitted/,
+         "tocopy_vars: the code died as expected");
   };
 };
 
 
-subtest "not_common" => sub {
+subtest "not_tocopy" => sub {
   subtest 'new()' => sub {
-    like(exception { Config::INI::RefVars->new(not_common => 72) },
-         qr/'not_common': unexpected type: must be ARRAY or HASH ref/,
-         "not_common: the code died as expected");
+    like(exception { Config::INI::RefVars->new(not_tocopy => 72) },
+         qr/'not_tocopy': unexpected type: must be ARRAY or HASH ref/,
+         "not_tocopy: the code died as expected");
 
-    like(exception { Config::INI::RefVars->new(not_common => ['a', undef, 'b']) },
-         qr/'not_common': undefined value in array/,
-         "not_common: the code died as expected");
+    like(exception { Config::INI::RefVars->new(not_tocopy => ['a', undef, 'b']) },
+         qr/'not_tocopy': undefined value in array/,
+         "not_tocopy: the code died as expected");
 
-    like(exception { Config::INI::RefVars->new(not_common => ['a', [], 'b']) },
-         qr/'not_common': unexpected ref value in array/,
-         "not_common: the code died as expected");
+    like(exception { Config::INI::RefVars->new(not_tocopy => ['a', [], 'b']) },
+         qr/'not_tocopy': unexpected ref value in array/,
+         "not_tocopy: the code died as expected");
   };
 
   subtest 'parse_ini()' => sub {
     my $obj = Config::INI::RefVars->new();
 
-    like(exception { $obj->parse_ini(src => $Dummy_Src, not_common => 72) },
-         qr/'not_common': unexpected type: must be ARRAY or HASH ref/,
-         "not_common: the code died as expected");
+    like(exception { $obj->parse_ini(src => $Dummy_Src, not_tocopy => 72) },
+         qr/'not_tocopy': unexpected type: must be ARRAY or HASH ref/,
+         "not_tocopy: the code died as expected");
 
-    like(exception { $obj->parse_ini(src => $Dummy_Src, not_common => ['a', undef, 'b']) },
-         qr/'not_common': undefined value in array/,
-         "not_common: the code died as expected");
+    like(exception { $obj->parse_ini(src => $Dummy_Src, not_tocopy => ['a', undef, 'b']) },
+         qr/'not_tocopy': undefined value in array/,
+         "not_tocopy: the code died as expected");
 
-    like(exception { $obj->parse_ini(src => $Dummy_Src, not_common => ['a', [], 'b']) },
-         qr/'not_common': unexpected ref value in array/,
-         "not_common: the code died as expected");
+    like(exception { $obj->parse_ini(src => $Dummy_Src, not_tocopy => ['a', [], 'b']) },
+         qr/'not_tocopy': unexpected ref value in array/,
+         "not_tocopy: the code died as expected");
   };
 };
 
@@ -138,14 +138,14 @@ subtest "separator (only possible in new())" => sub {
 };
 
 
-subtest "common_section" => sub {
-  like(exception { Config::INI::RefVars->new(common_section => []) },
-       qr/'common_section': must not be a reference/,
+subtest "tocopy_section" => sub {
+  like(exception { Config::INI::RefVars->new(tocopy_section => []) },
+       qr/'tocopy_section': must not be a reference/,
        "separator: the code died as expected");
 
   my $obj = Config::INI::RefVars->new();
-  like(exception { $obj->parse_ini(src => '[sec]', common_section => []) },
-       qr/'common_section': must not be a reference/,
+  like(exception { $obj->parse_ini(src => '[sec]', tocopy_section => []) },
+       qr/'tocopy_section': must not be a reference/,
        "separator: the code died as expected");
 };
 
@@ -188,19 +188,19 @@ subtest "Unsupported argument" => sub {
 };
 
 
-subtest "warning: common_vars" => sub {
+subtest "warning: tocopy_vars" => sub {
   subtest "new()" => sub {
     my $obj;
-    warning_like(sub {$obj = Config::INI::RefVars->new(common_vars => {a => 1,
+    warning_like(sub {$obj = Config::INI::RefVars->new(tocopy_vars => {a => 1,
                                                                        b => undef,
                                                                        c => 3})
                     },
-                 qr/'common_vars': value 'b' is undef - treated as empty string/,
-                 "'common_vars': the code printed the warning as expected");
+                 qr/'tocopy_vars': value 'b' is undef - treated as empty string/,
+                 "'tocopy_vars': the code printed the warning as expected");
     $obj->parse_ini(src => [ '[sec]' ]);
     is_deeply($obj->variables,
               {
-               '__COMMON__' => {
+               '__TOCOPY__' => {
                                 'a' => '1',
                                 'b' => '',
                                 'c' => '3'
@@ -217,15 +217,15 @@ subtest "warning: common_vars" => sub {
   subtest "parse_ini()" => sub {
     my $obj = Config::INI::RefVars->new();
     warning_like(sub {$obj->parse_ini(src         => [ '[sec]' ],
-                                      common_vars => {a => 1,
+                                      tocopy_vars => {a => 1,
                                                       b => undef,
                                                       c => 3})
                     },
-                 qr/'common_vars': value 'b' is undef - treated as empty string/,
-                 "'common_vars': the code printed the warning as expected");
+                 qr/'tocopy_vars': value 'b' is undef - treated as empty string/,
+                 "'tocopy_vars': the code printed the warning as expected");
     is_deeply($obj->variables,
               {
-               '__COMMON__' => {
+               '__TOCOPY__' => {
                                 'a' => '1',
                                 'b' => '',
                                 'c' => '3'
@@ -243,9 +243,9 @@ subtest "warning: common_vars" => sub {
 
 subtest "no error" => sub {
   my $obj;
-  warning_is( sub { $obj = Config::INI::RefVars->new(common_section => undef,
-                                                     common_vars    => undef,
-                                                     not_common     => undef,
+  warning_is( sub { $obj = Config::INI::RefVars->new(tocopy_section => undef,
+                                                     tocopy_vars    => undef,
+                                                     not_tocopy     => undef,
                                                      separator      => undef,
                                                 );
               },
@@ -254,9 +254,9 @@ subtest "no error" => sub {
 
   # We do not test cleanup => undef here, as this is done somewhere else.
   warning_is( sub { $obj->parse_ini(src            => [ '[sec]' ],
-                                    common_section => undef,
-                                    common_vars    => undef,
-                                    not_common     => undef,
+                                    tocopy_section => undef,
+                                    tocopy_vars    => undef,
+                                    not_tocopy     => undef,
                                    )
                   },
               "",

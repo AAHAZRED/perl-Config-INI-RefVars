@@ -58,19 +58,19 @@ subtest "section header" => sub {
   like(exception { $obj->parse_ini(src_name => "my INI",
                                    src      => [
                                                 'a=b',
-                                                '[__COMMON__]',
+                                                '[__TOCOPY__]',
                                                ]) },
-       qr/'my INI': common section '__COMMON__' must be first section at line 2\b/,
+       qr/'my INI': tocopy section '__TOCOPY__' must be first section at line 2\b/,
        "section header: the code died as expected");
 
   $obj = Config::INI::RefVars->new();
   like(exception { $obj->parse_ini(src_name       => "my INI",
-                                   common_section => 'CommSec',
+                                   tocopy_section => 'CommSec',
                                    src            => [
                                                       'a=b',
                                                       '[CommSec]',
                                                      ]) },
-       qr/'my INI': common section 'CommSec' must be first section at line 2\b/,
+       qr/'my INI': tocopy section 'CommSec' must be first section at line 2\b/,
        "section header: the code died as expected");
 
   $obj = Config::INI::RefVars->new();
@@ -78,9 +78,9 @@ subtest "section header" => sub {
                                    src      => [
                                                 '[sec]',
                                                 'a=b',
-                                                '[__COMMON__]',
+                                                '[__TOCOPY__]',
                                                ]) },
-       qr/'my INI': common section '__COMMON__' must be first section at line 3\b/,
+       qr/'my INI': tocopy section '__TOCOPY__' must be first section at line 3\b/,
        "section header: the code died as expected");
 };
 
@@ -90,7 +90,7 @@ subtest "var def" => sub {
   like(exception { $obj->parse_ini(src => [
                                            '[sec]',
                                            'a',
-                                           '[__COMMON__]',
+                                           '[__TOCOPY__]',
                                           ]) },
        qr/'INI data': neither section header nor key definition at line 2\b/,
        "var def: the code died as expected");

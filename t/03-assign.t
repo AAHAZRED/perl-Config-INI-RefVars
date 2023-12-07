@@ -16,7 +16,7 @@ note("Testing assignments with and without auto vars, simple variable referencin
 # For heredocs containing INI data always use the single quote variant!
 #
 
-use constant DFLT_COMMON_SECTION => Config::INI::RefVars::DFLT_COMMON_SECTION;
+use constant DFLT_TOCOPY_SECTION => Config::INI::RefVars::DFLT_TOCOPY_SECTION;
 
 subtest 'basic assignments' => sub {
   my $obj = Config::INI::RefVars->new;
@@ -25,12 +25,12 @@ subtest 'basic assignments' => sub {
       subtest $file => sub {
         $obj->parse_ini(src => $file);
         is_deeply($obj->sections,
-                  [+DFLT_COMMON_SECTION, "this section"],
+                  [+DFLT_TOCOPY_SECTION, "this section"],
                   "sections()");
-        is_deeply($obj->sections_h, { (DFLT_COMMON_SECTION) => 0,
+        is_deeply($obj->sections_h, { (DFLT_TOCOPY_SECTION) => 0,
                                       "this section"        => 1 },
                   "sections_h()");
-        is_deeply($obj->variables, { (DFLT_COMMON_SECTION) => {foo => 'foo_val'},
+        is_deeply($obj->variables, { (DFLT_TOCOPY_SECTION) => {foo => 'foo_val'},
                                      "this section"        => {foo => 'foo_val',
                                                                str => "hello world"}
                                    },

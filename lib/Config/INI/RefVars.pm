@@ -10,15 +10,15 @@ use File::Spec::Functions qw(catdir rel2abs splitpath);
 
 our $VERSION = '0.01';
 
-use constant DFLT_COMMON_SECTION  => "__COMMON__";
+use constant DFLT_TOCOPY_SECTION  => "__TOCOPY__";
 
 use constant FLD_KEY_PREFIX => __PACKAGE__ . ' __ ';
 
 use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
 
-              COMMON_SECTION    => FLD_KEY_PREFIX . 'COMMON_SECTION',
-              COMMON_VARS       => FLD_KEY_PREFIX . 'COMMON_VARS',
-              NOT_COMMON        => FLD_KEY_PREFIX . 'NOT_COMMON',
+              TOCOPY_SECTION    => FLD_KEY_PREFIX . 'TOCOPY_SECTION',
+              TOCOPY_VARS       => FLD_KEY_PREFIX . 'TOCOPY_VARS',
+              NOT_TOCOPY        => FLD_KEY_PREFIX . 'NOT_TOCOPY',
               SECTIONS          => FLD_KEY_PREFIX . 'SECTIONS',
               SECTIONS_H        => FLD_KEY_PREFIX . 'SECTIONS_H',
               SRC_NAME          => FLD_KEY_PREFIX . 'SRC_NAME',
@@ -36,53 +36,53 @@ my $Modifier_Char = '[^_[:^punct:]]';
 
 my ($_look_up, $_x_var_name, $_expand_vars);
 
-my $_check_common_vars = sub {
-  my ($self, $common_vars, $set) = @_;
-  croak("'common_vars': expected HASH ref") if ref($common_vars) ne 'HASH';
-  $common_vars = { %$common_vars };
-  while (my ($var, $value) = each(%$common_vars)) {
-    croak("'common_vars': value of '$var' is a ref, expected scalar") if ref($value);
+my $_check_tocopy_vars = sub {
+  my ($self, $tocopy_vars, $set) = @_;
+  croak("'tocopy_vars': expected HASH ref") if ref($tocopy_vars) ne 'HASH';
+  $tocopy_vars = { %$tocopy_vars };
+  while (my ($var, $value) = each(%$tocopy_vars)) {
+    croak("'tocopy_vars': value of '$var' is a ref, expected scalar") if ref($value);
     if (!defined($value)) {
-      carp("'common_vars': value '$var' is undef - treated as empty string");
-      $common_vars->{$var} = "";
+      carp("'tocopy_vars': value '$var' is undef - treated as empty string");
+      $tocopy_vars->{$var} = "";
     }
-    croak("'common_vars': variable '$var': name is not permitted")
+    croak("'tocopy_vars': variable '$var': name is not permitted")
       if ($var =~ /^\s*$/ || $var =~ /^[[=;]/);
   }
-  #  @{$self->{+COMMON_VARS}}{keys(%$common_vars)} = values(%$common_vars) if $set;
-  $self->{+COMMON_VARS} = {%$common_vars} if $set;
-  return $common_vars;
+  #  @{$self->{+TOCOPY_VARS}}{keys(%$tocopy_vars)} = values(%$tocopy_vars) if $set;
+  $self->{+TOCOPY_VARS} = {%$tocopy_vars} if $set;
+  return $tocopy_vars;
 };
 
 
-my $_check_not_common = sub {
-  my ($self, $not_common, $set) = @_;
-  my $ref = ref($not_common);
+my $_check_not_tocopy = sub {
+  my ($self, $not_tocopy, $set) = @_;
+  my $ref = ref($not_tocopy);
   if ($ref eq 'ARRAY') {
-    foreach my $v (@$not_common) {
-      croak("'not_common': undefined value in array") if !defined($v);
-      croak("'not_common': unexpected ref value in array") if ref($v);
+    foreach my $v (@$not_tocopy) {
+      croak("'not_tocopy': undefined value in array") if !defined($v);
+      croak("'not_tocopy': unexpected ref value in array") if ref($v);
     }
-    $not_common = {map {$_ => undef} @$not_common};
+    $not_tocopy = {map {$_ => undef} @$not_tocopy};
   }
   elsif ($ref eq 'HASH') {
-    $not_common = %{$not_common};
+    $not_tocopy = %{$not_tocopy};
   }
   else {
-    croak("'not_common': unexpected type: must be ARRAY or HASH ref");
+    croak("'not_tocopy': unexpected type: must be ARRAY or HASH ref");
   }
-  $self->{+NOT_COMMON}= $not_common if $set;
-  return $not_common;
+  $self->{+NOT_TOCOPY}= $not_tocopy if $set;
+  return $not_tocopy;
 };
 
 
 sub new {
   my ($class, %args) = @_;
-  state $allowed_keys = {map {$_ => undef} qw(common_section common_vars not_common
+  state $allowed_keys = {map {$_ => undef} qw(tocopy_section tocopy_vars not_tocopy
                                               separator)};
   _check_args(\%args, $allowed_keys);
   my $self = {};
-  croak("'common_section': must not be a reference") if ref($args{common_section});
+  croak("'tocopy_section': must not be a reference") if ref($args{tocopy_section});
   if (exists($args{separator})) {
     state $allowed_sep_chars = "!#%&',./:~";
     my $sep = $args{separator};
@@ -94,9 +94,9 @@ sub new {
   else {
     $self->{+VREF_RE} = qr/^\[\s*(.*?)\s*\](.*)$/;
   }
-  $self->{+COMMON_SECTION} = $args{common_section} // DFLT_COMMON_SECTION;
-  $self->$_check_common_vars($args{common_vars}, 1) if exists($args{common_vars});
-  $self->$_check_not_common($args{not_common},   1) if exists($args{not_common});
+  $self->{+TOCOPY_SECTION} = $args{tocopy_section} // DFLT_TOCOPY_SECTION;
+  $self->$_check_tocopy_vars($args{tocopy_vars}, 1) if exists($args{tocopy_vars});
+  $self->$_check_not_tocopy($args{not_tocopy},   1) if exists($args{not_tocopy});
   return bless($self, $class) ;
 }
 
@@ -107,16 +107,16 @@ my $_expand_value = sub {
 
 #
 # We assume that this is called when the target section is still empty and if
-# common vars exist.
+# tocopy vars exist.
 #
-my $_cp_common_vars = sub {
+my $_cp_tocopy_vars = sub {
   my ($self, $to_sect_name) = @_;
-  my $comm_sec   = $self->{+VARIABLES}{$self->{+COMMON_SECTION}} // die("no common vars");
-  my $not_common = $self->{+NOT_COMMON};
+  my $comm_sec   = $self->{+VARIABLES}{$self->{+TOCOPY_SECTION}} // die("no tocopy vars");
+  my $not_tocopy = $self->{+NOT_TOCOPY};
   my $to_sec     = $self->{+VARIABLES}{$to_sect_name} //= {};
   my $expanded   = $self->{+EXPANDED};
   foreach my $comm_var (keys(%$comm_sec)) {
-    next if exists($not_common->{$comm_var});
+    next if exists($not_tocopy->{$comm_var});
     $to_sec->{$comm_var} = $comm_sec->{$comm_var};
     my $comm_x_var_name = "[$comm_sec]$comm_var";   # see _x_var_name()
     $expanded->{"[$to_sect_name]$comm_var"} = undef if exists($expanded->{$comm_x_var_name});
@@ -140,23 +140,23 @@ my $_parse_ini = sub {
   my $sections_h  = $self->{+SECTIONS_H};
   my $expanded    = $self->{+EXPANDED};
   my $variables   = $self->{+VARIABLES};
-  my $common_sec  = $self->{+COMMON_SECTION};
-  my $common_vars = $variables->{$common_sec}; # hash key need not to exist!
+  my $tocopy_sec  = $self->{+TOCOPY_SECTION};
+  my $tocopy_vars = $variables->{$tocopy_sec}; # hash key need not to exist!
 
-  my $common_sec_declared;
+  my $tocopy_sec_declared;
 
   my $i;                        # index in for() loop
   my $_fatal = sub { croak("'$src_name': ", $_[0], " at line ", $i + 1); };
 
   my $set_curr_section = sub {
     $curr_section = shift;
-    if ($curr_section eq $common_sec) {
-      $_fatal->("common section '$common_sec' must be first section") if @$sections;
-      $common_vars = $variables->{$common_sec} = {} if !$common_vars;
-      $common_sec_declared = 1;
+    if ($curr_section eq $tocopy_sec) {
+      $_fatal->("tocopy section '$tocopy_sec' must be first section") if @$sections;
+      $tocopy_vars = $variables->{$tocopy_sec} = {} if !$tocopy_vars;
+      $tocopy_sec_declared = 1;
     }
-    elsif ($common_vars) {
-      $self->$_cp_common_vars($curr_section);
+    elsif ($tocopy_vars) {
+      $self->$_cp_tocopy_vars($curr_section);
     }
     else {
       $variables->{$curr_section} = {};
@@ -183,7 +183,7 @@ my $_parse_ini = sub {
     }
 
     # var = val
-    $set_curr_section->($common_sec) if !defined($curr_section);
+    $set_curr_section->($tocopy_sec) if !defined($curr_section);
     $line =~ /^(.*?)\s*($Modifier_Char*?)=(?:\s*)(.*)/ or
       $_fatal->("neither section header nor key definition");
     my ($var_name, $modifier, $value) = ($1, $2, $3);
@@ -225,7 +225,7 @@ my $_parse_ini = sub {
       $_fatal->("'$modifier': unsupported modifier");
     }
   }
-  return ($common_sec_declared, $curr_section);
+  return ($tocopy_sec_declared, $curr_section);
 };
 
 
@@ -234,41 +234,41 @@ sub parse_ini {
   my %args = (cleanup => 1,
               @_ );
   state $allowed_keys = {map {$_ => undef} qw(cleanup src src_name
-                                              common_section common_vars not_common)};
+                                              tocopy_section tocopy_vars not_tocopy)};
   state $dflt_src_name = "INI data";
   _check_args(\%args, $allowed_keys);
-  foreach my $scalar_arg (qw(common_section src_name)) {
+  foreach my $scalar_arg (qw(tocopy_section src_name)) {
      croak("'$scalar_arg': must not be a reference") if ref($args{$scalar_arg});
    }
   $self->{+SRC_NAME} = $args{src_name} if exists($args{src_name});
-  my (      $cleanup, $src, $common_section, $common_vars, $not_common) =
-    @args{qw(cleanup   src   common_section   common_vars   not_common)};
+  my (      $cleanup, $src, $tocopy_section, $tocopy_vars, $not_tocopy) =
+    @args{qw(cleanup   src   tocopy_section   tocopy_vars   not_tocopy)};
 
   croak("'src': missing mandatory argument") if !defined($src);
   my $backup = $self->{+BACKUP} //= {};
-  if (defined($common_section)) {
-    $backup->{common_section} = $self->{+COMMON_SECTION};
-    $self->{+COMMON_SECTION}  = $common_section;
+  if (defined($tocopy_section)) {
+    $backup->{tocopy_section} = $self->{+TOCOPY_SECTION};
+    $self->{+TOCOPY_SECTION}  = $tocopy_section;
   }
   else {
-    $common_section = $self->{+COMMON_SECTION};
+    $tocopy_section = $self->{+TOCOPY_SECTION};
   }
-  if ($common_vars) {
-    $backup->{common_vars} = $self->{+COMMON_VARS};
-    $self->$_check_common_vars($common_vars, 1);
+  if ($tocopy_vars) {
+    $backup->{tocopy_vars} = $self->{+TOCOPY_VARS};
+    $self->$_check_tocopy_vars($tocopy_vars, 1);
   }
-  if ($not_common) {
-    $backup->{not_common} = $self->{+NOT_COMMON};
-    $self->$_check_not_common($not_common, 1)
+  if ($not_tocopy) {
+    $backup->{not_tocopy} = $self->{+NOT_TOCOPY};
+    $self->$_check_not_tocopy($not_tocopy, 1)
   }
   $self->{+SECTIONS}   = [];
   $self->{+SECTIONS_H} = {};
   $self->{+EXPANDED}   = {};
   $self->{+VARIABLES}  =
-    {$common_section => ($self->{+COMMON_VARS} ? {%{$self->{+COMMON_VARS}}} : {})};
+    {$tocopy_section => ($self->{+TOCOPY_VARS} ? {%{$self->{+TOCOPY_VARS}}} : {})};
 
   my $global_vars = $self->{+GLOBAL_VARS} = {%Globals};
-  my $common_sec_vars = $self->{+VARIABLES}{$common_section};
+  my $tocopy_sec_vars = $self->{+VARIABLES}{$tocopy_section};
   if (my $ref_src = ref($src)) {
     $self->{+SRC_NAME} = $dflt_src_name if !exists($self->{+SRC_NAME});
     if ($ref_src eq 'ARRAY') {
@@ -301,7 +301,7 @@ sub parse_ini {
   }
   $global_vars->{'=INIname'} = $self->{+SRC_NAME};
 
-  my ($common_sec_declared, undef) = $self->$_parse_ini($src);
+  my ($tocopy_sec_declared, undef) = $self->$_parse_ini($src);
 
   while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
     while (my ($variable, $value) = each(%$variables)) {
@@ -314,8 +314,8 @@ sub parse_ini {
         delete $variables->{$var} if index($var, '=') >= 0;
       }
     }
-    delete $self->{+VARIABLES}{$self->{+COMMON_SECTION}} if (!$common_sec_declared &&
-                                                             !%$common_sec_vars);
+    delete $self->{+VARIABLES}{$self->{+TOCOPY_SECTION}} if (!$tocopy_sec_declared &&
+                                                             !%$tocopy_sec_vars);
   }
   else {
     while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
@@ -323,9 +323,9 @@ sub parse_ini {
       @{$variables}{keys(%$global_vars)} = values(%$global_vars);
     }
   }
-  $self->{+COMMON_SECTION} = $backup->{common_section} if exists($backup->{common_section});
-  $self->{+COMMON_VARS}    = $backup->{common_vars}    if exists($backup->{common_vars});
-  $self->{+NOT_COMMON}     = $backup->{not_common}     if exists($backup->{not_common});
+  $self->{+TOCOPY_SECTION} = $backup->{tocopy_section} if exists($backup->{tocopy_section});
+  $self->{+TOCOPY_VARS}    = $backup->{tocopy_vars}    if exists($backup->{tocopy_vars});
+  $self->{+NOT_TOCOPY}     = $backup->{not_tocopy}     if exists($backup->{not_tocopy});
   $backup = {};
   return $self;
 }
@@ -340,7 +340,7 @@ sub variables       { my $vars = $_[0]->{+VARIABLES} // return undef;
                     }
 
 sub src_name        {$_[0]->{+SRC_NAME}}
-sub common_section  {$_[0]->{+COMMON_SECTION}}
+sub tocopy_section  {$_[0]->{+TOCOPY_SECTION}}
 
 
 $_look_up = sub {
@@ -597,8 +597,8 @@ Section names must be unique.
 
 An INI file does not have to start with a section header, it can also start
 with variable definitions. In this case, the variables are added to the
-I<common section> (default name: C<__COMMON__>). You can explicitly specify
-the common section heading, but then this must be the first active line in
+I<tocopy section> (default name: C<__TOCOPY__>). You can explicitly specify
+the tocopy section heading, but then this must be the first active line in
 your INI file.
 
 
@@ -610,7 +610,7 @@ you want to define a variable whose name ends with an punctuation character,
 there must be at least one space between the variable name and the assignment
 operator.
 
-B<Note>: Since the use of the underscore in identifiers is so common, it is
+B<Note>: Since the use of the underscore in identifiers is so tocopy, it is
 not treated as a punctuation character here.
 
 =over
@@ -846,8 +846,8 @@ C<$(var)>.
 =head3 Custom predefined Variables
 
 Currently, custom predefined variables. But you can do something very similar,
-see argument C<common_vars> (of C<new> and C<parse_ini>), see also L</"THE
-I<COMMON> SECTION">. With this argument you can also define variables whose
+see argument C<tocopy_vars> (of C<new> and C<parse_ini>), see also L</"THE
+I<TOCOPY> SECTION">. With this argument you can also define variables whose
 names contain a C<=>, which is obviously impossible in an INI file.
 
 
@@ -882,12 +882,12 @@ value C<$(var)> and you write this in your INI file:
 This results in C<x> having the value C<$(var)>, while C<y> has the value C<hello!>.
 
 
-=head2 THE I<COMMON> SECTION
+=head2 THE I<TOCOPY> SECTION
 
-If specified, the C<parse_ini> method copies the variables of the I<common
+If specified, the C<parse_ini> method copies the variables of the I<tocopy
 section> to every other section when the INI file is read. For example this
 
-   [__COMMON__]
+   [__TOCOPY__]
    some var=some value
    section info=$(=)
 
@@ -897,7 +897,7 @@ section> to every other section when the INI file is read. For example this
 
 is exactly the same as this:
 
-   [__COMMON__]
+   [__TOCOPY__]
    some var=some
    section info=$(=)
 
@@ -909,20 +909,20 @@ is exactly the same as this:
    some var=some
    section info=$(=)
 
-Of course, you can change or overwrite a variable copied from the C<common>
+Of course, you can change or overwrite a variable copied from the C<tocopy>
 section locally within a section at any time without any side effects.
 
-You can exclude variables with the argument C<not_common> from copying
+You can exclude variables with the argument C<not_tocopy> from copying
 (methods C<new> and C<parse_ini>), but there is currently no notation to do
 this in the INI file.
 
-The I<common section> is optional. If it is specified, it must be the first
-section. By default, its name is C<__COMMON__>, this can be changed with the
-argument C<common_section> (methods C<new> and C<parse_ini>). You can omit the
-C<[__COMMON__]> header and simply start your INI file with variable
-definitions. These then simply become the I<common section>. So this:
+The I<tocopy section> is optional. If it is specified, it must be the first
+section. By default, its name is C<__TOCOPY__>, this can be changed with the
+argument C<tocopy_section> (methods C<new> and C<parse_ini>). You can omit the
+C<[__TOCOPY__]> header and simply start your INI file with variable
+definitions. These then simply become the I<tocopy section>. So this:
 
-  [__COMMON__]
+  [__TOCOPY__]
   a=this
   b=that
 
@@ -937,9 +937,9 @@ is exactly the same as this:
   [sec]
   x=y
 
-You can also add common variables via the argument C<common_vars> (methods
+You can also add tocopy variables via the argument C<tocopy_vars> (methods
 C<new> and C<parse_ini>), these are treated as if they were at the very
-beginning of the common section.
+beginning of the tocopy section.
 
 
 =head2 COMMENTS
@@ -970,7 +970,7 @@ B<Attention>: if you do this, the comment must not contain a C<]> character!
 
    -------------------------------------
   sections and sections_h refer to what was contained in the INI input.
-  so variables may contain __COMMON__ but sections and sections_h not
+  so variables may contain __TOCOPY__ but sections and sections_h not
    -------------------------------------
 
 https://stackoverflow.com/questions/11581893/prepend-to-simply-expanded-variable
@@ -996,15 +996,15 @@ The constructor takes the following optional named arguments:
 
 =over
 
-=item C<common_section>
+=item C<tocopy_section>
 
-Optional, a string. Specifies a different name for the common section. Default
-is C<__COMMON__>. See accessor C<common_section>.
+Optional, a string. Specifies a different name for the tocopy section. Default
+is C<__TOCOPY__>. See accessor C<tocopy_section>.
 
-=item C<common_vars>
+=item C<tocopy_vars>
 
 Optional, a hash reference. If specified, its keys become variables of the
-common section, the hash values become the corresponding variable values. This
+tocopy section, the hash values become the corresponding variable values. This
 allows you to specify variables that you cannot specify in the INI file,
 e.g. variables with a C<=> in the name.
 
@@ -1012,12 +1012,12 @@ Keys with C<=> or C<;> as the first character are not permitted.
 
 Default is C<undef>.
 
-=item C<not_common>
+=item C<not_tocopy>
 
 Optional, a reference to a hash or an array of strings. The hash keys or array
-entries specify a list of variables that should not be copied from the common
+entries specify a list of variables that should not be copied from the tocopy
 section to the other sections. It does not matter whether these variables
-actually occur in the common section or not.
+actually occur in the tocopy section or not.
 
 Default is C<undef>.
 
@@ -1029,9 +1029,9 @@ Optional, a string.
 
 
 
-=head3 common_section
+=head3 tocopy_section
 
-Returns the name of the common section that will be used as the default for
+Returns the name of the tocopy section that will be used as the default for
 the next call to C<parse_ini>.
 
 
@@ -1052,17 +1052,17 @@ Optional, a boolean.
 
 Default is 1 (I<true)>
 
-=item C<common_section>
+=item C<tocopy_section>
 
-Optional, a string. Specifies a different name for the common section for this
+Optional, a string. Specifies a different name for the tocopy section for this
 run only. The previous value is restored before the method returns. Default is
-the string returned by accessor C<common_section>.
+the string returned by accessor C<tocopy_section>.
 
-=item C<common_vars>
+=item C<tocopy_vars>
 
 Optional,
 
-=item C<not_common>
+=item C<not_tocopy>
 
 Optional,
 

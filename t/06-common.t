@@ -17,8 +17,8 @@ use Config::INI::RefVars;
 my $obj = Config::INI::RefVars->new;
 
 subtest "basic" => sub {
-  subtest "first examples, with and without arg 'common_section'" => sub {
-    subtest 'no explicite [__COMMON__]' => sub {
+  subtest "first examples, with and without arg 'tocopy_section'" => sub {
+    subtest 'no explicite [__TOCOPY__]' => sub {
       my $src = [
                  '[A]',
                  'a=b'
@@ -28,15 +28,15 @@ subtest "basic" => sub {
       is_deeply($obj->sections_h, {A => 0}, 'sections_h()');
       is_deeply($obj->sections,   ['A'], 'sections()');
 
-      $obj->parse_ini(src => $src, common_vars => {'a=b' => 1});
+      $obj->parse_ini(src => $src, tocopy_vars => {'a=b' => 1});
       is_deeply($obj->variables,  {A => {a => 'b'}}, 'variables()');
       is_deeply($obj->sections_h, {A => 0}, 'sections_h()');
       is_deeply($obj->sections,   ['A'], 'sections()');
 
-      $obj->parse_ini(src => $src, common_vars => {'ab' => 1});
+      $obj->parse_ini(src => $src, tocopy_vars => {'ab' => 1});
       is_deeply($obj->variables,
                 {
-                 '__COMMON__' => {
+                 '__TOCOPY__' => {
                                   'ab' => '1'
                                  },
                  A => {a  => 'b',
@@ -48,16 +48,16 @@ subtest "basic" => sub {
       is_deeply($obj->sections,   ['A'], 'sections()');
     };
 
-    subtest 'with explicite [__COMMON__]' => sub {
+    subtest 'with explicite [__TOCOPY__]' => sub {
       my $src = [
-                 '[__COMMON__]',  # explicite common section (but empty)
+                 '[__TOCOPY__]',  # explicite tocopy section (but empty)
                  '[A]',
                  'a=b'
                 ];
       $obj->parse_ini(src => $src);
-      is_deeply($obj->variables,  {__COMMON__ => {}, A => {a => 'b'}}, 'variables()');
-      is_deeply($obj->sections_h, {__COMMON__ => 0, A => 1}, 'sections_h()');
-      is_deeply($obj->sections,   [qw(__COMMON__ A)], 'sections()');
+      is_deeply($obj->variables,  {__TOCOPY__ => {}, A => {a => 'b'}}, 'variables()');
+      is_deeply($obj->sections_h, {__TOCOPY__ => 0, A => 1}, 'sections_h()');
+      is_deeply($obj->sections,   [qw(__TOCOPY__ A)], 'sections()');
     };
 
     my $src = [
@@ -75,7 +75,7 @@ subtest "basic" => sub {
     $obj->parse_ini(src => $src);
     is_deeply($obj->variables,
               {
-               '__COMMON__' => {
+               '__TOCOPY__' => {
                                 'a' => '1'
                                },
                'sec A' => {
@@ -90,7 +90,7 @@ subtest "basic" => sub {
               },
               'variables()');
 
-    $obj->parse_ini(src => $src, common_section => 'COM_SEC');
+    $obj->parse_ini(src => $src, tocopy_section => 'COM_SEC');
     is_deeply($obj->variables,
               {
                'COM_SEC' => {
@@ -108,7 +108,7 @@ subtest "basic" => sub {
               },
               'variables()');
 
-    $obj->parse_ini(src => $src, common_section => '');
+    $obj->parse_ini(src => $src, tocopy_section => '');
     is_deeply($obj->variables,
               {
                ''      => {
@@ -127,9 +127,9 @@ subtest "basic" => sub {
               'variables()');
   };
 
-  subtest 'with $(=) and explicite [__COMMON__]' => sub {
+  subtest 'with $(=) and explicite [__TOCOPY__]' => sub {
     my $src = [
-               '[__COMMON__]',
+               '[__TOCOPY__]',
                'theVar = Section: $(=)',
                '',
                '[A]',
@@ -153,8 +153,8 @@ subtest "basic" => sub {
                        'theVar' => 'Section: C',
                        'sec'    => 'C'
                       },
-               '__COMMON__' => {
-                                'theVar' => 'Section: __COMMON__'
+               '__TOCOPY__' => {
+                                'theVar' => 'Section: __TOCOPY__'
                                }
               },
               'variables()');
@@ -214,10 +214,10 @@ subtest "Environment variables" => sub {
   };
 };
 
-subtest "common, not common" => sub {
-  subtest "common" => sub {
+subtest "tocopy, not tocopy" => sub {
+  subtest "tocopy" => sub {
     my $expected = {
-                    '__COMMON__' => {
+                    '__TOCOPY__' => {
                                      'a' => 'xyz',
                                      'foo' => 'abcde'
                                     },
@@ -230,7 +230,7 @@ subtest "common, not common" => sub {
                                 'foo' => 'abcde'
                      }
                    };
-    subtest "common section" => sub {
+    subtest "tocopy section" => sub {
       my $src = [
                  'a=xyz',
                  'foo=abcde',
@@ -242,13 +242,13 @@ subtest "common, not common" => sub {
       $obj->parse_ini(src => $src);
       is_deeply($obj->variables, $expected, 'variables()');
     };
-    subtest "common: 'common_vars' arg" => sub {
+    subtest "tocopy: 'tocopy_vars' arg" => sub {
       my $src = [
                  '[sec A]',
                  '',
                  '[sec B]',
                 ];
-      $obj->parse_ini(src => $src, common_vars => {a => 'xyz', foo => 'abcde'});
+      $obj->parse_ini(src => $src, tocopy_vars => {a => 'xyz', foo => 'abcde'});
       is_deeply($obj->variables, $expected, 'variables()');
     };
   };
@@ -264,8 +264,8 @@ subtest "common, not common" => sub {
     $obj->parse_ini(src => $src);
     is_deeply($obj->variables,
               {
-               '__COMMON__' => {
-                                'bar' => '__COMMON__',
+               '__TOCOPY__' => {
+                                'bar' => '__TOCOPY__',
                                 'foo' => 'sec A'
                                },
                'sec A' => {
@@ -279,14 +279,14 @@ subtest "common, not common" => sub {
               },
               'variables()');
   };
-  subtest "'common_section', section in input" => sub {
+  subtest "'tocopy_section', section in input" => sub {
     my $src = [
                '[XY]',
                'a=1',
                '',
                '[sec A]',
               ];
-    $obj->parse_ini(src => $src, common_section => 'XY');
+    $obj->parse_ini(src => $src, tocopy_section => 'XY');
     is_deeply($obj->variables,
               {
                'XY' => {
@@ -298,23 +298,23 @@ subtest "common, not common" => sub {
               },
               'variables()');
   };
-  subtest "simple mix, with 'common_section'" => sub {
+  subtest "simple mix, with 'tocopy_section'" => sub {
     my $src = [
-               'a.=xyz',     # common section
+               'a.=xyz',     # tocopy section
                '',
-               'foo=abcde',  # common section
+               'foo=abcde',  # tocopy section
                '',
                '[sec A]',
                '',
                '[sec B]',
               ];
     $obj->parse_ini(src => $src,
-                    common_vars => {a => 27,
+                    tocopy_vars => {a => 27,
                                     c => 42,
                                     d => '$(x=y)!!!',
                                     'x=y' => 'hello'},
-                    common_section => '_C_',
-                    not_common => [qw(c foo)]);
+                    tocopy_section => '_C_',
+                    not_tocopy => [qw(c foo)]);
     is_deeply($obj->variables,
               {
                '_C_' => {

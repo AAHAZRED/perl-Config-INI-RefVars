@@ -14,7 +14,7 @@ foreach my $meth (qw(new
                      sections_h
                      variables
                      src_name
-                     common_section
+                     tocopy_section
                    )) {
   ok(Config::INI::RefVars->can($meth), "$meth() exists");
 }

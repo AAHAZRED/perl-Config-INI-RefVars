@@ -320,12 +320,12 @@ EOT
             'variables()');
 };
 
-subtest "THE COMMON SECTION" => sub {
+subtest "THE TOCOPY SECTION" => sub {
   my $obj = Config::INI::RefVars->new();
 
-  subtest "common and manual copying" => sub {
+  subtest "tocopy and manual copying" => sub {
     my $src = <<'EOT';
-     [__COMMON__]
+     [__TOCOPY__]
      some var=some value
      section info=$(=)
 
@@ -334,7 +334,7 @@ subtest "THE COMMON SECTION" => sub {
      [B]
 EOT
     my $expected = {
-                    __COMMON__ => { 'some var' => 'some value', 'section info' => '__COMMON__'},
+                    __TOCOPY__ => { 'some var' => 'some value', 'section info' => '__TOCOPY__'},
                     A => { 'some var' => 'some value', 'section info' => 'A'},
                     B => { 'some var' => 'some value', 'section info' => 'B'},
                    };
@@ -342,7 +342,7 @@ EOT
     is_deeply($obj->variables, $expected, 'variables()');
 
     $src = <<'EOT';
-     [__COMMON__]
+     [__TOCOPY__]
      some var=some value
      section info=$(=)
 
@@ -357,10 +357,10 @@ EOT
     $obj->parse_ini(src => $src);
     is_deeply($obj->variables, $expected, 'variables()');
   };
-  subtest "with and without explicite __COMMON__" => sub {
+  subtest "with and without explicite __TOCOPY__" => sub {
     my $obj = Config::INI::RefVars->new();
     my $src = <<'EOT';
-     [__COMMON__]
+     [__TOCOPY__]
      a=this
      b=that
 
@@ -368,7 +368,7 @@ EOT
       x=y
 EOT
     my $expected = {
-                    __COMMON__ => {a => 'this', b => 'that'},
+                    __TOCOPY__ => {a => 'this', b => 'that'},
                     sec        => {a => 'this', b => 'that', x => 'y'},
                    };
     $obj->parse_ini(src => $src);

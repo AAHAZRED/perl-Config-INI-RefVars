@@ -17,7 +17,7 @@ sub test_data_file { catfile(qw(t 02-data), $_[0]) }
 
 
 subtest 'predefined sections' => sub {
-  is(Config::INI::RefVars::DFLT_COMMON_SECTION, "__COMMON__", "COMMON_SECTION default");
+  is(Config::INI::RefVars::DFLT_TOCOPY_SECTION, "__TOCOPY__", "TOCOPY_SECTION default");
 };
 
 subtest 'before any parsing' => sub {
@@ -27,7 +27,7 @@ subtest 'before any parsing' => sub {
                        variables
                        src_name)) {
     is($obj->$meth, undef, "$meth(): undef");
-    is($obj->common_section, Config::INI::RefVars::DFLT_COMMON_SECTION, "common_section()");
+    is($obj->tocopy_section, Config::INI::RefVars::DFLT_TOCOPY_SECTION, "tocopy_section()");
   }
 };
 
@@ -168,18 +168,18 @@ subtest "simple content / reuse" => sub {
 };
 
 
-subtest "common section" => sub {
+subtest "tocopy section" => sub {
   my $obj = new_ok('Config::INI::RefVars');
   my $input = ["a=b",
                "[blah]",
                "A=B"];
   is($obj->parse_ini(src => $input), $obj, "parse_ini() returns obj");
-  is_deeply($obj->sections, [Config::INI::RefVars::DFLT_COMMON_SECTION, "blah"],
+  is_deeply($obj->sections, [Config::INI::RefVars::DFLT_TOCOPY_SECTION, "blah"],
             "sections(): default and empty section");
-  is_deeply($obj->sections_h, { Config::INI::RefVars::DFLT_COMMON_SECTION => 0,
+  is_deeply($obj->sections_h, { Config::INI::RefVars::DFLT_TOCOPY_SECTION => 0,
                                 'blah'                                    => 1},
             'sections_h()');
-  is_deeply($obj->variables,  { Config::INI::RefVars::DFLT_COMMON_SECTION => {a => 'b'},
+  is_deeply($obj->variables,  { Config::INI::RefVars::DFLT_TOCOPY_SECTION => {a => 'b'},
                                 'blah'                                    => {A => 'B',
                                                                               a => 'b'},
                               },
@@ -246,5 +246,5 @@ done_testing();
 sub check_other {
   my $obj = shift;
   my $src_name = shift // "INI data";
-  is($obj->common_section,  Config::INI::RefVars::DFLT_COMMON_SECTION, 'common_section()');
+  is($obj->tocopy_section,  Config::INI::RefVars::DFLT_TOCOPY_SECTION, 'tocopy_section()');
 }

@@ -164,8 +164,8 @@ subtest "from file / with and without cleanup" => sub {
     $obj->parse_ini(src => $src, cleanup => 0);
     is_deeply($obj->variables,
               {
-               '__COMMON__' => {
-                                '='  => '__COMMON__',
+               '__TOCOPY__' => {
+                                '='  => '__TOCOPY__',
                                 '=:' => $Path_Sep,
                                 '=INIdir'  => $ini_dir,
                                 '=INIfile' => $ini_file,
@@ -213,8 +213,8 @@ subtest "from file / with and without cleanup" => sub {
     $obj->parse_ini(src => $src, cleanup => undef);
     is_deeply($obj->variables,
               {
-               '__COMMON__' => {
-                                '='  => '__COMMON__',
+               '__TOCOPY__' => {
+                                '='  => '__TOCOPY__',
                                 '=:' => $Path_Sep,
                                 '=INIdir'  => $ini_dir,
                                 '=INIfile' => $ini_file,
