@@ -169,7 +169,7 @@ subtest "use all args of new()" => sub {
                              '12=ab' => '42',
                              '=' => 'TOCOPY!',
                              '=:' => '/',
-                             '=INIname' => 'INI data',
+                             '=srcname' => 'INI data',
                              'additional' => 'yet another tocopy var!',
                              'foo' => 'override!'
                             },
@@ -178,7 +178,7 @@ subtest "use all args of new()" => sub {
                            '12=ab' => '42',
                            '=' => 'sec-A',
                            '=:' => '/',
-                           '=INIname' => 'INI data',
+                           '=srcname' => 'INI data',
                            'a var' => '42',
                            'additional' => 'yet another tocopy var!',
                            'foo' => 'override!'
@@ -188,7 +188,7 @@ subtest "use all args of new()" => sub {
                            '12=ab' => '42',
                            '=' => 'sec-B',
                            '=:' => '/',
-                           '=INIname' => 'INI data',
+                           '=srcname' => 'INI data',
                            'additional' => 'yet another tocopy var!',
                            'foo' => 'override!'
                           }
