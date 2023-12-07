@@ -28,6 +28,7 @@ t/10-arg_error.t
 t/11-ini_error.t
 t/99-data
 t/99-data/dummy.ini
+t/99-examples.t
 t/manifest.t
 t/pod-coverage.t
 t/pod.t
