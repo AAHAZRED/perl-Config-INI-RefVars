@@ -798,8 +798,8 @@ The hash returned by the C<variables> method is then:
              'ref' => 'Reference to foo of section B: variable foo of section B'
             },
      'B' => {
-             'bar' => 'variable foo of section B',
              'foo' => 'variable foo of section B'
+             'bar' => 'variable foo of section B',
             }
    }
 
@@ -845,10 +845,11 @@ C<$(var)>.
 
 =head3 Custom predefined Variables
 
-Currently, custom predefined variables. But you can do something very similar,
-see argument C<tocopy_vars> (of C<new> and C<parse_ini>), see also L</"THE
-I<TOCOPY> SECTION">. With this argument you can also define variables whose
-names contain a C<=>, which is obviously impossible in an INI file.
+Currently, custom predefined variables are not supported. But you can do
+something very similar, see argument C<tocopy_vars> (of C<new> and
+C<parse_ini>), see also L</"THE I<TOCOPY> SECTION">. With this argument you
+can also define variables whose names contain a C<=>, which is obviously
+impossible in an INI file.
 
 
 =head3 Predefined Variables in resulting Hash
@@ -967,25 +968,49 @@ B<Attention>: if you do this, the comment must not contain a C<]> character!
 
 =head2 PITFALLS
 
+In most cases, the keys in the hash returned by C<variables> are the same as
+the keys in the hash returned by the C<sections_h> method and the entries in
+the array returned by the C<sections> method. In special cases, however, there
+may be a difference with regard to the I<tocopy> section. Example:
 
-   -------------------------------------
-  sections and sections_h refer to what was contained in the INI input.
-  so variables may contain __TOCOPY__ but sections and sections_h not
-   -------------------------------------
+   [A]
+   a=1
 
-https://stackoverflow.com/questions/11581893/prepend-to-simply-expanded-variable
+   [B]
+   b=2
 
-Do not write something like
+If you parse this INI source like this:
 
-   while (my ($sec, $val) = each(%{$ini_obj->variables})) {
-   # ...
+  my $obj = Config::INI::RefVars->new();
+  $obj->parse_ini(src => $src, tocopy_vars => {'foo' => 'xyz'});
 
-since this will result in an infinite loop. Instead, write:
+then the C<variables> method returns this:
 
-   my $vars = $ini_obj->variables;
-   while (my ($sec, $val) = each(%$vars)) {
-   # ...
+   'A' => {
+           'a' => '1',
+           'foo' => 'xyz'
+          },
+   'B' => {
+           'b' => '2',
+           'foo' => 'xyz'
+          },
+   '__TOCOPY__' => {
+                    'foo' => 'xyz'
+                   }
 
+but C<sections_h> returns
+
+   { 'A' => '0',
+     'B' => '1' }
+
+and C<sections> returns
+
+   ['A', 'B']
+
+No C<__TOCOPY__>. The reason for this is that the return values of
+C<sections_h> and C<sections_h> refer to what is contained in the source, and
+in this case C<__TOCOPY__> is not contained in the source, but comes from a
+method argument.
 
 
 =head2 METHODS
@@ -1015,15 +1040,28 @@ Default is C<undef>.
 =item C<not_tocopy>
 
 Optional, a reference to a hash or an array of strings. The hash keys or array
-entries specify a list of variables that should not be copied from the I<tocopy>
-section to the other sections. It does not matter whether these variables
-actually occur in the I<tocopy> section or not.
+entries specify a list of variables that should not be copied from the
+I<tocopy> section to the other sections. It does not matter whether these
+variables actually occur in the I<tocopy> section or not.
 
 Default is C<undef>.
 
 =item C<separator>
 
-Optional, a string.
+Optional, a character string. If specified, an alternative notation can be
+used for referencing variables in another section. Example:
+
+   my $obj = Config::INI::RefVars->new(separator => '::');
+
+Then you can write:
+
+    [A]
+    y=27
+    
+    [B]
+    a var=$(A::y)
+
+This gives the variable C<a var> the value C<27>.
 
 =back
 
@@ -1037,6 +1075,8 @@ the next call to C<parse_ini>.
 
 =head3 parse_ini
 
+Parses an INI source. The method takes the following optional named arguments:
+
 =over
 
 =item C<src>
@@ -1048,7 +1088,9 @@ directly.
 
 =item C<cleanup>
 
-Optional, a boolean.
+Optional, a boolean. If this value is set to I<false>, variables with a C<=>
+in their name are not removed from the resulting hash that is returned by the
+C<variables> method.
 
 Default is 1 (I<true)>
 
@@ -1058,17 +1100,29 @@ Optional, a string. Specifies a different name for the I<tocopy> section for
 this run only. The previous value is restored before the method
 returns. Default is the string returned by accessor C<tocopy_section>.
 
+See constructor argument of the same name.
+
 =item C<tocopy_vars>
 
-Optional,
+Optional, overwrites the corresponding setting saved in the object for this
+run only. The previous setting is restored before the method returns.
+
+See constructor argument of the same name.
 
 =item C<not_tocopy>
 
-Optional,
+Optional, overwrites the corresponding setting saved in the object for this
+run only. The previous setting is restored before the method returns.
+
+See constructor argument of the same name.
 
 =item C<src_name>
 
-Optional,
+Optional, overwrites the corresponding setting saved in the object for this
+run only. The previous setting is restored before the method returns.
+
+See constructor argument of the same name, see also the accessor os the same
+name.
 
 =back
 
@@ -1093,7 +1147,10 @@ to the source">.
 
 =head3 variables
 
-Returns a reference to a hash of 
+Returns a reference to a hash of hashes. The keys are the section names, each
+value is the corresponding hash of varibales (key: variable name, vaule:
+variable value). By default, variables with a C<=> in their name are not
+included; this can be changed with the C<cleanup> argument.
 
 
 =head1 AUTHOR
@@ -1104,9 +1161,11 @@ Abdul al Hazred, C<< <451 at gmx.eu> >>
 
 =head1 BUGS
 
-Please report any bugs or feature requests to C<bug-config-ini-accvars at rt.cpan.org>, or through
-the web interface at L<https://rt.cpan.org/NoAuth/ReportBug.html?Queue=Config-INI-RefVars>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
+Please report any bugs or feature requests to C<bug-config-ini-accvars at
+rt.cpan.org>, or through the web interface at
+L<https://rt.cpan.org/NoAuth/ReportBug.html?Queue=Config-INI-RefVars>.  I will
+be notified, and then you'll automatically be notified of progress on your bug
+as I make changes.
 
 
 =head1 SUPPORT
@@ -1133,9 +1192,6 @@ L<https://metacpan.org/release/Config-INI-RefVars>
 L<https://github.com/AAHAZRED/perl-Config-INI-RefVars>
 
 =back
-
-
-=head1 ACKNOWLEDGEMENTS
 
 
 =head1 LICENSE AND COPYRIGHT
