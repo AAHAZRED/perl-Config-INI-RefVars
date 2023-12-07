@@ -412,7 +412,7 @@ EOT
                              }
             },
             'variables()');
-  is_deeply($obj->sections_h, { A => 0, 'B' => 1 }, 'sections_h())');
+  is_deeply($obj->sections_h, { A => '0', B => '1' }, 'sections_h())');
   is_deeply($obj->sections,   [qw(A B)],            'sections())');
 };
 
