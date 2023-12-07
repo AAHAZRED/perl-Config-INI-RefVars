@@ -386,5 +386,35 @@ EOT
   };
 };
 
+
+subtest "PITFALLS" => sub {
+  my $obj = Config::INI::RefVars->new();
+  my $src = <<'EOT';
+    [A]
+    a=1
+
+    [B]
+    b=2
+EOT
+  $obj->parse_ini(src => $src, tocopy_vars => {'foo' => 'xyz'});
+  is_deeply($obj->variables,
+            {
+             'A' => {
+                     'a' => '1',
+                     'foo' => 'xyz'
+                    },
+             'B' => {
+                     'b' => '2',
+                     'foo' => 'xyz'
+                    },
+             '__TOCOPY__' => {
+                              'foo' => 'xyz'
+                             }
+            },
+            'variables()');
+  is_deeply($obj->sections_h, { A => 0, 'B' => 1 }, 'sections_h())');
+  is_deeply($obj->sections,   [qw(A B)],            'sections())');
+};
+
 #==================================================================================================
 done_testing();
