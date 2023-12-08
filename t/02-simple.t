@@ -65,6 +65,7 @@ subtest 'empty input' => sub {
     is_deeply($obj->sections,   [], 'sections(): empty array');
     is_deeply($obj->sections_h, {}, 'sections_h(): empty hash');
     is_deeply($obj->variables,  {}, 'variables(): empty hash');
+    is($obj->src_name, $empty_file, "src_name returns $empty_file");
     check_other($obj, $empty_file);
   };
   subtest "file containing only spaces" => sub {

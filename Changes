@@ -1,5 +1,9 @@
 Revision history for Config-INI-RefVars
 
+0.03    2023/12/08
+        Fixed minor bug with src_name.
+        Some corrections in the POD section.
+
 0.02    2023/12/07
         Fixed minor POD problem.
 
