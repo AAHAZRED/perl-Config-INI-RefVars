@@ -16,7 +16,7 @@ t/03-data/basic.ini
 t/03-data/basic_spaces.ini
 t/04-ref_vars.t
 t/05-ref_sec_vars.t
-t/06-common.t
+t/06-tocopy.t
 t/07-separator.t
 t/08-autovars.t
 t/08-data/mix.ini
