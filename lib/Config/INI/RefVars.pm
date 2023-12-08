@@ -8,7 +8,7 @@ use feature ":5.10";
 
 use File::Spec::Functions qw(catdir rel2abs splitpath);
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 use constant DFLT_TOCOPY_SECTION  => "__TOCOPY__";
 
@@ -461,7 +461,7 @@ Config::INI::RefVars - INI file reader, allows the referencing of INI and enviro
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =head1 SYNOPSIS
 
