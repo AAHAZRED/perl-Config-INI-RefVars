@@ -498,12 +498,17 @@ then C<< $ini_reader->variables >> returns:
 
 =head1 DESCRIPTION
 
+
+=head2 INTRODUCTION
+
+Minimum version of perl required to use this module: C<v5.10.1>.
+
 This module provides an INI file reader that allows INI variables and
 environment variables to be referenced within the INI file. It also supports
 some additional assignment operators.
 
 
-=head2 INTRODUCTION
+=head2 OVERVIEW
 
 A line in an INI file should not start with an C<=> or the sequence
 C<;!>. These are reserved for future extensions. Otherwise the parser throws a
@@ -548,8 +553,8 @@ A variable name cannot be empty.
 
 =item *
 
-A sequence of the sequence C<$(...)> is used to reference INI variables or
-environment variables.
+The sequence C<$(...)> is used to reference INI variables or environment
+variables.
 
 =item *
 
@@ -589,9 +594,10 @@ of C<]> are ignored.
 
    [   The name of the section   ]
 
-This sets the section name to C<The name of the section>. As a special case,
-C<[]> or C<[ ]> are permitted, which results in a section name that is just an
-empty string.
+This sets the section name to C<The name of the section>.
+
+As a special case, C<[]> or C<[ ]> are permitted, which results in a section
+name that is just an empty string.
 
 Section names must be unique.
 
@@ -660,7 +666,7 @@ Now C<var> has the value C<abc 123>.
 =item C<< .>= >>
 
 The right-hand side is placed in front of the value of the variable. If the
-variable is not yet defined, this has thgit config user.name AAHAZREDe same effect as a simple C<=>.
+variable is not yet defined, this has the same effect as a simple C<=>.
 
 Example:
 
@@ -825,9 +831,8 @@ only present if the source is a file, otherwise they are not defined.
 =head3 Space Variables
 
 C<$()> always expands to an empty string, C<$(E<nbsp>)>, C<$(E<nbsp>E<nbsp>)>
-with any number of spaces within the parens expands to exactly these
-spaces. So there are several ways to define variables with heading or trailing
-spaces:
+with any number of spaces within the parens expand to exactly these spaces. So
+there are several ways to define variables with heading or trailing spaces:
 
    foo = abc   $()
    bar = $(   )abc
@@ -1009,8 +1014,8 @@ and C<sections> returns
    ['A', 'B']
 
 No C<__TOCOPY__>. The reason for this is that the return values of
-C<sections_h> and C<sections_h> refer to what is contained in the source, and
-in this case C<__TOCOPY__> is not contained in the source, but comes from a
+C<sections_h> and C<sections> refer to what is contained in the source, and in
+this case C<__TOCOPY__> is not contained in the source, but comes from a
 method argument.
 
 
@@ -1153,7 +1158,7 @@ to the source">.
 =head3 variables
 
 Returns a reference to a hash of hashes. The keys are the section names, each
-value is the corresponding hash of varibales (key: variable name, vaule:
+value is the corresponding hash of varibales (key: variable name, value:
 variable value). By default, variables with a C<=> in their name are not
 included; this can be changed with the C<cleanup> argument.
 
