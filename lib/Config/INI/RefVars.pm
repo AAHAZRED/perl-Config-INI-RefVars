@@ -240,6 +240,7 @@ sub parse_ini {
   foreach my $scalar_arg (qw(tocopy_section src_name)) {
      croak("'$scalar_arg': must not be a reference") if ref($args{$scalar_arg});
    }
+  delete $self->{+SRC_NAME} if exists($self->{+SRC_NAME});  #### !!!!!!!!!!!
   $self->{+SRC_NAME} = $args{src_name} if exists($args{src_name});
   my (      $cleanup, $src, $tocopy_section, $tocopy_vars, $not_tocopy) =
     @args{qw(cleanup   src   tocopy_section   tocopy_vars   not_tocopy)};
@@ -823,16 +824,17 @@ only present if the source is a file, otherwise they are not defined.
 
 =head3 Space Variables
 
-C<$()> always expands to an empty string, C<$( )>, C<$( )> with any number of
-spaces within the parens expands to exactly these spaces. So there are several
-ways to define variables with heading or trailing spaces:
+C<$()> always expands to an empty string, C<$(E<nbsp>)>, C<$(E<nbsp>E<nbsp>)>
+with any number of spaces within the parens expands to exactly these
+spaces. So there are several ways to define variables with heading or trailing
+spaces:
 
    foo = abc   $()
    bar = $(   )abc
 
 The value of C<foo> has three spaces at the end, the value of C<bar> has three
 spaces at the beginning. A special use case for C<$()> is the avoidance of
-unwanted extensions:
+unwanted variable expansion:
 
    var=hello!
    x=$(var)
@@ -1061,6 +1063,10 @@ Then you can write:
     a var=$(A::y)
 
 This gives the variable C<a var> the value C<27>.
+
+The following characters are permitted for C<separator>:
+
+   !#%&',./:~
 
 =back
 

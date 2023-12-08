@@ -307,5 +307,21 @@ subtest "backup / restore" => sub {
   };
 };
 
+subtest 'src_name' => sub {
+  my $obj = Config::INI::RefVars->new();
+  my $src = [
+             '[section]',
+             'variable=value',
+            ];
+  $obj->parse_ini(src => $src);
+  is($obj->src_name, "INI data", 'src_name: "INI data"');
+
+  $obj->parse_ini(src => $src, src_name => "other name");
+  is($obj->src_name, "other name", 'src_name: "other name"');
+
+  $obj->parse_ini(src => $src);  # No explicite 'src_name => ...'!
+  is($obj->src_name, "INI data", 'src_name: back to "INI data"');
+};
+
 #==================================================================================================
 done_testing();
