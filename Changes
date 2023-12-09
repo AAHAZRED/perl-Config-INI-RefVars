@@ -1,5 +1,10 @@
 Revision history for Config-INI-RefVars
 
+0.05    yyyy/mm/dd
+        Fixed bug in test script.
+        Added variable '=::'.
+        Completed POD.
+
 0.04    2023/12/08
         Some corrections in the POD documentation.
 

@@ -6,6 +6,7 @@ use Carp;
 
 use feature ":5.10";
 
+use Config;
 use File::Spec::Functions qw(catdir rel2abs splitpath);
 
 our $VERSION = '0.04';
@@ -28,7 +29,8 @@ use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
               BACKUP            => FLD_KEY_PREFIX . 'BACKUP',
              };
 
-my %Globals = ('=:' => catdir("", ""));
+my %Globals = ('=:'  => catdir("", "",),
+               '=::' => $Config{path_sep});
 
 
 # Match punctuation chars, but not the underscores.
@@ -810,7 +812,7 @@ The hash returned by the C<variables> method is then:
    }
 
 
-=head3 Variables related to the Source:
+=head3 Variables related to the Source
 
 =over
 
@@ -824,6 +826,22 @@ set to "INI data". The value can be overwritten with the argument C<src_name>.
 
 Directory (absolute path) and file name of the INI file. These variables are
 only present if the source is a file, otherwise they are not defined.
+
+=back
+
+=head3 Variables related to the OS
+
+=over
+
+=item C<=:>
+
+The directory separator, C<\> on Windows, C</> on Linux.  Note: This is not
+always sufficient to create a path, e.g. on VMS.
+
+=item C<=::>
+
+Path separator, which is used in the environment variable C<PATH>, for
+example.
 
 =back
 

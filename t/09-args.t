@@ -5,15 +5,18 @@ use Test::More;
 
 use Config::INI::RefVars;
 
+use Config;
 use Storable qw(dclone);
+use File::Spec::Functions qw(catdir catfile rel2abs splitpath);
 
-# use File::Spec::Functions qw(catdir catfile rel2abs splitpath);
-#
 #sub test_data_file { catfile(qw(t 09-data), $_[0]) }
 
 #
 # For heredocs containing INI data always use the single quote variant!
 #
+
+my $Dir_Sep = catdir("", "");
+
 
 subtest "use all args of new()" => sub {
   my $obj = Config::INI::RefVars->new(tocopy_section => "TOCOPY!",
@@ -164,33 +167,36 @@ subtest "use all args of new()" => sub {
     is_deeply($obj->variables,
               {
                'TOCOPY!' => {
-                             '#foo' => 'foo with hash',
-                             '#hash' => 'other value',
-                             '12=ab' => '42',
-                             '=' => 'TOCOPY!',
-                             '=:' => '/',
-                             '=srcname' => 'INI data',
+                             '#foo'       => 'foo with hash',
+                             '#hash'      => 'other value',
+                             '12=ab'      => '42',
+                             '='          => 'TOCOPY!',
+                             '=:'         => $Dir_Sep,
+                             '=::'        => $Config{path_sep},
+                             '=srcname'   => 'INI data',
                              'additional' => 'yet another tocopy var!',
-                             'foo' => 'override!'
+                             'foo'        => 'override!'
                             },
                'sec-A' => {
-                           '#foo' => 'foo with hash',
-                           '12=ab' => '42',
-                           '=' => 'sec-A',
-                           '=:' => '/',
-                           '=srcname' => 'INI data',
-                           'a var' => '42',
+                           '#foo'       => 'foo with hash',
+                           '12=ab'      => '42',
+                           '='          => 'sec-A',
+                           '=:'         => $Dir_Sep,
+                           '=::'        => $Config{path_sep},
+                           '=srcname'   => 'INI data',
+                           'a var'      => '42',
                            'additional' => 'yet another tocopy var!',
-                           'foo' => 'override!'
+                           'foo'        => 'override!'
                           },
                'sec-B' => {
-                           '#foo' => 'foo with hash',
-                           '12=ab' => '42',
-                           '=' => 'sec-B',
-                           '=:' => '/',
-                           '=srcname' => 'INI data',
+                           '#foo'       => 'foo with hash',
+                           '12=ab'      => '42',
+                           '='          => 'sec-B',
+                           '=:'         => $Dir_Sep,
+                           '=::'        => $Config{path_sep},
+                           '=srcname'   => 'INI data',
                            'additional' => 'yet another tocopy var!',
-                           'foo' => 'override!'
+                           'foo'        => 'override!'
                           }
 
               },
