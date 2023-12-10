@@ -29,8 +29,9 @@ use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
               BACKUP            => FLD_KEY_PREFIX . 'BACKUP',
              };
 
-my %Globals = ('=:'  => catdir("", "",),
-               '=::' => $Config{path_sep});
+my %Globals = ('=:'       => catdir("", "",),
+               '=::'      => $Config{path_sep},
+               '=VERSION' => $VERSION);
 
 
 # Match punctuation chars, but not the underscores.
@@ -865,6 +866,16 @@ unwanted variable expansion:
 
 With these settings, C<x> has the value C<Hello!>, but C<y> has the value
 C<$(var)>.
+
+=head3 Other Variables
+
+=over
+
+=item C<=VERSION>
+
+Version of the C<Config::INI::RefVars> module.
+
+=back
 
 
 =head3 Custom predefined Variables

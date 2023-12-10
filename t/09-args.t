@@ -16,7 +16,11 @@ use File::Spec::Functions qw(catdir catfile rel2abs splitpath);
 #
 
 my $Dir_Sep = catdir("", "");
-
+my $VERSION = $Config::INI::RefVars::VERSION;
+my %Global = ('=:'        => $Dir_Sep,
+              '=::'       => $Config{path_sep},
+              '=VERSION'  => $VERSION,
+             );
 
 subtest "use all args of new()" => sub {
   my $obj = Config::INI::RefVars->new(tocopy_section => "TOCOPY!",
@@ -171,8 +175,7 @@ subtest "use all args of new()" => sub {
                              '#hash'      => 'other value',
                              '12=ab'      => '42',
                              '='          => 'TOCOPY!',
-                             '=:'         => $Dir_Sep,
-                             '=::'        => $Config{path_sep},
+                             %Global,
                              '=srcname'   => 'INI data',
                              'additional' => 'yet another tocopy var!',
                              'foo'        => 'override!'
@@ -181,8 +184,7 @@ subtest "use all args of new()" => sub {
                            '#foo'       => 'foo with hash',
                            '12=ab'      => '42',
                            '='          => 'sec-A',
-                           '=:'         => $Dir_Sep,
-                           '=::'        => $Config{path_sep},
+                           %Global,
                            '=srcname'   => 'INI data',
                            'a var'      => '42',
                            'additional' => 'yet another tocopy var!',
@@ -192,8 +194,7 @@ subtest "use all args of new()" => sub {
                            '#foo'       => 'foo with hash',
                            '12=ab'      => '42',
                            '='          => 'sec-B',
-                           '=:'         => $Dir_Sep,
-                           '=::'        => $Config{path_sep},
+                           %Global,
                            '=srcname'   => 'INI data',
                            'additional' => 'yet another tocopy var!',
                            'foo'        => 'override!'

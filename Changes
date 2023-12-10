@@ -1,5 +1,8 @@
 Revision history for Config-INI-RefVars
 
+0.06    yyyy/mm/dd
+        Added variable '=VERSION'.
+
 0.05    2023/12/09
         Fixed bug in test script.
         Added variable '=::'.
