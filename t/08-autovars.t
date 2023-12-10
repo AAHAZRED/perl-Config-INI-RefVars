@@ -16,6 +16,10 @@ sub test_data_file { catfile(qw(t 08-data), $_[0]) }
 
 my $Dir_Sep = catdir("", "");
 my $VERSION = $Config::INI::RefVars::VERSION;
+my %Global = ('=:'        => $Dir_Sep,
+              '=::'       => $Config{path_sep},
+              '=VERSION'  => $VERSION,
+             );
 
 subtest "not from file" => sub {
   my $expected = {
@@ -192,9 +196,7 @@ subtest "from file / with and without cleanup" => sub {
               {
                '__TOCOPY__' => {
                                 '='   => '__TOCOPY__',
-                                '=:'  => $Dir_Sep,
-                                '=::' => $Config{path_sep},
-                                '=VERSION' => $VERSION,
+                                %Global,
                                 '=srcdir'  => $ini_dir,
                                 '=srcfile' => $ini_file,
                                 '=srcname' => $src
@@ -238,9 +240,7 @@ subtest "from file / with and without cleanup" => sub {
                               },
                'section 2' => {
                                '='   => 'section 2',
-                               '=:'  => $Dir_Sep,
-                               '=::' => $Config{path_sep},
-                               '=VERSION' => $VERSION,
+                               %Global,
                                '=srcdir'  => $ini_dir,
                                '=srcfile' => $ini_file,
                                '=srcname' => $src
@@ -253,9 +253,7 @@ subtest "from file / with and without cleanup" => sub {
               {
                '__TOCOPY__' => {
                                 '='   => '__TOCOPY__',
-                                '=:'  => $Dir_Sep,
-                                '=::' => $Config{path_sep},
-                                '=VERSION' => $VERSION,
+                                %Global,
                                 '=srcdir'  => $ini_dir,
                                 '=srcfile' => $ini_file,
                                 '=srcname' => $src
@@ -298,9 +296,7 @@ subtest "from file / with and without cleanup" => sub {
                               },
                'section 2' => {
                                '='   => 'section 2',
-                               '=:'  => $Dir_Sep,
-                               '=::' => $Config{path_sep},
-                               '=VERSION' => $VERSION,
+                               %Global,
                                '=srcdir'  => $ini_dir,
                                '=srcfile' => $ini_file,
                                '=srcname' => $src
