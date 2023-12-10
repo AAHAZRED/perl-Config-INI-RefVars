@@ -21,37 +21,42 @@ my %Global = ('=:'        => $Dir_Sep,
               '=VERSION'  => $VERSION,
              );
 
+sub exp_sec_1 {
+  my ($src, $ini_file, $ini_dir) = @_;
+  return {
+          '1a' => $src,
+          '1b' => $ini_file,
+          '1c' => $ini_dir,
+          '1d' => $Dir_Sep,
+          '1e' => 'section 1',
+          '1f' => '',
+          '1g' => '  ',
+          '1h' => $Config{path_sep},
+          '1i' => $VERSION,
+          '2a' => $src,
+          '2b' => $ini_file,
+          '2c' => $ini_dir,
+          '2d' => $Dir_Sep,
+          '2e' => 'section 2',
+          '2f' => '',
+          '2g' => '  ',
+          '2h' => $Config{path_sep},
+          '2i' => $VERSION,
+          '3a' => '',
+          '3b' => '',
+          '3c' => '',
+          '3d' => '',
+          '3e' => '',
+          '3f' => '',
+          '3g' => '',
+          '3h' => '',
+          '3i' => '',
+         };
+}
+
 subtest "not from file" => sub {
   my $expected = {
-                  'section 1' => {
-                                  '1a' => 'INI data',
-                                  '1b' => '',
-                                  '1c' => '',
-                                  '1d' => $Dir_Sep,
-                                  '1e' => 'section 1',
-                                  '1f' => '',
-                                  '1g' => '  ',
-                                  '1h' => $Config{path_sep},
-                                  '1i' => $VERSION,
-                                  '2a' => 'INI data',
-                                  '2b' => '',
-                                  '2c' => '',
-                                  '2d' => $Dir_Sep,
-                                  '2e' => 'section 2',
-                                  '2f' => '',
-                                  '2g' => '  ',
-                                  '2h' => $Config{path_sep},
-                                  '2i' => $VERSION,
-                                  '3a' => '',
-                                  '3b' => '',
-                                  '3c' => '',
-                                  '3d' => '',
-                                  '3e' => '',
-                                  '3f' => '',
-                                  '3g' => '',
-                                  '3h' => '',
-                                  '3i' => ''
-                                 },
+                  'section 1' => exp_sec_1('INI data', '', ''),
                   'section 2' => {}
                  };
     subtest "default section ref" => sub {
@@ -107,6 +112,10 @@ subtest "not from file" => sub {
     };
     subtest "separator" => sub {
       my $obj = Config::INI::RefVars->new(separator => '~');
+
+      #
+      # Keep this in sync with file mix.ini!!!
+      #
       my $src = [
                  '[section 1]',
                  '1a=$(=srcname)',
@@ -155,38 +164,10 @@ subtest "from file / with and without cleanup" => sub {
   subtest "default, e.i., no cleanup argument" => sub {
     $obj->parse_ini(src => $src);
     is_deeply($obj->variables,
-               {
-                  'section 1' => {
-                                  '1a' => $src,
-                                  '1b' => $ini_file,
-                                  '1c' => $ini_dir,
-                                  '1d' => $Dir_Sep,
-                                  '1e' => 'section 1',
-                                  '1f' => '',
-                                  '1g' => '  ',
-                                  '1h' => $Config{path_sep},
-                                  '1i' => $VERSION,
-                                  '2a' => $src,
-                                  '2b' => $ini_file,
-                                  '2c' => $ini_dir,
-                                  '2d' => $Dir_Sep,
-                                  '2e' => 'section 2',
-                                  '2f' => '',
-                                  '2g' => '  ',
-                                  '2h' => $Config{path_sep},
-                                  '2i' => $VERSION,
-                                  '3a' => '',
-                                  '3b' => '',
-                                  '3c' => '',
-                                  '3d' => '',
-                                  '3e' => '',
-                                  '3f' => '',
-                                  '3g' => '',
-                                  '3h' => '',
-                                  '3i' => ''
-                                 },
-                  'section 2' => {}
-               },
+              {
+               'section 1' => exp_sec_1($src, $ini_file, $ini_dir),
+               'section 2' => {}
+              },
               'variables()');
   };
 
@@ -202,41 +183,12 @@ subtest "from file / with and without cleanup" => sub {
                                 '=srcname' => $src
                                },
                'section 1' => {
-                               '1a'  => $src,
-                               '1b'  => $ini_file,
-                               '1c'  => $ini_dir,
-                               '1d'  => $Dir_Sep,
-                               '1e'  => 'section 1',
-                               '1f'  => '',
-                               '1g'  => '  ',
-                               '1h'  => $Config{path_sep},
-                               '1i' => $VERSION,
-                               '2a'  => $src,
-                               '2b'  => $ini_file,
-                               '2c'  => $ini_dir,
-                               '2d'  => $Dir_Sep,
-                               '2e'  => 'section 2',
-                               '2f'  => '',
-                               '2g'  => '  ',
-                               '2h'  => $Config{path_sep},
-                               '2i' => $VERSION,
-                               '3a'  => '',
-                               '3b'  => '',
-                               '3c'  => '',
-                               '3d'  => '',
-                               '3e'  => '',
-                               '3f'  => '',
-                               '3g'  => '',
-                               '3h'  => '',
-                               '3i'  => '',
                                '='   => 'section 1',
-                               '=:'  => $Dir_Sep,
-                               '=::' => $Config{path_sep},
-                               '=VERSION' => $VERSION,
+                               %{exp_sec_1($src, $ini_file, $ini_dir)},
+                               %Global,
                                '=srcdir'  => $ini_dir,
                                '=srcfile' => $ini_file,
                                '=srcname' => $src
-
                               },
                'section 2' => {
                                '='   => 'section 2',
@@ -259,37 +211,9 @@ subtest "from file / with and without cleanup" => sub {
                                 '=srcname' => $src
                                },
                'section 1' => {
-                               '1a' => $src,
-                               '1b' => $ini_file,
-                               '1c' => $ini_dir,
-                               '1d' => $Dir_Sep,
-                               '1e' => 'section 1',
-                               '1f' => '',
-                               '1g' => '  ',
-                               '1h' => $Config{path_sep},
-                               '1i' => $VERSION,
-                               '2a' => $src,
-                               '2b' => $ini_file,
-                               '2c' => $ini_dir,
-                               '2d' => $Dir_Sep,
-                               '2e' => 'section 2',
-                               '2f' => '',
-                               '2g' => '  ',
-                               '2h' => $Config{path_sep},
-                               '2i' => $VERSION,
-                               '3a' => '',
-                               '3b' => '',
-                               '3c' => '',
-                               '3d' => '',
-                               '3e' => '',
-                               '3f' => '',
-                               '3g' => '',
-                               '3h' => '',
-                               '3i' => '',
-                               '='  => 'section 1',
-                               '=:' => $Dir_Sep,
-                               '=::' => $Config{path_sep},
-                               '=VERSION' => $VERSION,
+                               '='   => 'section 1',
+                               %{exp_sec_1($src, $ini_file, $ini_dir)},
+                               %Global,
                                '=srcdir'  => $ini_dir,
                                '=srcfile' => $ini_file,
                                '=srcname' => $src
