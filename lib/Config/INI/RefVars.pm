@@ -1,3 +1,5 @@
+# https://www.dhcpserver.de/cms/ini_file_reference/special/sectionname-syntax-for-ini-file-variables/
+
 package Config::INI::RefVars;
 use 5.010;
 use strict;
@@ -17,6 +19,7 @@ use constant FLD_KEY_PREFIX => __PACKAGE__ . ' __ ';
 
 use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
 
+              CMNT_VL           => FLD_KEY_PREFIX . 'CMNT_VL',
               TOCOPY_SECTION    => FLD_KEY_PREFIX . 'TOCOPY_SECTION',
               CURR_TOCP_SECTION => FLD_KEY_PREFIX . 'CURR_TOCP_SECTION',
               TOCOPY_VARS       => FLD_KEY_PREFIX . 'TOCOPY_VARS',
@@ -84,12 +87,12 @@ my $_check_not_tocopy = sub {
 sub new {
   my ($class, %args) = @_;
   state $allowed_keys = {map {$_ => undef} qw(tocopy_section tocopy_vars not_tocopy
-                                              separator)};
+                                              separator cmnt_vl)};
   _check_args(\%args, $allowed_keys);
   my $self = {};
   croak("'tocopy_section': must not be a reference") if ref($args{tocopy_section});
   if (exists($args{separator})) {
-    state $allowed_sep_chars = "!#%&',./:~";
+    state $allowed_sep_chars = "#!%&',./:~\\\\";
     my $sep = $args{separator};
     croak("'separator': unexpected ref type, must be a scalar") if ref($sep);
     croak("'separator': invalid value. Allowed chars: $allowed_sep_chars")
@@ -100,6 +103,7 @@ sub new {
   else {
     $self->{+VREF_RE} = qr/^\[\s*(.*?)\s*\](.*)$/;
   }
+  $self->{+CMNT_VL} = $args{cmnt_vl};
   $self->{+TOCOPY_SECTION} = $args{tocopy_section} // DFLT_TOCOPY_SECTION;
   $self->$_check_tocopy_vars($args{tocopy_vars}, 1) if exists($args{tocopy_vars});
   $self->$_check_not_tocopy($args{not_tocopy},   1) if exists($args{not_tocopy});
@@ -142,6 +146,7 @@ my $_parse_ini = sub {
     $src = [do { local (*ARGV); @ARGV = ($src_name); <> }];
   }
   my $curr_section;
+  my $cmnt_vl     = $self->{+CMNT_VL};
   my $sections    = $self->{+SECTIONS};
   my $sections_h  = $self->{+SECTIONS_H};
   my $expanded    = $self->{+EXPANDED};
@@ -189,6 +194,7 @@ my $_parse_ini = sub {
     }
 
     # var = val
+    $line =~ s/\s+;.*$// if $cmnt_vl;
     $set_curr_section->($tocopy_sec) if !defined($curr_section);
     $line =~ /^(.*?)\s*($Modifier_Char*?)=(?:\s*)(.*)/ or
       $_fatal->("neither section header nor key definition");
@@ -1060,22 +1066,6 @@ The constructor takes the following optional named arguments:
 
 =over
 
-=item C<tocopy_section>
-
-Optional, a string. Specifies a different name for the I<tocopy>
-section. Default is C<__TOCOPY__>. See accessor C<tocopy_section>.
-
-=item C<tocopy_vars>
-
-Optional, a hash reference. If specified, its keys become variables of the
-I<tocopy> section, the hash values become the corresponding variable values. This
-allows you to specify variables that you cannot specify in the INI file,
-e.g. variables with a C<=> in the name.
-
-Keys with C<=> or C<;> as the first character are not permitted.
-
-Default is C<undef>.
-
 =item C<not_tocopy>
 
 Optional, a reference to a hash or an array of strings. The hash keys or array
@@ -1104,9 +1094,49 @@ This gives the variable C<a var> the value C<27>.
 
 The following characters are permitted for C<separator>:
 
-   !#%&',./:~
+   #!%&',./:~\
 
 See also the accessor method of the same name.
+
+=item C<tocopy_section>
+
+Optional, a string. Specifies a different name for the I<tocopy>
+section. Default is C<__TOCOPY__>. See accessor C<tocopy_section>.
+
+=item C<tocopy_vars>
+
+Optional, a hash reference. If specified, its keys become variables of the
+I<tocopy> section, the hash values become the corresponding variable values. This
+allows you to specify variables that you cannot specify in the INI file,
+e.g. variables with a C<=> in the name.
+
+Keys with C<=> or C<;> as the first character are not permitted.
+
+Default is C<undef>.
+
+=item C<cmnt_vl>
+
+Optional, a Boolean value. If this value is set to I<true>, comments are
+permitted in variable lines. The comment character is a semicolon preceded by
+one or more spaces.
+
+Example:
+
+   [section]
+   var 1=val 1 ; comment
+   var 2=val 2  ; ;  ; comment
+   var 3=val 3; no comment
+   var 4=val 4 $(); no comment
+
+After parsing, the C<variables> method returns:
+
+   section => {'var 1' => 'val 1',
+               'var 2' => 'val 2',
+               'var 3' => 'val 3; no comment',
+               'var 4' => 'val 4 ; no comment',
+              }
+
+Default is I<false> (C<undef>).
 
 =back
 

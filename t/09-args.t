@@ -334,5 +334,26 @@ subtest 'src_name' => sub {
   is($obj->src_name, "INI data", 'src_name: back to "INI data"');
 };
 
+subtest 'cmnt_vl' => sub {
+  my $obj = Config::INI::RefVars->new(cmnt_vl => 1);
+  my $src = [
+             '[section]',
+             'var 1 =val 1 ; comment',
+             'var 2=val 2  ; ;  ; comment',
+             'var 3 =val 3; no comment',
+             'var 4=val 4 $(); no comment',
+            ];
+  $obj->parse_ini(src => $src);
+  is_deeply($obj->variables,
+            {
+             section => {'var 1' => 'val 1',
+                         'var 2' => 'val 2',
+                         'var 3' => 'val 3; no comment',
+                         'var 4' => 'val 4 ; no comment',
+                        }
+            },
+            'variables()');
+};
+
 #==================================================================================================
 done_testing();
