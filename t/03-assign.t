@@ -24,6 +24,9 @@ subtest 'basic assignments' => sub {
     foreach my $file (test_data_file('basic.ini'), test_data_file('basic_spaces.ini')) {
       subtest $file => sub {
         $obj->parse_ini(src => $file);
+        is($obj->tocopy_section, DFLT_TOCOPY_SECTION, 'tocopy_section()');
+        is($obj->current_tocopy_section, DFLT_TOCOPY_SECTION, 'current_tocopy_section()');
+        is($obj->src_name, $file, 'src_name()');
         is_deeply($obj->sections,
                   [+DFLT_TOCOPY_SECTION, "this section"],
                   "sections()");

@@ -2,6 +2,8 @@ Revision history for Config-INI-RefVars
 
 0.06    yyyy/mm/dd
         Added variable '=VERSION'.
+        Added method current_tocopy_section.
+        Added method separator.
 
 0.05    2023/12/09
         Fixed bug in test script.

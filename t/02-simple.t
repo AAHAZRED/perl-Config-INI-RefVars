@@ -28,6 +28,7 @@ subtest 'before any parsing' => sub {
                        src_name)) {
     is($obj->$meth, undef, "$meth(): undef");
     is($obj->tocopy_section, Config::INI::RefVars::DFLT_TOCOPY_SECTION, "tocopy_section()");
+    is($obj->current_tocopy_section, undef, 'current_tocopy_section()');
   }
 };
 
@@ -36,6 +37,9 @@ subtest 'empty input' => sub {
   subtest "string that only contains a line break" => sub {
     my $obj = new_ok('Config::INI::RefVars');
     is($obj->parse_ini(src => "\n"), $obj, "parse_ini() returns obj");
+    is($obj->tocopy_section, Config::INI::RefVars::DFLT_TOCOPY_SECTION, "tocopy_section()");
+    is($obj->current_tocopy_section, Config::INI::RefVars::DFLT_TOCOPY_SECTION,
+       'current_tocopy_section()');
     is_deeply($obj->sections,   [], 'sections(): empty array');
     is_deeply($obj->sections_h, {}, 'sections_h(): empty hash');
     is_deeply($obj->variables,  {}, 'variables(): empty hash');
@@ -248,4 +252,5 @@ sub check_other {
   my $obj = shift;
   my $src_name = shift // "INI data";
   is($obj->tocopy_section,  Config::INI::RefVars::DFLT_TOCOPY_SECTION, 'tocopy_section()');
+  is($obj->separator, undef, 'separator()');
 }

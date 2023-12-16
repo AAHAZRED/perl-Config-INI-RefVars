@@ -23,7 +23,8 @@ my %Global = ('=:'        => $Dir_Sep,
              );
 
 subtest "use all args of new()" => sub {
-  my $obj = Config::INI::RefVars->new(tocopy_section => "TOCOPY!",
+  my $initial_tocopy_section = "TOCOPY!";
+  my $obj = Config::INI::RefVars->new(tocopy_section => $initial_tocopy_section,
                                       tocopy_vars    => { '#hash' => 'maria',
                                                           'f~27'  => 42,
                                                           'foo'   => 'sec:$(=)'
@@ -31,6 +32,8 @@ subtest "use all args of new()" => sub {
                                       not_tocopy     => ['#hash'],
                                       separator      => '/'
                                      );
+  is($obj->current_tocopy_section, undef, 'current_tocopy_section()');
+
   subtest "simple tests" => sub {
     my $src = [
                '[sec-A]',
@@ -38,6 +41,7 @@ subtest "use all args of new()" => sub {
               ];
     subtest "parse_ini() - no further args" => sub {
       $obj->parse_ini(src => $src);
+      is($obj->current_tocopy_section, $initial_tocopy_section, 'current_tocopy_section()');
       is_deeply($obj->variables,
                 {
                  'TOCOPY!' => {

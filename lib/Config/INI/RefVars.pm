@@ -18,6 +18,7 @@ use constant FLD_KEY_PREFIX => __PACKAGE__ . ' __ ';
 use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
 
               TOCOPY_SECTION    => FLD_KEY_PREFIX . 'TOCOPY_SECTION',
+              CURR_TOCP_SECTION => FLD_KEY_PREFIX . 'CURR_TOCP_SECTION',
               TOCOPY_VARS       => FLD_KEY_PREFIX . 'TOCOPY_VARS',
               NOT_TOCOPY        => FLD_KEY_PREFIX . 'NOT_TOCOPY',
               SECTIONS          => FLD_KEY_PREFIX . 'SECTIONS',
@@ -26,6 +27,7 @@ use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
               VARIABLES         => FLD_KEY_PREFIX . 'VARIABLES',
               GLOBAL_VARS       => FLD_KEY_PREFIX . 'GLOBAL_VARS',
               VREF_RE           => FLD_KEY_PREFIX . 'VREF_RE',
+              SEPARATOR         => FLD_KEY_PREFIX . 'SEPARATOR',
               BACKUP            => FLD_KEY_PREFIX . 'BACKUP',
              };
 
@@ -92,6 +94,7 @@ sub new {
     croak("'separator': unexpected ref type, must be a scalar") if ref($sep);
     croak("'separator': invalid value. Allowed chars: $allowed_sep_chars")
       if $sep !~ m{^[$allowed_sep_chars]+$};
+    $self->{+SEPARATOR} = $sep;
     $self->{+VREF_RE} = qr/^(.*?)(?:\Q$sep\E)(.*)$/;
   }
   else {
@@ -257,6 +260,7 @@ sub parse_ini {
   else {
     $tocopy_section = $self->{+TOCOPY_SECTION};
   }
+  $self->{+CURR_TOCP_SECTION} = $tocopy_section;
   if ($tocopy_vars) {
     $backup->{tocopy_vars} = $self->{+TOCOPY_VARS};
     $self->$_check_tocopy_vars($tocopy_vars, 1);
@@ -335,16 +339,16 @@ sub parse_ini {
 }
 
 
+sub current_tocopy_section {$_[0]->{+CURR_TOCP_SECTION}}
 sub sections        { defined($_[0]->{+SECTIONS})   ? [@{$_[0]->{+SECTIONS}}]     : undef}
-
 sub sections_h      { defined($_[0]->{+SECTIONS_H}) ? +{ %{$_[0]->{+SECTIONS_H}} } : undef }
+sub separator       {$_[0]->{+SEPARATOR}}
+sub src_name        {$_[0]->{+SRC_NAME}}
+sub tocopy_section  {$_[0]->{+TOCOPY_SECTION}}
 
 sub variables       { my $vars = $_[0]->{+VARIABLES} // return undef;
                       return  {map {$_ => {%{$vars->{$_}}}} keys(%$vars)};
                     }
-
-sub src_name        {$_[0]->{+SRC_NAME}}
-sub tocopy_section  {$_[0]->{+TOCOPY_SECTION}}
 
 
 $_look_up = sub {
@@ -1083,8 +1087,8 @@ Default is C<undef>.
 
 =item C<separator>
 
-Optional, a character string. If specified, an alternative notation can be
-used for referencing variables in another section. Example:
+Optional, a string. If specified, an alternative notation can be used for
+referencing variables in another section. Example:
 
    my $obj = Config::INI::RefVars->new(separator => '::');
 
@@ -1092,7 +1096,7 @@ Then you can write:
 
     [A]
     y=27
-    
+
     [B]
     a var=$(A::y)
 
@@ -1102,14 +1106,18 @@ The following characters are permitted for C<separator>:
 
    !#%&',./:~
 
+See also the accessor method of the same name.
+
 =back
 
 
+=head3 current_tocopy_section
 
-=head3 tocopy_section
+Returns the name of the section I<tocopy> that was used the last time
+C<parse_ini> was called. Please note that the section does not have to be
+present in the data.
 
-Returns the name of the I<tocopy> section that will be used as the default for
-the next call to C<parse_ini>.
+See also method C<tocopy_section>.
 
 
 =head3 parse_ini
@@ -1177,12 +1185,28 @@ Returns a reference to a hash whose keys are the section names from the INI
 source, the values are the corresponding indices in the array returned by
 C<sections>.
 
+
+=head3 separator
+
+Returns the value that was passed to the constructor via the argument of the
+same name, or C<undef> .
+
+
 =head3 src_name
 
 Returns the name of the INI source (file name that you have passed to
 C<parse_ini> via the argument C<src>, or the one that you have passed via the
 argument C<src_name>, or "C<INI data>", see section L</"Variables in relation
 to the source">.
+
+
+=head3 tocopy_section
+
+Returns the name of the I<tocopy> section that will be used as the default for
+the next call to C<parse_ini>.
+
+See also method C<current_tocopy_section>.
+
 
 =head3 variables
 
