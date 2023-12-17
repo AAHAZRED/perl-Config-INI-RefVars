@@ -1,5 +1,3 @@
-# https://www.dhcpserver.de/cms/ini_file_reference/special/sectionname-syntax-for-ini-file-variables/
-
 package Config::INI::RefVars;
 use 5.010;
 use strict;
@@ -11,7 +9,7 @@ use feature ":5.10";
 use Config;
 use File::Spec::Functions qw(catdir rel2abs splitpath);
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 use constant DFLT_TOCOPY_SECTION  => "__TOCOPY__";
 
@@ -474,7 +472,7 @@ Config::INI::RefVars - INI file reader, allows the referencing of INI and enviro
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 =head1 SYNOPSIS
 
