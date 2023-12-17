@@ -1278,7 +1278,7 @@ as follows:
      EnableHTTP=1
      Root="$(BaseDir)\wwwroot" ; use wwwroot for http and tftp
    EOT
-   $obj->parse_ini(src => $src
+   $obj->parse_ini(src => $src);
 
 =head1 SEE ALSO
 
