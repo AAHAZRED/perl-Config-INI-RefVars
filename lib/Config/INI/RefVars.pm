@@ -92,11 +92,11 @@ sub new {
   my $self = {};
   croak("'tocopy_section': must not be a reference") if ref($args{tocopy_section});
   if (exists($args{separator})) {
-    state $allowed_sep_chars = "#!%&',./:~\\\\";
+    state $allowed_sep_chars = "#!%&',./:~\\";
     my $sep = $args{separator};
     croak("'separator': unexpected ref type, must be a scalar") if ref($sep);
     croak("'separator': invalid value. Allowed chars: $allowed_sep_chars")
-      if $sep !~ m{^[$allowed_sep_chars]+$};
+      if $sep !~ m{^[\Q$allowed_sep_chars\E]+$};
     $self->{+SEPARATOR} = $sep;
     $self->{+VREF_RE} = qr/^(.*?)(?:\Q$sep\E)(.*)$/;
   }
@@ -1244,6 +1244,51 @@ Returns a reference to a hash of hashes. The keys are the section names, each
 value is the corresponding hash of varibales (key: variable name, value:
 variable value). By default, variables with a C<=> in their name are not
 included; this can be changed with the C<cleanup> argument.
+
+
+=head2 EXAMPLES
+
+You can parse INI files as described here L<$(section\name) syntax for INI
+file
+variables|https://www.dhcpserver.de/cms/ini_file_reference/special/sectionname-syntax-for-ini-file-variables/>
+as follows:
+
+   my $obj = Config::INI::RefVars->new(separator      => "\\",
+                                       cmnt_vl        => 1,
+                                       tocopy_section => 'Settings');
+   my $src = <<'EOT';
+     [Settings]
+     BaseDir="d:\dhcpsrv" ; dhcpsrv.exe resides here
+     IPBIND_1=192.168.17.2
+     IPPOOL_1=$(Settings\IPBIND_1)-50
+     AssociateBindsToPools=1
+     Trace=1
+     TraceFile="$(BaseDir)\dhcptrc.txt" ; trace file
+
+     [DNS-Settings]
+     EnableDNS=1
+
+     [General]
+     SUBNETMASK=255.255.255.0
+     DNS_1=$(IPBIND_1)
+
+     [TFTP-Settings]
+     EnableTFTP=1
+     Root="$(BaseDir)\wwwroot" ; use wwwroot for http and tftp
+
+     [HTTP-Settings]
+     EnableHTTP=1
+     Root="$(BaseDir)\wwwroot" ; use wwwroot for http and tftp
+   EOT
+   $obj->parse_ini(src => $src
+
+=head1 SEE ALSO
+
+L<$(section\name) syntax for INI file variables|https://www.dhcpserver.de/cms/ini_file_reference/special/sectionname-syntax-for-ini-file-variables/>
+
+L<Config::INI>,
+L<Config::INI::Tiny>,
+L<Config::IniFiles>
 
 
 =head1 AUTHOR
