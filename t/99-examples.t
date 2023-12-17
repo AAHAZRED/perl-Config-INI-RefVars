@@ -416,5 +416,89 @@ EOT
   is_deeply($obj->sections,   [qw(A B)],            'sections())');
 };
 
+subtest "EXAMPLES" => sub {
+  my $obj = Config::INI::RefVars->new(separator      => "\\",
+                                      cmnt_vl        => 1,
+                                      tocopy_section => 'Settings');
+  # see https://www.dhcpserver.de/cms/ini_file_reference/special/sectionname-syntax-for-ini-file-variables/
+  my $src = <<'EOT';
+   [Settings]
+   BaseDir="d:\dhcpsrv" ; dhcpsrv.exe resides here
+   IPBIND_1=192.168.17.2
+   IPPOOL_1=$(Settings\IPBIND_1)-50
+   AssociateBindsToPools=1
+   Trace=1
+   TraceFile="$(BaseDir)\dhcptrc.txt" ; trace file
+
+   [DNS-Settings]
+   EnableDNS=1
+
+   [General]
+   SUBNETMASK=255.255.255.0
+   DNS_1=$(IPBIND_1)
+
+   [TFTP-Settings]
+   EnableTFTP=1
+   Root="$(BaseDir)\wwwroot" ; use wwwroot for http and tftp
+
+   [HTTP-Settings]
+   EnableHTTP=1
+   Root="$(BaseDir)\wwwroot" ; use wwwroot for http and tftp
+EOT
+  $obj->parse_ini(src => $src);
+  is_deeply($obj->variables,
+            {
+             'Settings' => {
+                            'AssociateBindsToPools' => '1',
+                            'BaseDir' => '"d:\\dhcpsrv"',
+                            'IPBIND_1' => '192.168.17.2',
+                            'IPPOOL_1' => '192.168.17.2-50',
+                            'Trace' => '1',
+                            'TraceFile' => '""d:\\dhcpsrv"\\dhcptrc.txt"'
+                           },
+             'DNS-Settings' => {
+                                'AssociateBindsToPools' => '1',
+                                'BaseDir' => '"d:\\dhcpsrv"',
+                                'EnableDNS' => '1',
+                                'IPBIND_1' => '192.168.17.2',
+                                'IPPOOL_1' => '192.168.17.2-50',
+                                'Trace' => '1',
+                                'TraceFile' => '""d:\\dhcpsrv"\\dhcptrc.txt"'
+                               },
+             'General' => {
+                           'AssociateBindsToPools' => '1',
+                           'BaseDir' => '"d:\\dhcpsrv"',
+                           'DNS_1' => '192.168.17.2',
+                           'IPBIND_1' => '192.168.17.2',
+                           'IPPOOL_1' => '192.168.17.2-50',
+                           'SUBNETMASK' => '255.255.255.0',
+                           'Trace' => '1',
+                           'TraceFile' => '""d:\\dhcpsrv"\\dhcptrc.txt"'
+                          },
+             'TFTP-Settings' => {
+                                 'AssociateBindsToPools' => '1',
+                                 'BaseDir' => '"d:\\dhcpsrv"',
+                                 'EnableTFTP' => '1',
+                                 'IPBIND_1' => '192.168.17.2',
+                                 'IPPOOL_1' => '192.168.17.2-50',
+                                 'Root' => '""d:\\dhcpsrv"\\wwwroot"',
+                                 'Trace' => '1',
+                                 'TraceFile' => '""d:\\dhcpsrv"\\dhcptrc.txt"'
+                                },
+             'HTTP-Settings' => {
+                                 'AssociateBindsToPools' => '1',
+                                 'BaseDir' => '"d:\\dhcpsrv"',
+                                 'EnableHTTP' => '1',
+                                 'IPBIND_1' => '192.168.17.2',
+                                 'IPPOOL_1' => '192.168.17.2-50',
+                                 'Root' => '""d:\\dhcpsrv"\\wwwroot"',
+                                 'Trace' => '1',
+                                 'TraceFile' => '""d:\\dhcpsrv"\\dhcptrc.txt"'
+                                },
+
+            }
+           );
+};
+
 #==================================================================================================
 done_testing();
