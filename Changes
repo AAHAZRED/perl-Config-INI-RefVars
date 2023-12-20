@@ -1,6 +1,6 @@
 Revision history for Config-INI-RefVars
 
-0.07    yyyy/mm/dd
+0.07    2023/12/20
         Operator ':=': allow assignments like a:=$(a)
 
 0.06    2023/12/17
