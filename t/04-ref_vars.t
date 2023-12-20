@@ -289,6 +289,9 @@ EOT
   subtest "mixed" => sub {
     my $src = <<'EOT';
 [the section]
+a=omethin
+a:=s$(a)g
+b:=$(b)
 AX=x
 X=$(A$(empty)X)
 Y=y
@@ -309,6 +312,8 @@ EOT
     is_deeply($obj->variables,
               {
                'the section' => {
+                                 'a'                 => 'something',
+                                 'b'                 => '',
                                  'AX'                => 'x',
                                  'X'                 => 'x',
                                  'Y'                 => 'y',
