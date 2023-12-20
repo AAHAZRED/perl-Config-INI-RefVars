@@ -751,6 +751,14 @@ This results in the variable C<var> having the value C<$(FOO)>. It works
 because C<$()> always expands to an empty string (see section L</"PREDEFINED
 VARIABLES">).
 
+Recursive references are not possible, an attempt to do so leads to a fatal
+error. However, you can do this with the C<:=> assignment:
+
+   a=omethin
+   a:=s$(a)g
+
+C<a> has the value C<something>. However, due to the way C<:=> works, this is
+not really a recursive reference.
 
 =head3 Referencing Variables of other Sections
 
@@ -794,6 +802,8 @@ C<$(=)> expands to the name of the current section.
 =item C<==>
 
 C<$(==)> expands to the name of the variable that is currently being defined.
+Think of this as a pseudo-variable, something like $([SECTION]==) always
+results in an empty string.
 
 =back
 
