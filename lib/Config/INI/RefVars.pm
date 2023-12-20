@@ -220,7 +220,7 @@ my $_parse_ini = sub {
         . ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value);
     } elsif ($modifier eq ':') {
       delete $expanded->{$x_var_name} if $exp_flag; # Needed to make _expand_vars corectly!
-      $sect_vars->{$var_name} = $self->$_expand_vars($curr_section, $var_name, $value);
+      $sect_vars->{$var_name} = $self->$_expand_vars($curr_section, $var_name, $value, undef, 1);
     } elsif ($modifier eq '+>') {
       if (exists($sect_vars->{$var_name})) {
         $sect_vars->{$var_name} =
@@ -402,7 +402,7 @@ $_x_var_name = sub {
 
 
 $_expand_vars = sub {
-  my ($self, $curr_sect, $variable, $value, $seen) = @_;
+  my ($self, $curr_sect, $variable, $value, $seen, $not_seen) = @_;
   my $top = !$seen;
   my @result = ("");
   my $level = 0;
@@ -413,7 +413,7 @@ $_expand_vars = sub {
                                                        || $var_basename =~ /^=ENV:/);
     croak("recursive variable '", $x_variable_name, "' references itself")
       if exists($seen->{$x_variable_name});
-    $seen->{$x_variable_name} = undef;
+    $seen->{$x_variable_name} = undef if !$not_seen;
   }
   foreach my $token (split(/(\$\(|\))/, $value)) {
     if ($token eq '$(') {
