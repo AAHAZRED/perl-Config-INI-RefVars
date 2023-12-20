@@ -1,6 +1,9 @@
 Revision history for Config-INI-RefVars
 
-0.06    2023/12/17/
+0.07    yyyy/mm/dd
+        Operator ':=': allow assignments like a:=$(a)
+
+0.06    2023/12/17
         Added variable '=VERSION'.
         Added method current_tocopy_section().
         Added method separator().
