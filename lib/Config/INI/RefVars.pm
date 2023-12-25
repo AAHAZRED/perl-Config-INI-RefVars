@@ -956,10 +956,14 @@ value C<$(var)> and you write this in your INI file:
 This results in C<x> having the value C<$(var)>, while C<y> has the value C<hello!>.
 
 
-=head2 THE I<TOCOPY> SECTION
+=head2 THE SECTION I<TOCOPY>
 
-If specified, the C<parse_ini> method copies the variables of the I<tocopy
-section> to every other section when the INI file is read. For example this
+=head3 Default Behavior
+
+If specified, the method C<parse_ini> copies the variables of the section
+I<tocopy> to any other section when the INI file is read (default, this
+behavior can be changed by the constructor argument C<global_mode>).
+For example this
 
    [__TOCOPY__]
    some var=some value
@@ -1015,6 +1019,38 @@ You can also add I<tocopy> variables via the argument C<tocopy_vars> (methods
 C<new> and C<parse_ini>), these are treated as if they were at the very
 beginning of the C<tocopy> section.
 
+
+=head3 Global Mode
+
+If you specify the constructor argument C<global_mode> with a I<true> value,
+the variables of the I<tocopy> section are not copied, but behave like global
+variables. Variables that you specify with the argument C<not_tocopy> are not
+treated as global.
+
+As a result, there is no difference in referencing variables if you use globale mode. The benefit of this mode is that you do not mess up your sections with unwanted variables.
+
+Example:
+
+   [__TOCOPY__]
+   a=this
+   b=that
+
+   [sec]
+   x=y
+
+This would lead to this result by default:
+
+   {
+     __TOCOPY__ => {a => 'this', b => 'that'},
+     sec        => {a => 'this', b => 'that', x => 'y'}
+   }
+
+But in global mode the result is:
+
+   {
+     __TOCOPY__ => {a => 'this', b => 'that'},
+     sec        => {x => 'y'}
+   }
 
 =head2 COMMENTS
 
@@ -1093,6 +1129,11 @@ method argument.
 The constructor takes the following optional named arguments:
 
 =over
+
+=item C<global_mode>
+
+Optional, a boolean. Cheanges handling of the I<tocopy> section, see section
+L</"GLOBAL MODE">. See also the accessor method of the same name.
 
 =item C<not_tocopy>
 
@@ -1178,6 +1219,12 @@ present in the data.
 See also method C<tocopy_section>.
 
 
+=head3 global_mode
+
+Returns a boolean value indicating whether the global mode is activated or
+not. See constructor argument of the same name, see also section L</"GLOBAL
+MODE">.
+
 =head3 parse_ini
 
 Parses an INI source. The method takes the following optional named arguments:
@@ -1195,7 +1242,8 @@ directly.
 
 Optional, a boolean. If this value is set to I<false>, variables with a C<=>
 in their name are not removed from the resulting hash that is returned by the
-C<variables> method.
+C<variables> method. But in global mode, most of this variables will not be
+contained, see section L</"Global Mode">.
 
 Default is 1 (I<true)>
 

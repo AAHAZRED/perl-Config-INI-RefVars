@@ -359,7 +359,7 @@ EOT
   };
   subtest "with and without explicite __TOCOPY__" => sub {
     my $obj = Config::INI::RefVars->new();
-    my $src = <<'EOT';
+    my $src1 = <<'EOT';
      [__TOCOPY__]
      a=this
      b=that
@@ -371,18 +371,27 @@ EOT
                     __TOCOPY__ => {a => 'this', b => 'that'},
                     sec        => {a => 'this', b => 'that', x => 'y'},
                    };
-    $obj->parse_ini(src => $src);
+    $obj->parse_ini(src => $src1);
     is_deeply($obj->variables, $expected, 'variables()');
 
-    $src = <<'EOT';
+    my $src2 = <<'EOT';
      a=this
      b=that
 
      [sec]
       x=y
 EOT
-    $obj->parse_ini(src => $src);
+    $obj->parse_ini(src => $src2);
     is_deeply($obj->variables, $expected, 'variables()');
+
+    my $obj_gm = Config::INI::RefVars->new(global_mode => 1);
+    $obj_gm->parse_ini(src => $src1);
+    is_deeply($obj_gm->variables,
+              {
+               __TOCOPY__ => {a => 'this', b => 'that'},
+               sec        => {x => 'y'},
+              },
+              'variables(), global mode');
   };
 };
 
@@ -419,7 +428,8 @@ EOT
 subtest "EXAMPLES" => sub {
   my $obj = Config::INI::RefVars->new(separator      => "\\",
                                       cmnt_vl        => 1,
-                                      tocopy_section => 'Settings');
+                                      tocopy_section => 'Settings',
+                                      global_mode    => 1);
   # see https://www.dhcpserver.de/cms/ini_file_reference/special/sectionname-syntax-for-ini-file-variables/
   my $src = <<'EOT';
    [Settings]
@@ -457,43 +467,19 @@ EOT
                             'TraceFile' => '""d:\\dhcpsrv"\\dhcptrc.txt"'
                            },
              'DNS-Settings' => {
-                                'AssociateBindsToPools' => '1',
-                                'BaseDir' => '"d:\\dhcpsrv"',
                                 'EnableDNS' => '1',
-                                'IPBIND_1' => '192.168.17.2',
-                                'IPPOOL_1' => '192.168.17.2-50',
-                                'Trace' => '1',
-                                'TraceFile' => '""d:\\dhcpsrv"\\dhcptrc.txt"'
                                },
              'General' => {
-                           'AssociateBindsToPools' => '1',
-                           'BaseDir' => '"d:\\dhcpsrv"',
                            'DNS_1' => '192.168.17.2',
-                           'IPBIND_1' => '192.168.17.2',
-                           'IPPOOL_1' => '192.168.17.2-50',
-                           'SUBNETMASK' => '255.255.255.0',
-                           'Trace' => '1',
-                           'TraceFile' => '""d:\\dhcpsrv"\\dhcptrc.txt"'
+                           'SUBNETMASK' => '255.255.255.0'
                           },
              'TFTP-Settings' => {
-                                 'AssociateBindsToPools' => '1',
-                                 'BaseDir' => '"d:\\dhcpsrv"',
                                  'EnableTFTP' => '1',
-                                 'IPBIND_1' => '192.168.17.2',
-                                 'IPPOOL_1' => '192.168.17.2-50',
-                                 'Root' => '""d:\\dhcpsrv"\\wwwroot"',
-                                 'Trace' => '1',
-                                 'TraceFile' => '""d:\\dhcpsrv"\\dhcptrc.txt"'
+                                 'Root' => '""d:\\dhcpsrv"\\wwwroot"'
                                 },
              'HTTP-Settings' => {
-                                 'AssociateBindsToPools' => '1',
-                                 'BaseDir' => '"d:\\dhcpsrv"',
                                  'EnableHTTP' => '1',
-                                 'IPBIND_1' => '192.168.17.2',
-                                 'IPPOOL_1' => '192.168.17.2-50',
-                                 'Root' => '""d:\\dhcpsrv"\\wwwroot"',
-                                 'Trace' => '1',
-                                 'TraceFile' => '""d:\\dhcpsrv"\\dhcptrc.txt"'
+                                 'Root' => '""d:\\dhcpsrv"\\wwwroot"'
                                 },
 
             }
