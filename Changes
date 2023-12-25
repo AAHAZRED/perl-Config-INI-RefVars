@@ -1,5 +1,8 @@
 Revision history for Config-INI-RefVars
 
+0.08    2023/12/20
+        Added global_mode.
+
 0.07    2023/12/20
         Operator ':=': allow assignments like a:=$(a)
 
