@@ -153,6 +153,7 @@ my $_parse_ini = sub {
   my $variables   = $self->{+VARIABLES};
   my $tocopy_sec  = $self->{+TOCOPY_SECTION};
   my $tocopy_vars = $variables->{$tocopy_sec}; # hash key need not to exist!
+  my $global_mode = $self->{+GLOBAL_MODE};
 
   my $tocopy_sec_declared;
 
@@ -166,7 +167,7 @@ my $_parse_ini = sub {
       $tocopy_vars = $variables->{$tocopy_sec} = {} if !$tocopy_vars;
       $tocopy_sec_declared = 1;
     }
-    elsif ($tocopy_vars) {
+    elsif ($tocopy_vars && !$global_mode) {
       $self->$_cp_tocopy_vars($curr_section);
     }
     else {
@@ -332,10 +333,17 @@ sub parse_ini {
                                                              !%$tocopy_sec_vars);
   }
   else {
-    my $global_mode = $self->{+GLOBAL_MODE};
-    while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
-      $variables->{'='} = $section;
-      @{$variables}{keys(%$global_vars)} = values(%$global_vars) unless $global_mode;
+    if ($self->{+GLOBAL_MODE}) {
+      while (my ($section, $sec_vars) = each(%{$self->{+VARIABLES}})) {
+        $sec_vars->{'='} = $section;
+      }
+      @{$tocopy_sec_vars}{keys(%$global_vars)} = values(%$global_vars);
+    }
+    else {
+      while (my ($section, $sec_vars) = each(%{$self->{+VARIABLES}})) {
+        $sec_vars->{'='} = $section;
+        @{$sec_vars}{keys(%$global_vars)} = values(%$global_vars);
+      }
     }
   }
   $self->{+TOCOPY_SECTION} = $backup->{tocopy_section} if exists($backup->{tocopy_section});
@@ -364,6 +372,7 @@ $_look_up = sub {
   my ($v_section, $v_basename) = $matched ? ($1, $2) : ($curr_sect, $variable);
   my $v_value;
   my $variables = $self->{+VARIABLES};
+  my $tocopy_section = $self->{+TOCOPY_SECTION};
   if (!exists($variables->{$v_section})) {
     $v_value = "";
   } elsif ($v_basename !~ /\S/) {
@@ -377,6 +386,14 @@ $_look_up = sub {
   }
   elsif (exists($self->{+GLOBAL_VARS}{$v_basename})) {
     $v_value = $self->{+GLOBAL_VARS}{$v_basename};
+  }
+  elsif ($self->{+GLOBAL_MODE} && exists($variables->{$tocopy_section}{$v_basename})) {
+    if (!$matched && $curr_sect ne $tocopy_section && exists($self->{+NOT_TOCOPY}{$v_basename})) {
+      $v_value = "";
+    }
+    else {
+      $v_value = $variables->{$tocopy_section}{$v_basename};
+    }
   }
   else {
     if (exists($variables->{$v_section}{$v_basename})) {
