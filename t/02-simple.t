@@ -251,6 +251,7 @@ done_testing();
 sub check_other {
   my $obj = shift;
   my $src_name = shift // "INI data";
-  is($obj->tocopy_section,  Config::INI::RefVars::DFLT_TOCOPY_SECTION, 'tocopy_section()');
+  is($obj->global_mode, !!0, 'global_mode()');
   is($obj->separator, undef, 'separator()');
+  is($obj->tocopy_section,  Config::INI::RefVars::DFLT_TOCOPY_SECTION, 'tocopy_section()');
 }
