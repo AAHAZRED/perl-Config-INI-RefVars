@@ -1,5 +1,10 @@
 Revision history for Config-INI-RefVars
 
+0.10    2023/12/25
+        Fixed bug in variable lookup.
+        Fixed dead links in POD section.
+        Completed POD section.
+
 0.09    2023/12/25
         Corrected release date.
 

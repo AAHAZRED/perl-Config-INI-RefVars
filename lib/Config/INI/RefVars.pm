@@ -375,7 +375,11 @@ $_look_up = sub {
   my $tocopy_section = $self->{+TOCOPY_SECTION};
   if (!exists($variables->{$v_section})) {
     $v_value = "";
-  } elsif ($v_basename !~ /\S/) {
+  }
+  elsif (exists($variables->{$v_section}{$v_basename})) {
+    $v_value = $variables->{$v_section}{$v_basename};
+  }
+  elsif ($v_basename !~ /\S/) {
     $v_value = $v_basename;
   }
   elsif ($v_basename eq '=') {
@@ -396,11 +400,7 @@ $_look_up = sub {
     }
   }
   else {
-    if (exists($variables->{$v_section}{$v_basename})) {
-      $v_value = $variables->{$v_section}{$v_basename};
-    } else {
-      $v_value = "";
-    }
+    $v_value = "";
   }
   die("Internal error") if !defined($v_value);
   return wantarray ? ($v_section, $v_basename, $v_value) : $v_value;
@@ -920,7 +920,7 @@ Version of the C<Config::INI::RefVars> module.
 
 Currently, custom predefined variables are not supported. But you can do
 something very similar, see argument C<tocopy_vars> (of C<new> and
-C<parse_ini>), see also L</"THE I<TOCOPY> SECTION">. With this argument you
+C<parse_ini>), see also L</"THE SECTION I<TOCOPY>">. With this argument you
 can also define variables whose names contain a C<=>, which is obviously
 impossible in an INI file.
 
@@ -1133,7 +1133,7 @@ The constructor takes the following optional named arguments:
 =item C<global_mode>
 
 Optional, a boolean. Cheanges handling of the I<tocopy> section, see section
-L</"GLOBAL MODE">. See also the accessor method of the same name.
+L</"Global Mode">. See also the accessor method of the same name.
 
 =item C<not_tocopy>
 
@@ -1222,8 +1222,8 @@ See also method C<tocopy_section>.
 =head3 global_mode
 
 Returns a boolean value indicating whether the global mode is activated or
-not. See constructor argument of the same name, see also section L</"GLOBAL
-MODE">.
+not. See constructor argument of the same name, see also section L</"Global
+Mode">.
 
 =head3 parse_ini
 
@@ -1363,9 +1363,13 @@ as follows:
 
 L<$(section\name) syntax for INI file variables|https://www.dhcpserver.de/cms/ini_file_reference/special/sectionname-syntax-for-ini-file-variables/>
 
+This one allows also referencing variables: L<Config::IOD::Reader>.
+
+Other modules handling INI files:
+
 L<Config::INI>,
 L<Config::INI::Tiny>,
-L<Config::IniFiles>
+L<Config::IniFiles>, and many more.
 
 
 =head1 AUTHOR

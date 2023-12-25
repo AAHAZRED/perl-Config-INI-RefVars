@@ -86,6 +86,7 @@ subtest "simple examples" => sub {
                '[B]',
                'bar=not common: $(not common)',
                'baz=not common: $([__TOCOPY__]not common)',
+               'global:=$(global) (but local)',
                'x=$([A]=srcname)',
                'y=$(=srcname)'
               ];
@@ -98,10 +99,11 @@ subtest "simple examples" => sub {
                        'foo' => '123'
                       },
                'B' => {
-                       'bar' => 'not common: ',
-                       'baz' => 'not common: i am NOT global',
-                       'x' => 'INI data',
-                       'y' => 'INI data'
+                       'bar'    => 'not common: ',
+                       'baz'    => 'not common: i am NOT global',
+                       'global' => 'i am global (but local)',
+                       'x'      => 'INI data',
+                       'y'      => 'INI data'
                       },
                '__TOCOPY__' => {
                                 'global' => 'i am global',
@@ -123,6 +125,7 @@ subtest "simple examples" => sub {
                        '=' => 'B',
                        'bar' => 'not common: ',
                        'baz' => 'not common: i am NOT global',
+                       'global' => 'i am global (but local)',
                        'x' => 'INI data',
                        'y' => 'INI data'
                       },
