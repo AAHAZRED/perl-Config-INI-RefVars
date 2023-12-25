@@ -1331,7 +1331,8 @@ as follows:
 
    my $obj = Config::INI::RefVars->new(separator      => "\\",
                                        cmnt_vl        => 1,
-                                       tocopy_section => 'Settings');
+                                       tocopy_section => 'Settings',
+                                       global_mode    => 1);
    my $src = <<'EOT';
      [Settings]
      BaseDir="d:\dhcpsrv" ; dhcpsrv.exe resides here
