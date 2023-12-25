@@ -27,6 +27,7 @@ use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
               SRC_NAME          => FLD_KEY_PREFIX . 'SRC_NAME',
               VARIABLES         => FLD_KEY_PREFIX . 'VARIABLES',
               GLOBAL_VARS       => FLD_KEY_PREFIX . 'GLOBAL_VARS',
+              GLOBAL_MODE       => FLD_KEY_PREFIX . 'GLOBAL_MODE',
               VREF_RE           => FLD_KEY_PREFIX . 'VREF_RE',
               SEPARATOR         => FLD_KEY_PREFIX . 'SEPARATOR',
               BACKUP            => FLD_KEY_PREFIX . 'BACKUP',
@@ -84,7 +85,7 @@ my $_check_not_tocopy = sub {
 
 sub new {
   my ($class, %args) = @_;
-  state $allowed_keys = {map {$_ => undef} qw(tocopy_section tocopy_vars not_tocopy
+  state $allowed_keys = {map {$_ => undef} qw(tocopy_section tocopy_vars not_tocopy global_mode
                                               separator cmnt_vl)};
   _check_args(\%args, $allowed_keys);
   my $self = {};
@@ -105,7 +106,8 @@ sub new {
   $self->{+TOCOPY_SECTION} = $args{tocopy_section} // DFLT_TOCOPY_SECTION;
   $self->$_check_tocopy_vars($args{tocopy_vars}, 1) if exists($args{tocopy_vars});
   $self->$_check_not_tocopy($args{not_tocopy},   1) if exists($args{not_tocopy});
-  return bless($self, $class) ;
+  $self->{+GLOBAL_MODE} = !!$args{global_mode};
+  return bless($self, $class);
 }
 
 
@@ -250,7 +252,7 @@ sub parse_ini {
   foreach my $scalar_arg (qw(tocopy_section src_name)) {
      croak("'$scalar_arg': must not be a reference") if ref($args{$scalar_arg});
    }
-  delete $self->{+SRC_NAME} if exists($self->{+SRC_NAME});  #### !!!!!!!!!!!
+  delete $self->{+SRC_NAME} if exists($self->{+SRC_NAME});
   $self->{+SRC_NAME} = $args{src_name} if exists($args{src_name});
   my (      $cleanup, $src, $tocopy_section, $tocopy_vars, $not_tocopy) =
     @args{qw(cleanup   src   tocopy_section   tocopy_vars   not_tocopy)};
@@ -330,9 +332,10 @@ sub parse_ini {
                                                              !%$tocopy_sec_vars);
   }
   else {
+    my $global_mode = $self->{+GLOBAL_MODE};
     while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
       $variables->{'='} = $section;
-      @{$variables}{keys(%$global_vars)} = values(%$global_vars);
+      @{$variables}{keys(%$global_vars)} = values(%$global_vars) unless $global_mode;
     }
   }
   $self->{+TOCOPY_SECTION} = $backup->{tocopy_section} if exists($backup->{tocopy_section});
@@ -344,12 +347,12 @@ sub parse_ini {
 
 
 sub current_tocopy_section {$_[0]->{+CURR_TOCP_SECTION}}
+sub tocopy_section  {$_[0]->{+TOCOPY_SECTION}}
+sub global_mode     {$_[0]->{+GLOBAL_MODE}}
 sub sections        { defined($_[0]->{+SECTIONS})   ? [@{$_[0]->{+SECTIONS}}]     : undef}
 sub sections_h      { defined($_[0]->{+SECTIONS_H}) ? +{ %{$_[0]->{+SECTIONS_H}} } : undef }
 sub separator       {$_[0]->{+SEPARATOR}}
 sub src_name        {$_[0]->{+SRC_NAME}}
-sub tocopy_section  {$_[0]->{+TOCOPY_SECTION}}
-
 sub variables       { my $vars = $_[0]->{+VARIABLES} // return undef;
                       return  {map {$_ => {%{$vars->{$_}}}} keys(%$vars)};
                     }
