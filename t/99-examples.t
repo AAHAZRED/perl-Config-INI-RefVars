@@ -23,6 +23,23 @@ subtest "SYNOPSIS" => sub {
   while (my ($section, $section_vars) = each(%$variables)) {
     isa_ok($section_vars, 'HASH');
   }
+  is_deeply($variables,
+            {
+             '__TOCOPY__' => {
+                              'section' => '__TOCOPY__'
+                             },
+             'sec A' => {
+                         'bar' => 'Variable foo in section sec A',
+                         'foo' => 'Variable foo in section sec A!',
+                         'section' => 'sec A'
+                        },
+             'sec B' => {
+                         'baz' => 'from sec B: ref foo from sec A: Variable foo in section sec A!',
+                         'section' => 'sec B'
+                        }
+            },
+            'variables()'
+           );
 };
 
 subtest "COMMENTS" => sub {
@@ -320,7 +337,7 @@ EOT
             'variables()');
 };
 
-subtest "THE TOCOPY SECTION" => sub {
+subtest "THE SECTION TOCOPY" => sub {
   my $obj = Config::INI::RefVars->new();
 
   subtest "tocopy and manual copying" => sub {
@@ -390,6 +407,40 @@ EOT
               {
                __TOCOPY__ => {a => 'this', b => 'that'},
                sec        => {x => 'y'},
+              },
+              'variables(), global mode');
+  };
+  subtest "global vs default" => sub {
+    my $src = <<'EOT';
+      section=$(=)
+
+      [sec A]
+      var 1 = $(section)
+      var 2 := $(section)
+EOT
+    my $obj_gm = Config::INI::RefVars->new(global_mode => 1)->parse_ini(src => $src);
+    my $obj_dflt = Config::INI::RefVars->new()->parse_ini(src => $src);
+    is_deeply($obj_gm->variables,
+              {
+               '__TOCOPY__' => {
+                                'section' => '__TOCOPY__'
+                               },
+               'sec A' => {
+                           'var 1' => '__TOCOPY__',
+                           'var 2' => 'sec A'
+                          }
+              },
+              'variables(), global mode');
+    is_deeply($obj_dflt->variables,
+              {
+               '__TOCOPY__' => {
+                                'section' => '__TOCOPY__'
+                               },
+               'sec A' => {
+                           'section' => 'sec A',
+                           'var 1' => 'sec A',
+                           'var 2' => 'sec A'
+                          }
               },
               'variables(), global mode');
   };

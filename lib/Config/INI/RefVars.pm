@@ -514,25 +514,32 @@ Version 0.10
 
 If the INI file contains:
 
+   section = $(=)
+
    [sec A]
-   foo=this value
-   bar=that value
+   foo=Variable $(==) in section $(section)
+   bar:=$(foo)
+   foo.=!
 
    [sec B]
-   baz = yet another value
+   baz = from $(=): ref foo from sec A: $([sec A]foo)
 
 then C<< $ini_reader->variables >> returns:
 
-   {
-       'sec A' => {
-                    'bar' => 'that value',
-                    'foo' => 'this value'
-                  },
-       'sec B' => {
-                    'baz' => 'yet another value'
-                  }
-   }
-
+  {
+    '__TOCOPY__' => {
+                      'section' => '__TOCOPY__'
+                    },
+    'sec A' => {
+                 'bar' => 'Variable foo in section sec A',
+                 'foo' => 'Variable foo in section sec A!',
+                 'section' => 'sec A'
+               },
+    'sec B' => {
+                 'baz' => 'from sec B: ref foo from sec A: Variable foo in section sec A!',
+                 'section' => 'sec B'
+               }
+  }
 
 =head1 DESCRIPTION
 
@@ -1069,6 +1076,8 @@ But in global mode the result is:
      __TOCOPY__ => {a => 'this', b => 'that'},
      sec        => {x => 'y'}
    }
+
+For a local copy of a global variable, use assignment operator C<:=>.
 
 A difference occurs if you you use C<$(=)> in a global variable:
 
