@@ -46,11 +46,10 @@ subtest "simple examples" => sub {
     $obj->parse_ini(src => $src);
     is_deeply($obj->variables,
               {
-                'A' => {
-                         'foo' => '123'
-                       },
-                'B' => {
-                       }
+               'A' => {
+                       'foo' => '123'
+                      },
+               'B' => {}
               },
               'variables(), with cleanup');
     is($obj->global_mode, $True, 'global_mode() true');
