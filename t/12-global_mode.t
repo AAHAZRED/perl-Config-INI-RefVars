@@ -5,7 +5,8 @@ use Test::More;
 
 use Config::INI::RefVars;
 
-#use File::Spec::Functions;
+use File::Spec::Functions;
+
 #
 #sub test_data_file { catfile(qw(t 07-data), $_[0]) }
 
@@ -14,6 +15,7 @@ use Config::INI::RefVars;
 #
 
 my $VERSION = $Config::INI::RefVars::VERSION;
+my $Dir_Sep = catdir("", "");
 my ($True, $False) = (!!1, !!0);
 
 subtest "accessor global_mode()" => sub {
@@ -64,7 +66,7 @@ subtest "simple examples" => sub {
                       },
                '__TOCOPY__' => {
                                 '=' => '__TOCOPY__',
-                                '=:' => '/',
+                                '=:' => $Dir_Sep,
                                 '=::' => ':',
                                 '=VERSION' => $VERSION,
                                 '=srcname' => 'INI data'
@@ -131,7 +133,7 @@ subtest "simple examples" => sub {
                       },
                '__TOCOPY__' => {
                                 '=' => '__TOCOPY__',
-                                '=:' => '/',
+                                '=:' => $Dir_Sep,
                                 '=::' => ':',
                                 '=VERSION' => $VERSION,
                                 '=srcname' => 'INI data',
