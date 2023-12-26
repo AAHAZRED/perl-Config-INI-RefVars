@@ -195,7 +195,7 @@ subtest "Environment variables" => sub {
               },
               'variables()');
   };
-  subtest "xxx" => sub {
+  subtest "ENV and env" => sub {
     my $src = [
                '[sec Z]',
                'x= $(=ENV:FOO)',
