@@ -4,6 +4,7 @@ use warnings;
 use Test::More;
 
 use Config::INI::RefVars;
+use Config;
 
 #use File::Spec::Functions;
 #
@@ -350,6 +351,23 @@ EOT
   };
 };
 
+
+subtest "ENV and CONFIG" => sub {
+  my $src = <<'EOT';
+     [SEC]
+     the PATH=$(=ENV:PATH)
+     the archlib=$(=CONFIG:archlib)
+EOT
+  my $obj = Config::INI::RefVars->new->parse_ini(src => $src);
+  is_deeply($obj->variables,
+            {
+             'SEC' => {
+                       'the PATH'    => $ENV{PATH},
+                       'the archlib' => $Config{archlib}
+                      }
+            },
+            'variables()');
+};
 
 
 #==================================================================================================

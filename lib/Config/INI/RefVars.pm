@@ -388,6 +388,9 @@ $_look_up = sub {
   elsif ($v_basename =~ /^=(?:ENV|env):\s*(.*)$/) {
     $v_value = $ENV{$1} // "";
   }
+  elsif ($v_basename =~ /^=CONFIG:\s*(.*)$/) {
+    $v_value = $Config{$1} // "";
+  }
   elsif (exists($self->{+GLOBAL_VARS}{$v_basename})) {
     $v_value = $self->{+GLOBAL_VARS}{$v_basename};
   }
@@ -428,7 +431,7 @@ $_expand_vars = sub {
   if (defined($variable)) {
     ((my $var_basename), $x_variable_name) = $self->$_x_var_name($curr_sect, $variable);
     return $self->$_look_up($curr_sect, $variable) if (exists($self->{+EXPANDED}{$x_variable_name})
-                                                       || $var_basename =~ /^=ENV:/);
+                                                       || $var_basename =~ /^=(?:ENV|CONFIG):/);
     croak("recursive variable '", $x_variable_name, "' references itself")
       if exists($seen->{$x_variable_name});
     $seen->{$x_variable_name} = undef if !$not_seen;
@@ -934,7 +937,7 @@ argument C<cleanup>. The variable C<==> can of course not be included in the
 result.
 
 
-=head2 ACCESSING ENVIRONMENT VARIABLES
+=head2 ACCESSING ENVIRONMENT AND CONFIG VARIABLES
 
 You can access environment variables with this C<$(=ENV:...)> or this
 C<$(=env:...)> notation. Example:
@@ -954,6 +957,15 @@ value C<$(var)> and you write this in your INI file:
    y=$(=env:FOO)
 
 This results in C<x> having the value C<$(var)>, while C<y> has the value C<hello!>.
+
+You can access configuration variables of Perl's L<Config> module with this C<$(=:CONFIG...)> notation. Example:
+
+  the archlib=$(=CONFIG:archlib)
+
+This gives the variable C<the archlib> the value of C<$Config{archlib}>.
+
+Note: In contrast to C<=ENV:...>, there is no lower-case counterpart to
+C<$(=CONFIG:...)>, as this would not make sense.
 
 
 =head2 THE SECTION I<TOCOPY>
