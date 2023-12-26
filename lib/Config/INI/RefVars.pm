@@ -319,20 +319,15 @@ sub parse_ini {
 
   my ($tocopy_sec_declared, undef) = $self->$_parse_ini($src);
 
-
-  foreach my $section (@{$self->{+SECTIONS}}) {
-    next unless exists($variables->{$section});    # May happen for [__TOCOPY__].
+  my @sections = (exists($self->{+SECTIONS_H}{$tocopy_section}) ? () : $tocopy_section,
+                  @{$self->{+SECTIONS}}
+                 );
+  foreach my $section (@sections) {
     my $sec_vars = $variables->{$section};
     while (my ($variable, $value) = each(%$sec_vars)) {
       $sec_vars->{$variable} = $self->$_expand_vars($section, $variable, $value);
     }
   }
-
-  # while (my ($section, $sec_vars) = each(%{$variables})) {
-  #   while (my ($variable, $value) = each(%$sec_vars)) {
-  #     $sec_vars->{$variable} = $self->$_expand_vars($section, $variable, $value);
-  #   }
-  # }
   if ($cleanup) {
     while (my ($section, $sec_vars) = each(%{$variables})) {
       foreach my $var (keys(%$sec_vars)) {
@@ -1075,7 +1070,41 @@ But in global mode the result is:
      sec        => {x => 'y'}
    }
 
-A difference occurs if you you use C<$(=)> in a global variable: 
+A difference occurs if you you use C<$(=)> in a global variable:
+
+   section=$(=)
+
+   [sec A]
+   var 1 = $(section)
+   var 2 := $(section)
+
+In global mode, you will get this:
+
+   {
+     '__TOCOPY__' => {
+                       'section' => '__TOCOPY__'
+                     },
+     'sec A' => {
+                  'var 1' => '__TOCOPY__',
+                  'var 2' => 'sec A'
+                }
+   }
+
+But without global mode you will get:
+
+   {
+     '__TOCOPY__' => {
+                       'section' => '__TOCOPY__'
+                     },
+     'sec A' => {
+                  'section' => 'sec A',
+                  'var 1' => 'sec A',
+                  'var 2' => 'sec A'
+                }
+   }
+
+Note the difference in the value of C<var 1>!
+
 
 =head2 COMMENTS
 
