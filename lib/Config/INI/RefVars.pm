@@ -283,7 +283,8 @@ sub parse_ini {
     {$tocopy_section => ($self->{+TOCOPY_VARS} ? {%{$self->{+TOCOPY_VARS}}} : {})};
 
   my $global_vars = $self->{+GLOBAL_VARS} = {%Globals};
-  my $tocopy_sec_vars = $self->{+VARIABLES}{$tocopy_section};
+  my $variables = $self->{+VARIABLES};
+  my $tocopy_sec_vars = $variables->{$tocopy_section};
   if (my $ref_src = ref($src)) {
     $self->{+SRC_NAME} = $dflt_src_name if !exists($self->{+SRC_NAME});
     if ($ref_src eq 'ARRAY') {
@@ -318,29 +319,37 @@ sub parse_ini {
 
   my ($tocopy_sec_declared, undef) = $self->$_parse_ini($src);
 
-  while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
-    while (my ($variable, $value) = each(%$variables)) {
-      $variables->{$variable} = $self->$_expand_vars($section, $variable, $value);
+
+  foreach my $section (@{$self->{+SECTIONS}}) {
+    next unless exists($variables->{$section});    # May happen for [__TOCOPY__].
+    my $sec_vars = $variables->{$section};
+    while (my ($variable, $value) = each(%$sec_vars)) {
+      $sec_vars->{$variable} = $self->$_expand_vars($section, $variable, $value);
     }
   }
+
+  # while (my ($section, $sec_vars) = each(%{$variables})) {
+  #   while (my ($variable, $value) = each(%$sec_vars)) {
+  #     $sec_vars->{$variable} = $self->$_expand_vars($section, $variable, $value);
+  #   }
+  # }
   if ($cleanup) {
-    while (my ($section, $variables) = each(%{$self->{+VARIABLES}})) {
-      foreach my $var (keys(%$variables)) {
-        delete $variables->{$var} if index($var, '=') >= 0;
+    while (my ($section, $sec_vars) = each(%{$variables})) {
+      foreach my $var (keys(%$sec_vars)) {
+        delete $sec_vars->{$var} if index($var, '=') >= 0;
       }
     }
-    delete $self->{+VARIABLES}{$self->{+TOCOPY_SECTION}} if (!$tocopy_sec_declared &&
-                                                             !%$tocopy_sec_vars);
+    delete $variables->{$self->{+TOCOPY_SECTION}} if (!$tocopy_sec_declared && !%$tocopy_sec_vars);
   }
   else {
     if ($self->{+GLOBAL_MODE}) {
-      while (my ($section, $sec_vars) = each(%{$self->{+VARIABLES}})) {
+      while (my ($section, $sec_vars) = each(%{$variables})) {
         $sec_vars->{'='} = $section;
       }
       @{$tocopy_sec_vars}{keys(%$global_vars)} = values(%$global_vars);
     }
     else {
-      while (my ($section, $sec_vars) = each(%{$self->{+VARIABLES}})) {
+      while (my ($section, $sec_vars) = each(%{$variables})) {
         $sec_vars->{'='} = $section;
         @{$sec_vars}{keys(%$global_vars)} = values(%$global_vars);
       }
@@ -1039,7 +1048,9 @@ the variables of the I<tocopy> section are not copied, but behave like global
 variables. Variables that you specify with the argument C<not_tocopy> are not
 treated as global.
 
-As a result, there is no difference in referencing variables if you use globale mode. The benefit of this mode is that you do not mess up your sections with unwanted variables.
+Consequently, there is almost no difference in the referencing of variables if
+you use the global mode. The advantage of this mode is that you do not clutter
+your sections with unwanted variables.
 
 Example:
 
@@ -1063,6 +1074,8 @@ But in global mode the result is:
      __TOCOPY__ => {a => 'this', b => 'that'},
      sec        => {x => 'y'}
    }
+
+A difference occurs if you you use C<$(=)> in a global variable: 
 
 =head2 COMMENTS
 
