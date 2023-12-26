@@ -1,5 +1,11 @@
 Revision history for Config-INI-RefVars
 
+0.11    yyyy/mm/dd
+        Fixed bug in test script that caused test to fail on Windows.
+        Added the $(=CONFIG:...) to access entries of %Config::Config.
+        Fixed minor bug: evaluate sections in the order in which they appear.
+        Completed/improved POD.
+
 0.10    2023/12/25
         Fixed bug in variable lookup.
         Fixed dead links in POD section.
