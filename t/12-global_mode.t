@@ -6,6 +6,7 @@ use Test::More;
 use Config::INI::RefVars;
 
 use File::Spec::Functions;
+use Config;
 
 #
 #sub test_data_file { catfile(qw(t 07-data), $_[0]) }
@@ -66,7 +67,7 @@ subtest "simple examples" => sub {
                '__TOCOPY__' => {
                                 '=' => '__TOCOPY__',
                                 '=:' => $Dir_Sep,
-                                '=::' => ':',
+                                '=::' => $Config{path_sep},
                                 '=VERSION' => $VERSION,
                                 '=srcname' => 'INI data'
                                }
@@ -133,7 +134,7 @@ subtest "simple examples" => sub {
                '__TOCOPY__' => {
                                 '=' => '__TOCOPY__',
                                 '=:' => $Dir_Sep,
-                                '=::' => ':',
+                                '=::' => $Config{path_sep},
                                 '=VERSION' => $VERSION,
                                 '=srcname' => 'INI data',
                                 'global' => 'i am global',
