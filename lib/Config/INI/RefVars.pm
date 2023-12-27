@@ -1079,7 +1079,7 @@ But in global mode the result is:
 
 For a local copy of a global variable, use assignment operator C<:=>.
 
-A difference occurs if you you use C<$(=)> in a global variable:
+A difference occurs if you use C<$(=)> in a global variable:
 
    section=$(=)
 
