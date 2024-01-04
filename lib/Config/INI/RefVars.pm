@@ -494,7 +494,7 @@ __END__
 
 =head1 NAME
 
-Config::INI::RefVars - INI file reader, allows the referencing of INI and environment variables within the INI file.
+Config::INI::RefVars - INI file reader that supports make-style variable references and multiple assignment operators.
 
 
 =head1 VERSION

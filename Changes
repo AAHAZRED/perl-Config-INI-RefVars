@@ -1,5 +1,8 @@
 Revision history for Config-INI-RefVars
 
+0.14    yyyy/mm/dd
+        Improved POD.
+
 0.13    2024/01/04
         Renamed =srcdir, =srcfile to =INIdir, =INIfile.
         Improved POD section.
