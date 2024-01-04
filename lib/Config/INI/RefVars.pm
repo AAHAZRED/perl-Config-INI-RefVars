@@ -9,7 +9,7 @@ use feature ":5.10";
 use Config;
 use File::Spec::Functions qw(catdir rel2abs splitpath);
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 use constant DFLT_TOCOPY_SECTION  => "__TOCOPY__";
 
@@ -307,7 +307,7 @@ sub parse_ini {
       $src = [do { local (*ARGV); @ARGV = ($path); <> }];
       $self->{+SRC_NAME} = $path if !exists($self->{+SRC_NAME});
       my ($vol, $dirs, $file) = splitpath(rel2abs($path));
-      @{$global_vars}{'=srcfile', '=srcdir'} = ($file, catdir(length($vol // "") ? $vol : (),
+      @{$global_vars}{'=INIfile', '=INIdir'} = ($file, catdir(length($vol // "") ? $vol : (),
                                                               $dirs));
     }
     else {
@@ -499,7 +499,7 @@ Config::INI::RefVars - INI file reader, allows the referencing of INI and enviro
 
 =head1 VERSION
 
-Version 0.12
+Version 0.13
 
 =head1 SYNOPSIS
 
@@ -875,7 +875,7 @@ Name of the INI source. If the source is a file, this corresponds to the value
 that you have passed to C<parse_ini> via the C<src> argument, otherwise it is
 set to "INI data". The value can be overwritten with the argument C<src_name>.
 
-=item C<=srcdir>, C<=srcfile>
+=item C<=INIdir>, C<=INIfile>
 
 Directory (absolute path) and file name of the INI file. These variables are
 only present if the source is a file, otherwise they are not defined.

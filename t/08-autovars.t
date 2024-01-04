@@ -64,8 +64,8 @@ subtest "not from file" => sub {
       my $src = [
                  '[section 1]',
                  '1a=$(=srcname)',
-                 '1b=$(=srcfile)',
-                 '1c=$(=srcdir)',
+                 '1b=$(=INIfile)',
+                 '1c=$(=INIdir)',
                  '1d=$(=:)',
                  '1e=$(=)',
                  '1f=$()',
@@ -74,8 +74,8 @@ subtest "not from file" => sub {
                  '1i=$(=VERSION)',
 
                  '2a=$([section 2]=srcname)',
-                 '2b=$([section 2]=srcfile)',
-                 '2c=$([section 2]=srcdir)',
+                 '2b=$([section 2]=INIfile)',
+                 '2c=$([section 2]=INIdir)',
                  '2d=$([section 2]=:)',
                  '2e=$([section 2]=)',
                  '2f=$([section 2]x)',
@@ -84,8 +84,8 @@ subtest "not from file" => sub {
                  '2i=$([section 2]=VERSION)',
 
                  '3a=$([section 3]=srcname)',
-                 '3b=$([section 3]=srcfile)',
-                 '3c=$([section 3]=srcdir)',
+                 '3b=$([section 3]=INIfile)',
+                 '3c=$([section 3]=INIdir)',
                  '3d=$([section 3]=:)',
                  '3e=$([section 3]=)',
                  '3f=$([section 3])',
@@ -119,8 +119,8 @@ subtest "not from file" => sub {
       my $src = [
                  '[section 1]',
                  '1a=$(=srcname)',
-                 '1b=$(=srcfile)',
-                 '1c=$(=srcdir)',
+                 '1b=$(=INIfile)',
+                 '1c=$(=INIdir)',
                  '1d=$(=:)',
                  '1e=$(=)',
                  '1f=$()',
@@ -129,8 +129,8 @@ subtest "not from file" => sub {
                  '1i=$(=VERSION)',
 
                  '2a=$(section 2~=srcname)',
-                 '2b=$(section 2~=srcfile)',
-                 '2c=$(section 2~=srcdir)',
+                 '2b=$(section 2~=INIfile)',
+                 '2c=$(section 2~=INIdir)',
                  '2d=$(section 2~=:)',
                  '2e=$(section 2~=)',
                  '2f=$(section 2~x)',
@@ -139,8 +139,8 @@ subtest "not from file" => sub {
                  '2i=$(section 2~=VERSION)',
 
                  '3a=$(section 3~=srcname)',
-                 '3b=$(section 3~=srcfile)',
-                 '3c=$(section 3~=srcdir)',
+                 '3b=$(section 3~=INIfile)',
+                 '3c=$(section 3~=INIdir)',
                  '3d=$(section 3~=:)',
                  '3e=$(section 3~=)',
                  '3f=$(section 3~)',
@@ -178,23 +178,23 @@ subtest "from file / with and without cleanup" => sub {
                '__TOCOPY__' => {
                                 '='   => '__TOCOPY__',
                                 %Global,
-                                '=srcdir'  => $ini_dir,
-                                '=srcfile' => $ini_file,
+                                '=INIdir'  => $ini_dir,
+                                '=INIfile' => $ini_file,
                                 '=srcname' => $src
                                },
                'section 1' => {
                                '='   => 'section 1',
                                %{exp_sec_1($src, $ini_file, $ini_dir)},
                                %Global,
-                               '=srcdir'  => $ini_dir,
-                               '=srcfile' => $ini_file,
+                               '=INIdir'  => $ini_dir,
+                               '=INIfile' => $ini_file,
                                '=srcname' => $src
                               },
                'section 2' => {
                                '='   => 'section 2',
                                %Global,
-                               '=srcdir'  => $ini_dir,
-                               '=srcfile' => $ini_file,
+                               '=INIdir'  => $ini_dir,
+                               '=INIfile' => $ini_file,
                                '=srcname' => $src
                               }
               },
@@ -206,23 +206,23 @@ subtest "from file / with and without cleanup" => sub {
                '__TOCOPY__' => {
                                 '='   => '__TOCOPY__',
                                 %Global,
-                                '=srcdir'  => $ini_dir,
-                                '=srcfile' => $ini_file,
+                                '=INIdir'  => $ini_dir,
+                                '=INIfile' => $ini_file,
                                 '=srcname' => $src
                                },
                'section 1' => {
                                '='   => 'section 1',
                                %{exp_sec_1($src, $ini_file, $ini_dir)},
                                %Global,
-                               '=srcdir'  => $ini_dir,
-                               '=srcfile' => $ini_file,
+                               '=INIdir'  => $ini_dir,
+                               '=INIfile' => $ini_file,
                                '=srcname' => $src
                               },
                'section 2' => {
                                '='   => 'section 2',
                                %Global,
-                               '=srcdir'  => $ini_dir,
-                               '=srcfile' => $ini_file,
+                               '=INIdir'  => $ini_dir,
+                               '=INIfile' => $ini_file,
                                '=srcname' => $src
                               }
               },
