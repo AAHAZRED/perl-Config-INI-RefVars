@@ -2,7 +2,7 @@ use 5.010;
 use strict;
 use warnings;
 use Test::More;
-use Test::Fatal;
+use Test::Fatal qw(exception lives_ok);
 use Test::Warn;
 
 
@@ -207,6 +207,35 @@ subtest "unsupported modifier" => sub {
                                            ]) },
          qr/'INI data': '\+\+\.\.\.!!!&&&&': unsupported modifier at line 2\b/,
          "no directives: the code died as expected");
+};
+
+subtest "varname_chk_re" => sub {
+  my $obj = Config::INI::RefVars->new(varname_chk_re => qr/^[A-Z]/);
+  subtest "All var names match" => sub {
+    my $src = [ '[the section]',
+                ' A=the value',
+                'Xyz=123',
+                'Z1=z2',
+                'Y=',
+              ];
+    lives_ok {$obj->parse_ini(src => $src)} 'Code does not fail';
+  };
+  subtest "A var name does not match" => sub {
+    my $src = <<'EOT';
+
+      [the section]
+      A=the value
+      xYZ=123
+      Z1=z2
+      Y=
+EOT
+#Don't append a semicolon to the line above!
+
+    like(exception { $obj->parse_ini(src => $src)},
+         qr/'xYZ': var name does not match varname_chk_re/,
+        );
+      #"'$var_name': var name does not match varname_chk_re"
+  };
 };
 
 

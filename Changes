@@ -1,6 +1,7 @@
 Revision history for Config-INI-RefVars
 
-0.14    yyyy/mm/dd
+0.14    2024/01/05
+        Added constructor argument 'varname_chk_re'.
         Improved POD.
 
 0.13    2024/01/04
@@ -28,13 +29,13 @@ Revision history for Config-INI-RefVars
         Added global_mode.
 
 0.07    2023/12/20
-        Operator ':=': allow assignments like a:=$(a)
+        Operator ':=': allow assignments like a:=$(a).
 
 0.06    2023/12/17
         Added variable '=VERSION'.
         Added method current_tocopy_section().
         Added method separator().
-        Added constructor argument cmnt_vl
+        Added constructor argument 'cmnt_vl'.
         Completed POD.
 
 0.05    2023/12/09

@@ -9,7 +9,7 @@ use feature ":5.10";
 use Config;
 use File::Spec::Functions qw(catdir rel2abs splitpath);
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 use constant DFLT_TOCOPY_SECTION  => "__TOCOPY__";
 
@@ -31,6 +31,7 @@ use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
               VREF_RE           => FLD_KEY_PREFIX . 'VREF_RE',
               SEPARATOR         => FLD_KEY_PREFIX . 'SEPARATOR',
               BACKUP            => FLD_KEY_PREFIX . 'BACKUP',
+              VARNAME_CHK_RE    => FLD_KEY_PREFIX . 'VARNAME_CHK_RE',
              };
 
 my %Globals = ('=:'       => catdir("", "",),
@@ -86,7 +87,7 @@ my $_check_not_tocopy = sub {
 sub new {
   my ($class, %args) = @_;
   state $allowed_keys = {map {$_ => undef} qw(tocopy_section tocopy_vars not_tocopy global_mode
-                                              separator cmnt_vl)};
+                                              separator cmnt_vl varname_chk_re)};
   _check_args(\%args, $allowed_keys);
   my $self = {};
   croak("'tocopy_section': must not be a reference") if ref($args{tocopy_section});
@@ -107,6 +108,10 @@ sub new {
   $self->$_check_tocopy_vars($args{tocopy_vars}, 1) if exists($args{tocopy_vars});
   $self->$_check_not_tocopy($args{not_tocopy},   1) if exists($args{not_tocopy});
   $self->{+GLOBAL_MODE} = !!$args{global_mode};
+  if (exists($args{varname_chk_re})) {
+    croak("'varname_chk_re': must be a compiled regex") if ref($args{varname_chk_re}) ne 'Regexp';
+    $self->{+VARNAME_CHK_RE} = $args{varname_chk_re};
+  }
   return bless($self, $class);
 }
 
@@ -154,6 +159,7 @@ my $_parse_ini = sub {
   my $tocopy_sec  = $self->{+TOCOPY_SECTION};
   my $tocopy_vars = $variables->{$tocopy_sec}; # hash key need not to exist!
   my $global_mode = $self->{+GLOBAL_MODE};
+  my $vnm_chk_re  = $self->{+VARNAME_CHK_RE};
 
   my $tocopy_sec_declared;
 
@@ -200,6 +206,9 @@ my $_parse_ini = sub {
     $line =~ /^(.*?)\s*($Modifier_Char*?)=(?:\s*)(.*)/ or
       $_fatal->("neither section header nor key definition");
     my ($var_name, $modifier, $value) = ($1, $2, $3);
+    if ($vnm_chk_re) {
+      croak("'$var_name': var name does not match varname_chk_re") if $var_name !~ $vnm_chk_re;
+    }
     my $x_var_name = $self->$_x_var_name($curr_section, $var_name);
     my $exp_flag = exists($expanded->{$x_var_name});
     $_fatal->("empty variable name") if $var_name eq "";
@@ -499,7 +508,7 @@ Config::INI::RefVars - INI file reader that supports make-style variable referen
 
 =head1 VERSION
 
-Version 0.13
+Version 0.14
 
 =head1 SYNOPSIS
 
@@ -1193,6 +1202,31 @@ The constructor takes the following optional named arguments:
 
 =over
 
+=item C<cmnt_vl>
+
+Optional, a Boolean value. If this value is set to I<true>, comments are
+permitted in variable lines. The comment character is a semicolon preceded by
+one or more spaces.
+
+Example:
+
+   [section]
+   var 1=val 1 ; comment
+   var 2=val 2  ; ;  ; comment
+   var 3=val 3; no comment
+   var 4=val 4 $(); no comment
+
+After parsing, the C<variables> method returns:
+
+   section => {'var 1' => 'val 1',
+               'var 2' => 'val 2',
+               'var 3' => 'val 3; no comment',
+               'var 4' => 'val 4 ; no comment',
+              }
+
+Default is I<false> (C<undef>).
+
+
 =item C<global_mode>
 
 Optional, a boolean. Cheanges handling of the I<tocopy> section, see section
@@ -1246,29 +1280,25 @@ Keys with C<=> or C<;> as the first character are not permitted.
 
 Default is C<undef>.
 
-=item C<cmnt_vl>
+=item C<varname_chk_re>
 
-Optional, a Boolean value. If this value is set to I<true>, comments are
-permitted in variable lines. The comment character is a semicolon preceded by
-one or more spaces.
+Optional, a compiled regex. If specified, each variable name defined in the
+INI source must match this regex.
 
 Example:
 
-   [section]
-   var 1=val 1 ; comment
-   var 2=val 2  ; ;  ; comment
-   var 3=val 3; no comment
-   var 4=val 4 $(); no comment
+   my $obj = Config::INI::RefVars->new(varname_chk_re => qr/^[A-Z]/);
+   my $src = <<'EOT';
+      [the section]
+      A=the value
+      xYZ=123
+      Z1=z2
+      Y=
+   EOT
+  $obj->parse_ini(src => $src);
 
-After parsing, the C<variables> method returns:
-
-   section => {'var 1' => 'val 1',
-               'var 2' => 'val 2',
-               'var 3' => 'val 3; no comment',
-               'var 4' => 'val 4 ; no comment',
-              }
-
-Default is I<false> (C<undef>).
+This will result in an exception with the message C<'xYZ': var name does not
+match varname_chk_re>.
 
 =back
 
