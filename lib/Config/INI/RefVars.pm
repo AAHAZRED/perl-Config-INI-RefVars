@@ -216,34 +216,43 @@ my $_parse_ini = sub {
     if ($modifier eq "") {
       delete $expanded->{$x_var_name} if $exp_flag;
       $sect_vars->{$var_name} = $value;
-    } elsif ($modifier eq '?') {
+    }
+    elsif ($modifier eq '?') {
       $sect_vars->{$var_name} = $value if !exists($sect_vars->{$var_name});
-    } elsif ($modifier eq '+') {
+    }
+    elsif ($modifier eq '+') {
       if (exists($sect_vars->{$var_name})) {
         $sect_vars->{$var_name} .= " "
           . ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value);
-      } else {
+      }
+      else {
         $sect_vars->{$var_name} = $value;
       }
-    } elsif ($modifier eq '.') {
+    }
+    elsif ($modifier eq '.') {
       $sect_vars->{$var_name} = ($sect_vars->{$var_name} // "")
         . ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value);
-    } elsif ($modifier eq ':') {
+    }
+    elsif ($modifier eq ':') {
       delete $expanded->{$x_var_name} if $exp_flag; # Needed to make _expand_vars corectly!
       $sect_vars->{$var_name} = $self->$_expand_vars($curr_section, $var_name, $value, undef, 1);
-    } elsif ($modifier eq '+>') {
+    }
+    elsif ($modifier eq '+>') {
       if (exists($sect_vars->{$var_name})) {
         $sect_vars->{$var_name} =
           ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value)
           . ' ' . $sect_vars->{$var_name};
-      } else {
+      }
+      else {
         $sect_vars->{$var_name} = $value;
       }
-    } elsif ($modifier eq '.>') {
+    }
+    elsif ($modifier eq '.>') {
       $sect_vars->{$var_name} =
         ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value)
         . ($sect_vars->{$var_name} // "");
-    } else {
+    }
+    else {
       $_fatal->("'$modifier': unsupported modifier");
     }
   }
