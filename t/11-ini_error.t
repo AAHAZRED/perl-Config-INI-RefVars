@@ -218,7 +218,7 @@ subtest "varname_chk_re" => sub {
                 'Z1=z2',
                 'Y=',
               ];
-    lives_ok {$obj->parse_ini(src => $src)} 'Code does not fail';
+    lives_ok {$obj->parse_ini(src => $src)} 'varname_chk_re: code does not fail';
   };
   subtest "A var name does not match" => sub {
     my $src = <<'EOT';
@@ -229,12 +229,11 @@ subtest "varname_chk_re" => sub {
       Z1=z2
       Y=
 EOT
-#Don't append a semicolon to the line above!
 
     like(exception { $obj->parse_ini(src => $src)},
          qr/'xYZ': var name does not match varname_chk_re/,
+         "varname_chk_re: the code died as expected"
         );
-      #"'$var_name': var name does not match varname_chk_re"
   };
 };
 

@@ -220,6 +220,10 @@ my $_parse_ini = sub {
     elsif ($modifier eq '?') {
       $sect_vars->{$var_name} = $value if !exists($sect_vars->{$var_name});
     }
+    elsif ($modifier eq '??') {
+      $sect_vars->{$var_name} = $value if (!exists($sect_vars->{$var_name})
+                                           || $sect_vars->{$var_name} eq "");
+    }
     elsif ($modifier eq '+') {
       if (exists($sect_vars->{$var_name})) {
         $sect_vars->{$var_name} .= " "
@@ -693,6 +697,21 @@ variable simply overwrites the first.
 
 Works like the corresponding operator of GNU Make: the assignment is only
 executed if the variable is not yet defined.
+
+=item C<??=>
+
+This works similar to C<?=>: the assignment is only executed if the variable
+is not yet defined or if its current, non-expanded value is an empty string.
+
+This allows you to set a default value for an environment variable:
+
+   env_var:=$(=ENV:ENV_VAR)
+   env_var??=the default
+
+If the environment variable C<ENV_VAR> is not defined or is empty, then
+C<env_var> has the value C<the default>. This would not work with
+C<?=>. Please note that you must also use C<:=>!
+
 
 =item C<:=>
 

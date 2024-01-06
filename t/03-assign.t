@@ -208,6 +208,40 @@ EOT
             'variables()');
 };
 
+subtest "??= and ?=" => sub {
+  local $ENV{NO_SUCH_VAR};
+
+  my $src = <<'EOT';
+    [sec]
+    a1?=A1
+    a2??=A2
+
+    b1=
+    b2=
+
+    b1 ?= B1
+    b2 ??= B2
+
+    c1:=$(=ENV:NO_SUCH_VAR)
+    c2:=$(=ENV:NO_SUCH_VAR)
+    c1?=C1
+    c2??=C2
+EOT
+  my $obj = Config::INI::RefVars->new->parse_ini(src => $src);
+  is_deeply($obj->variables,
+            {
+             'sec' => {
+                       'a1' => 'A1',
+                       'a2' => 'A2',
+                       'b1' => '',
+                       'b2' => 'B2',
+                       'c1' => '',
+                       'c2' => 'C2'
+                      }
+            },
+            'variables()');
+};
+
 #==================================================================================================
 done_testing();
 

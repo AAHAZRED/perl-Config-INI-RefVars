@@ -73,6 +73,60 @@ subtest "HEADERS" => sub {
 
 
 subtest "VARIABLES AND ASSIGNMENT OPERATORS" => sub {
+  subtest "??=" => sub {
+    my $obj = Config::INI::RefVars->new();
+    my $src = <<'EOT';
+      [sec]
+      env_var:=$(=ENV:ENV_VAR)
+      env_var??=the default
+
+      wrong1=$(=ENV:ENV_VAR)
+      wrong1??=the default
+
+      wrong2:=$(=ENV:ENV_VAR)
+      wrong1?=the default
+EOT
+    subtest "ENV_VAR is undef" => sub {
+      local $ENV{ENV_VAR};
+      $obj->parse_ini(src => $src);
+      is_deeply($obj->variables,
+                {
+                 sec => {
+                         env_var => 'the default',
+                         wrong1  => '',
+                         wrong2  => ''
+                        }
+                },
+                'variables()');
+    };
+    subtest "ENV_VAR is empty" => sub {
+      local $ENV{ENV_VAR} = "";
+      $obj->parse_ini(src => $src);
+      is_deeply($obj->variables,
+                {
+                 sec => {
+                         env_var => 'the default',
+                         wrong1  => '',
+                         wrong2  => ''
+                        }
+                },
+                'variables()');
+    };
+    subtest "ENV_VAR is not empty" => sub {
+      local $ENV{ENV_VAR} = "blah";
+      $obj->parse_ini(src => $src);
+      is_deeply($obj->variables,
+                {
+                 sec => {
+                         env_var => 'blah',
+                         wrong1  => 'blah',
+                         wrong2  => 'blah'
+                        }
+                },
+                'variables()');
+    };
+
+  };
   subtest ".=" => sub {
     my $obj = Config::INI::RefVars->new();
     my $src = [

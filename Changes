@@ -1,5 +1,8 @@
 Revision history for Config-INI-RefVars
 
+0.15    yyyy/mm/dd
+        Added assignment operator '??='.
+
 0.14    2024/01/05
         Added constructor argument 'varname_chk_re'.
         Improved POD.
