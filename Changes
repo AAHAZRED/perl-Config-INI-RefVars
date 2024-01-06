@@ -1,6 +1,6 @@
 Revision history for Config-INI-RefVars
 
-0.15    yyyy/mm/dd
+0.15    2024/01/06
         Added assignment operator '??='.
 
 0.14    2024/01/05
