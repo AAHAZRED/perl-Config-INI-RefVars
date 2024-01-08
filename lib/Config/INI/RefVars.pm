@@ -568,11 +568,11 @@ then C<< $ini_reader->variables >> returns:
 
 =head2 INTRODUCTION
 
-Minimum version of perl required to use this module: C<v5.10.1>.
-
 This module provides an INI file reader that allows INI variables and
 environment variables to be referenced within the INI file. It also supports
 some additional assignment operators.
+
+Minimum version of perl required to use this module: C<v5.10.1>.
 
 
 =head2 OVERVIEW
