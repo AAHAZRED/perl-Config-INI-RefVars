@@ -29,3 +29,4 @@ t/99-examples.t
 t/manifest.t
 t/pod-coverage.t
 t/pod.t
+xt/boilerplate.t
