@@ -2,6 +2,9 @@ Revision history for Config-INI-RefVars
 
 x.xx    yyyy/mm/dd
 
+    - Added test for global mode
+    - Adapted MANIFEST
+    - Makefile.PL: changed LICENSE from 'perl_5' to 'perl'
     - Reformatted changelog.
 
 0.16    2024/04/10
