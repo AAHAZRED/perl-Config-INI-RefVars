@@ -468,7 +468,7 @@ EOT
     my $src = <<'EOT';
       section=$(=)
       x=GLOBAL
-      x_val=--$(x)--
+      x_val=$(x)
 
       [local-sec]
       var 1 := $(section)
@@ -486,16 +486,16 @@ EOT
                '__TOCOPY__' => {
                                 'section' => '__TOCOPY__',
                                 'x' => 'GLOBAL',
-                                'x_val' => '--GLOBAL--'
+                                'x_val' => 'GLOBAL'
                                },
                'local-sec' => {
                                'section' => 'local-sec',
                                'var 1' => 'local-sec',
                                'var 2' => 'local-sec',
                                'x' => 'LOCAL',
-                               'x_1' => '--LOCAL--',
-                               'x_2' => '--LOCAL--',
-                               'x_val' => '--LOCAL--'
+                               'x_1' => 'LOCAL',
+                               'x_2' => 'LOCAL',
+                               'x_val' => 'LOCAL'
                               }
               },
               'variables(), default mode');
@@ -504,14 +504,14 @@ EOT
                '__TOCOPY__' => {
                                 'section' => '__TOCOPY__',
                                 'x' => 'GLOBAL',
-                                'x_val' => '--GLOBAL--'
+                                'x_val' => 'GLOBAL'
                                },
                'local-sec' => {
                                'var 1' => 'local-sec',
                                'var 2' => '__TOCOPY__',
                                'x' => 'LOCAL',
-                               'x_1' => '--LOCAL--',
-                               'x_2' => '--GLOBAL--'
+                               'x_1' => 'LOCAL',
+                               'x_2' => 'GLOBAL'
                          }
               },
               'variables(), global mode');
