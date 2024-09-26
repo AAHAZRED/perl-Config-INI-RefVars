@@ -471,8 +471,8 @@ EOT
       x_val=$(x)
 
       [local-sec]
-      var 1 := $(section)
-      var 2 = $(section)
+      var_1 := $(section)
+      var_2 = $(section)
 
       x=LOCAL
 
@@ -490,8 +490,8 @@ EOT
                                },
                'local-sec' => {
                                'section' => 'local-sec',
-                               'var 1' => 'local-sec',
-                               'var 2' => 'local-sec',
+                               'var_1' => 'local-sec',
+                               'var_2' => 'local-sec',
                                'x' => 'LOCAL',
                                'x_1' => 'LOCAL',
                                'x_2' => 'LOCAL',
@@ -507,14 +507,14 @@ EOT
                                 'x_val' => 'GLOBAL'
                                },
                'local-sec' => {
-                               'var 1' => 'local-sec',
-                               'var 2' => '__TOCOPY__',
+                               'var_1' => 'local-sec',
+                               'var_2' => '__TOCOPY__',
                                'x' => 'LOCAL',
                                'x_1' => 'LOCAL',
                                'x_2' => 'GLOBAL'
                          }
               },
-              'variables(), global mode');
+              'variables(), global mode; different values for var_2 and ');
   };
 };
 
