@@ -290,6 +290,7 @@ sub parse_ini {
     $tocopy_section = $self->{+TOCOPY_SECTION};
   }
   $self->{+CURR_TOCP_SECTION} = $tocopy_section;
+  $Globals{'=TO_CP_SEC'} = $tocopy_section;
   if ($tocopy_vars) {
     $backup->{tocopy_vars} = $self->{+TOCOPY_VARS};
     $self->$_check_tocopy_vars($tocopy_vars, 1);
@@ -670,7 +671,7 @@ Section names must be unique.
 
 An INI file does not have to start with a section header, it can also start
 with variable definitions. In this case, the variables are added to the
-I<tocopy section> (default name: C<__TOCOPY__>). You can explicitly specify
+I<tocopy> section (default name: C<__TOCOPY__>). You can explicitly specify
 the I<tocopy> section heading, but then this must be the first active line in
 your INI file.
 
@@ -960,6 +961,10 @@ C<$(var)>.
 
 =over
 
+=item C<=TO_CP_SEC>
+
+Name of the I<tocopy> section, see L</"THE I<TOCOPY> SECTION">.
+
 =item C<=VERSION>
 
 Version of the C<Config::INI::RefVars> module.
@@ -971,7 +976,7 @@ Version of the C<Config::INI::RefVars> module.
 
 Currently, custom predefined variables are not supported. But you can do
 something very similar, see argument C<tocopy_vars> (of C<new> and
-C<parse_ini>), see also L</"THE SECTION I<TOCOPY>">. With this argument you
+C<parse_ini>), see also L</"THE I<TOCOPY> SECTION">. With this argument you
 can also define variables whose names contain a C<=>, which is obviously
 impossible in an INI file.
 
@@ -1016,14 +1021,14 @@ Note: In contrast to C<$(=ENV:...)>, there is no lower-case counterpart to
 C<$(=CONFIG:...)>, as this would not make sense.
 
 
-=head2 THE SECTION I<TOCOPY>
+=head2 THE I<TOCOPY> SECTION
 
 =head3 Default Behavior
 
-If specified, the method C<parse_ini> copies the variables of the section
-I<tocopy> to any other section when the INI file is read (default, this
-behavior can be changed by the constructor argument C<global_mode>).
-For example this
+If specified, the method C<parse_ini> copies the variables of the I<tocopy>
+section (default name: C<__TOCOPY__>) to any other section when the INI file
+is read (default, this behavior can be changed by the constructor argument
+C<global_mode>).  For example this
 
    [__TOCOPY__]
    some var=some value
@@ -1048,7 +1053,14 @@ is exactly the same as this:
    section info=$(=)
 
 Of course, you can change or overwrite a variable copied from the C<tocopy>
-section locally within a section at any time without any side effects.
+section locally within a section at any time without any side effects. In this
+case, you can access the original value as follows:
+
+   $([__TOCOPY__]some var)
+
+or - more generally - like this:
+
+   $([$(=TO_CP_SEC)]some var)
 
 You can exclude variables with the argument C<not_tocopy> from copying
 (methods C<new> and C<parse_ini>), but there is currently no notation to do
