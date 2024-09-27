@@ -1,6 +1,6 @@
 Revision history for Config-INI-RefVars
 
-x.xx    yyyy/mm/dd
+0.17    2024/09/27
 
     - Added variable '=TO_CP_SEC'.
     - POD: Better explanation for special cases in global mode.
