@@ -65,11 +65,12 @@ subtest "simple examples" => sub {
                        '=' => 'B'
                       },
                '__TOCOPY__' => {
-                                '=' => '__TOCOPY__',
-                                '=:' => $Dir_Sep,
-                                '=::' => $Config{path_sep},
-                                '=VERSION' => $VERSION,
-                                '=srcname' => 'INI data'
+                                '='          => '__TOCOPY__',
+                                '=:'         => $Dir_Sep,
+                                '=::'        => $Config{path_sep},
+                                '=VERSION'   => $VERSION,
+                                '=TO_CP_SEC' => '__TOCOPY__',
+                                '=srcname'   => 'INI data'
                                }
               },
               'variables(), no cleanup');
@@ -136,6 +137,7 @@ subtest "simple examples" => sub {
                                 '=:' => $Dir_Sep,
                                 '=::' => $Config{path_sep},
                                 '=VERSION' => $VERSION,
+                                '=TO_CP_SEC' => '__TOCOPY__',
                                 '=srcname' => 'INI data',
                                 'global' => 'i am global',
                                 'not common' => 'i am NOT global'
@@ -180,6 +182,42 @@ EOT
                         }
             },
             'variables(), global mode');
+};
+
+subtest "Overwrite and direct access; global and default" => sub {
+  my $src =  <<'EOT';
+  a=ORIG
+
+  [sec]
+  a=1
+  a_orig1=$([GLOBAL]a)
+  a_orig2=$([$(=TO_CP_SEC)]a)
+EOT
+  my $expected = {
+                  'GLOBAL' => {
+                               'a' => 'ORIG'
+                              },
+                  'sec' => {
+                            'a' => '1',
+                            'a_orig1' => 'ORIG',
+                            'a_orig2' => 'ORIG'
+                           }
+                 };
+  subtest "global mode" => sub {
+    my $obj_gm = Config::INI::RefVars->new(global_mode => 1,
+                                           tocopy_section => 'GLOBAL',
+                                           tocopy_vars => {a => 'ORIG'}
+                                          );
+    $obj_gm->parse_ini(src => $src);
+    is_deeply($obj_gm->variables, $expected, "variables, global mode" );
+  };
+  subtest "default mode" => sub {
+    my $obj_dflt = Config::INI::RefVars->new(tocopy_section => 'GLOBAL',
+                                             tocopy_vars => {a => 'ORIG'}
+                                            );
+    $obj_dflt->parse_ini(src => $src);
+    is_deeply($obj_dflt->variables, $expected, "variables, global mode" );
+  };
 };
 
 #==================================================================================================
