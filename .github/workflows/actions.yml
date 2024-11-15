@@ -8,6 +8,7 @@ on:
     branches:
       - main
 
+ # Taken from https://github.com/FGasper/perl-github-action-tips
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        perl-version: ['5.12', '5.32', '5.34', '5.36']  # Perl-Versionen anpassen
+        perl-version: ['5.10', '5.32', '5.34', '5.36']  # Perl-Versionen anpassen
 
     container:
       image: perldocker/perl-tester:${{ matrix.perl-version }}
@@ -29,21 +30,3 @@ jobs:
       - run: perl Makefile.PL
       - run: make
       - run: prove -wlvmb t
-    # steps:
-    #   - name: Checkout repository
-    #     uses: actions/checkout@v3
-
-    #   - name: Set up Perl
-    #     uses: shogo82148/actions-setup-perl@v1
-    #     with:
-    #       perl-version: ${{ matrix.perl-version }}
-
-    #   - name: Install dependencies
-    #     run: |
-    #       cpanm --installdeps --notest .
-
-    #   - name: Run tests
-    #     run: |
-    #       perl Makefile.PL
-    #       make
-    #       make test
