@@ -28,8 +28,6 @@ jobs:
       - run: |
           perl -V
           curl -L https://cpanmin.us | perl - App::cpanminus
-          perl cpanm.pl --reinstall App::cpanminus
-          rm -f cpanm.pl
       - run: cpanm --installdeps --with-suggests --with-recommends .
       - name: Show Errors on Ubuntu
         if:  ${{ failure() && startsWith( matrix.runner, 'ubuntu-')}}
