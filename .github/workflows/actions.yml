@@ -31,6 +31,7 @@ jobs:
           args: --no-check-certificate -O cpanm.pl https://cpanmin.us/
       - run: |
           perl -V
+          curl -L https://cpanmin.us | perl - App::cpanminus
           perl cpanm.pl --reinstall App::cpanminus
           rm -f cpanm.pl
       - run: cpanm --installdeps --with-suggests --with-recommends .
