@@ -25,9 +25,12 @@ jobs:
         uses: shogo82148/actions-setup-perl@v1
         with:
           perl-version: ${{ matrix.perl }}
+      - name: wget
+        uses: wei/wget@v1
+        with:
+          args: --no-check-certificate -O cpanm.pl https://cpanmin.us/
       - run: |
           perl -V
-          wget --no-check-certificate -O cpanm.pl https://cpanmin.us/
           perl cpanm.pl --reinstall App::cpanminus
           rm -f cpanm.pl
       - run: cpanm --installdeps --with-suggests --with-recommends .
