@@ -1,4 +1,4 @@
-name: Perl CI
+bodename: Perl CI
 
 on:
   push:
@@ -26,6 +26,6 @@ jobs:
         with:
           perl-version: ${{ matrix.perl }}
       - run: perl -V
-      - run: cpanm --installdeps .
+      - run: cpanm --installdeps --verbose .
       - run: prove -lv t
 
