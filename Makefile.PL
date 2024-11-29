@@ -34,13 +34,6 @@ my %WriteMakefileArgs = (
         'Carp'     => 0,
         'File::Spec::Functions' => 0,
         'Config' => 0,
-        # ---------------
-        'ExtUtils::MakeMaker' => 0,
-        'Test::Simple' => '0.98',
-        'TAP::Harness' => '3.26',
-        'Test::More'  => '0.98',
-        'Test::Fatal' => '0.010',
-        'Test::Warn' => '0.37',
     },
     dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean => { FILES => 'Config-INI-RefVars-*' },
