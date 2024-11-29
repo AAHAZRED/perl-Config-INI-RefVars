@@ -26,7 +26,7 @@ jobs:
         with:
           perl-version: ${{ matrix.perl }}
       - run: perl -V
-      - run: cpanm --installdeps .
+      - run: cpanm --installdeps --no-interactive --verbose .
       - name: Show Errors on Ubuntu
         if:  ${{ failure() && startsWith( matrix.runner, 'ubuntu-')}}
         run: |
