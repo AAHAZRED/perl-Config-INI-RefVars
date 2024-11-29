@@ -21,7 +21,7 @@ jobs:
         exclude:
           # This combination causes problems
           - os: windows-latest
-            node: 5.10
+            perl: 5.10
     name: Perl ${{ matrix.perl }} on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
