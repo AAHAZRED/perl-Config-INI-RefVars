@@ -16,8 +16,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: ["windows-latest"]
-        perl: ["5.10"]
+        os: ["ubuntu-latest", "macos-latest", "windows-latest"]
+        perl: ["5.10", "5.14", "5.16", "5.36", "5.40"]
+        exclude:
+          # This combination causes problems
+          - os: windows-latest
+            node: 5.10
     name: Perl ${{ matrix.perl }} on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -26,10 +30,6 @@ jobs:
         with:
           perl-version: ${{ matrix.perl }}
       - run: perl -V
-      - run: cpanm ExtUtils::MakeMaker
-      - run: cpanm ExtUtils::ParseXS
-      - run: cpanm Try::Tiny
-      - run: cpanm --force Test::More
       - run: cpanm App::cpanminus
       - run: cpanm --installdeps --verbose .
       - run: prove -lv t
