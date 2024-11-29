@@ -26,6 +26,7 @@ jobs:
         with:
           perl-version: ${{ matrix.perl }}
       - run: perl -V
+      - run: cpm install ExtUtils::MakeMaker ExtUtils::ParseXS
       - run: cpm install Test::More
       - run: cpanm App::cpanminus
       - run: cpanm --installdeps --verbose .
