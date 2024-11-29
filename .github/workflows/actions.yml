@@ -28,6 +28,7 @@ jobs:
       - run: perl -V
       - run: cpanm ExtUtils::MakeMaker
       - run: cpanm ExtUtils::ParseXS
+      - run: cpanm Try::Tiny
       - run: cpanm --force Test::More
       - run: cpanm App::cpanminus
       - run: cpanm --installdeps --verbose .
