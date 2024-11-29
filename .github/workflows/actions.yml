@@ -27,7 +27,7 @@ jobs:
           perl-version: ${{ matrix.perl }}
       - run: |
           perl -V
-          curl -L https://cpanmin.us | perl - App::cpanminus
+          cpan -M https://www.cpan.org App::cpanminus
       - run: cpanm --installdeps --with-suggests --with-recommends .
       - name: Show Errors on Ubuntu
         if:  ${{ failure() && startsWith( matrix.runner, 'ubuntu-')}}
