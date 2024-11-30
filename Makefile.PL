@@ -34,8 +34,6 @@ my %WriteMakefileArgs = (
         'Carp'     => 0,
         'File::Spec::Functions' => 0,
         'Config' => 0,
-        #'ABC'              => '1.6',
-        #'Foo::Bar::Module' => '5.0401',
     },
     dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean => { FILES => 'Config-INI-RefVars-*' },
