@@ -29,8 +29,10 @@ jobs:
         uses: shogo82148/actions-setup-perl@v1
         with:
           perl-version: ${{ matrix.perl }}
-      - run: perl -V
-      - run: cpanm App::cpanminus
+      - name: Show Perl version
+        run: perl -V
+      - name: Install current cpanm
+        run: cpanm App::cpanminus
       - name: Install dependencies
         run: cpanm --installdeps --verbose .
 
