@@ -54,6 +54,6 @@ jobs:
       - name: Run author tests
         if: startsWith( matrix.runner, 'ubuntu-' ) && matrix.perl == '5.40'
         run: |
-          cpanm --verbose Test::Pod
-          prove -lv t
+          cpanm Test::Pod
+          prove -lv xt
 
