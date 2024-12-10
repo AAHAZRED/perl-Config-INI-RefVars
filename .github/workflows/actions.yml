@@ -52,7 +52,7 @@ jobs:
         run: prove -lv t
 
       - name: Run author tests
-        if: startsWith( matrix.runner, 'ubuntu-' ) && matrix.perl == "5.40"
+        if: startsWith( matrix.runner, 'ubuntu-' ) && matrix.perl == '5.40'
         run: |
           cpanm --verbose Test::Pod
           prove -lv t
