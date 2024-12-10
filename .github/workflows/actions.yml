@@ -20,7 +20,7 @@ jobs:
         perl: ["5.10", "5.14", "5.16", "5.36", "5.40"]
         exclude:
           # This combination causes problems
-          - os: windows-latest
+          - runner: windows-latest
             perl: 5.10
     name: Perl ${{ matrix.perl }} on ${{ matrix.os }}
     steps:
@@ -53,5 +53,7 @@ jobs:
 
       - name: Run author tests
         if: startsWith( matrix.runner, 'ubuntu-' ) && matrix.perl == "5.40"
-        run: prove -lv t
+        run: |
+          cpanm --verbose Test::Pod
+          prove -lv t
 
