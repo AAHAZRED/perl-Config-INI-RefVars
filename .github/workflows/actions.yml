@@ -48,12 +48,16 @@ jobs:
         if: ${{ failure() && startsWith( matrix.runner, 'windows-' )  }}
         run: cat C:/Users/RUNNER~1/.cpanm/work/*/build.log
 
-      - name: Run module tests 
-        run: prove -lv t
+      - name: Process Makefile.PL
+        run: |
+          perl Makefile.PL
+          make
+      - name: Run Regular Tests 
+        run: prove -bv t
 
       - name: Run author tests
         if: startsWith( matrix.runner, 'ubuntu-' ) && matrix.perl == '5.40'
         run: |
           cpanm Test::Pod
-          prove -lv xt
+          prove -bv xt
 
