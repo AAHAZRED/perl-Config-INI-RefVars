@@ -1318,7 +1318,7 @@ Default is I<false> (C<undef>).
 
 =item C<global_mode>
 
-Optional, a boolean. Cheanges handling of the I<tocopy> section, see section
+Optional, a boolean. Changes handling of the I<tocopy> section, see section
 L</"Global Mode">. See also the accessor method of the same name.
 
 =item C<not_tocopy>
@@ -1499,7 +1499,7 @@ See also method C<current_tocopy_section>.
 =head3 variables
 
 Returns a reference to a hash of hashes. The keys are the section names, each
-value is the corresponding hash of varibales (key: variable name, value:
+value is the corresponding hash of variables (key: variable name, value:
 variable value). By default, variables with a C<=> in their name are not
 included; this can be changed with the C<cleanup> argument.
 
