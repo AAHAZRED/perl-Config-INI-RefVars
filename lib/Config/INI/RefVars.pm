@@ -1597,7 +1597,7 @@ L<https://github.com/AAHAZRED/perl-Config-INI-RefVars>
 
 =head1 LICENSE AND COPYRIGHT
 
-This software is copyright (c) 2023 by F<Abdul al Hazred>.
+This software is copyright (c) 2023 by Abdul al-Hazred.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
