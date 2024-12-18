@@ -1456,7 +1456,7 @@ See constructor argument of the same name.
 Optional, overwrites the corresponding setting saved in the object for this
 run only. The previous setting is restored before the method returns.
 
-See constructor argument of the same name, see also the accessor os the same
+See constructor argument of the same name, see also the accessor of the same
 name.
 
 =back
@@ -1556,7 +1556,7 @@ L<Config::IniFiles>, and many more.
 
 =head1 AUTHOR
 
-Abdul al Hazred, C<< <451 at gmx.eu> >>
+F<Abdul al Hazred>, C<< <451 at gmx.eu> >>
 
 
 
@@ -1580,7 +1580,7 @@ You can also look for information at:
 
 =over 4
 
-=item * RT: CPAN's request tracker (report bugs here)
+=item * CPAN's request tracker (report bugs here)
 
 L<https://rt.cpan.org/NoAuth/Bugs.html?Dist=Config-INI-RefVars>
 
@@ -1597,7 +1597,7 @@ L<https://github.com/AAHAZRED/perl-Config-INI-RefVars>
 
 =head1 LICENSE AND COPYRIGHT
 
-This software is copyright (c) 2023 by Abdul al Hazred.
+This software is copyright (c) 2023 by F<Abdul al Hazred>.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
