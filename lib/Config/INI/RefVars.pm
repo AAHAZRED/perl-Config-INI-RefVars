@@ -522,7 +522,7 @@ Config::INI::RefVars - INI file reader that supports make-style variable referen
 
 =head1 VERSION
 
-Version 0.17
+Version #VERSION#
 
 =head1 SYNOPSIS
 
@@ -1556,7 +1556,7 @@ L<Config::IniFiles>, and many more.
 
 =head1 AUTHOR
 
-F<Abdul al Hazred>, C<< <451 at gmx.eu> >>
+#AUTHOR#, C<< <451 at gmx.eu> >>
 
 
 
@@ -1597,7 +1597,7 @@ L<https://github.com/AAHAZRED/perl-Config-INI-RefVars>
 
 =head1 LICENSE AND COPYRIGHT
 
-This software is copyright (c) 2023 by Abdul al-Hazred.
+This software is copyright (c) 2023 by #AUTHOR#.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
