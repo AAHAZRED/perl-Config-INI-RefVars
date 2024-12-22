@@ -29,4 +29,5 @@ t/99-examples.t
 t/manifest.t
 t/pod-coverage.t
 t/pod.t
+tools/pm_filter.pl
 xt/boilerplate.t
