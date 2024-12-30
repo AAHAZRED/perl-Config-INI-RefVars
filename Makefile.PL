@@ -35,7 +35,7 @@ my %WriteMakefileArgs = (
         'Test::Fatal' => '0.010',
         'Test::Warn' => '0.37',
     },
-   PM_FILTER => 'perl tools/pm_filter.pl',
+    PM_FILTER => 'perl tools/pm_filter.pl',
     dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean => { FILES => 'Config-INI-RefVars-*' },
 );
