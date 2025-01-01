@@ -23,8 +23,9 @@ jobs:
           - runner: windows-latest
             perl: 5.10
     name: Perl ${{ matrix.perl }} on ${{ matrix.runner }} -  composite action
-    uses: AAHAZRED/install-perl-module
-    with:
-      os: ${{ matrix.runner }}
-      node: ${{ matrix.perl }}
+    steps:
+    - uses: AAHAZRED/install-perl-module@main
+      with:
+        os: ${{ matrix.runner }}
+        node: ${{ matrix.perl }}
 
