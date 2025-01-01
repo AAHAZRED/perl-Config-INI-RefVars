@@ -23,46 +23,53 @@ jobs:
           - runner: windows-latest
             perl: 5.10
     name: Perl ${{ matrix.perl }} on ${{ matrix.runner }}
+    
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: 'true'
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Set up perl
-        uses: shogo82148/actions-setup-perl@v1
-        with:
-          perl-version: ${{ matrix.perl }}
-      - name: Show Perl version
-        run: perl -V
-      - name: Install current cpanm
-        run: cpanm App::cpanminus
-      - name: Install dependencies
-        run: cpanm --installdeps .
+    - uses: AAHAZRED/install-perl-module@v0.01
+      with:
+        os: ${{ matrix.runner }}
+        node: ${{ matrix.perl }}
 
-      - name: Show content of log files on Linux
-        if: ${{ failure() && startsWith( matrix.runner, 'ubuntu-' )  }}
-        run: cat /home/runner/.cpanm/work/*/build.log
+    # steps:
+    #   - uses: actions/checkout@v4
+    #     with:
+    #       submodules: 'true'
+    #       token: ${{ secrets.GITHUB_TOKEN }}
+    #   - name: Set up perl
+    #     uses: shogo82148/actions-setup-perl@v1
+    #     with:
+    #       perl-version: ${{ matrix.perl }}
+    #   - name: Show Perl version
+    #     run: perl -V
+    #   - name: Install current cpanm
+    #     run: cpanm App::cpanminus
+    #   - name: Install dependencies
+    #     run: cpanm --installdeps .
+
+    #   - name: Show content of log files on Linux
+    #     if: ${{ failure() && startsWith( matrix.runner, 'ubuntu-' )  }}
+    #     run: cat /home/runner/.cpanm/work/*/build.log
  
-      - name: Show content of log files on Mac
-        if: ${{ failure() && startsWith( matrix.runner, 'macos-' )  }}
-        run: cat /Users/runner/.cpanm/work/*/build.log
+    #   - name: Show content of log files on Mac
+    #     if: ${{ failure() && startsWith( matrix.runner, 'macos-' )  }}
+    #     run: cat /Users/runner/.cpanm/work/*/build.log
  
-      - name: Show content of log files on Windows
-        if: ${{ failure() && startsWith( matrix.runner, 'windows-' )  }}
-        run: cat C:/Users/RUNNER~1/.cpanm/work/*/build.log
+    #   - name: Show content of log files on Windows
+    #     if: ${{ failure() && startsWith( matrix.runner, 'windows-' )  }}
+    #     run: cat C:/Users/RUNNER~1/.cpanm/work/*/build.log
 
-      - name: Process Makefile.PL
-        run: |
-          perl Makefile.PL
-          make
-      - name: Run Regular Tests 
-        run: prove -bv t
+    #   - name: Process Makefile.PL
+    #     run: |
+    #       perl Makefile.PL
+    #       make
+    #   - name: Run Regular Tests 
+    #     run: prove -bv t
 
-      - name: Run author tests
-        if: startsWith( matrix.runner, 'ubuntu-' ) && matrix.perl == '5.40'
-        run: |
-          cpanm Test::Pod
-          sudo apt-get install hunspell hunspell-tools
-          cpanm Test::Spelling
-          prove -bv xt
+    #   - name: Run author tests
+    #     if: startsWith( matrix.runner, 'ubuntu-' ) && matrix.perl == '5.40'
+    #     run: |
+    #       cpanm Test::Pod
+    #       sudo apt-get install hunspell hunspell-tools
+    #       cpanm Test::Spelling
+    #       prove -bv xt
 
