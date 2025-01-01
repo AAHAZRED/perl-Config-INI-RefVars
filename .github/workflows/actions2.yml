@@ -1,4 +1,4 @@
-name: 'Perl CI 2'
+name: "Perl CI 2"
 
 on:
   push:
