@@ -37,7 +37,7 @@ jobs:
       - name: Install current cpanm
         run: cpanm App::cpanminus
       - name: Install dependencies
-        run: cpanm --installdeps --verbose .
+        run: cpanm --installdeps .
 
       - name: Show content of log files on Linux
         if: ${{ failure() && startsWith( matrix.runner, 'ubuntu-' )  }}
@@ -61,8 +61,8 @@ jobs:
       - name: Run author tests
         if: startsWith( matrix.runner, 'ubuntu-' ) && matrix.perl == '5.40'
         run: |
-          cpanm --verbose Test::Pod
+          cpanm Test::Pod
           sudo apt-get install hunspell hunspell-tools
-          cpanm --verbose Test::Spelling
+          cpanm Test::Spelling
           prove -bv xt
 
