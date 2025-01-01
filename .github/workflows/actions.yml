@@ -25,6 +25,9 @@ jobs:
     name: Perl ${{ matrix.perl }} on ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+          token: ${{ secrets.PAT_TOKEN }}
       - name: Set up perl
         uses: shogo82148/actions-setup-perl@v1
         with:
@@ -59,7 +62,7 @@ jobs:
         if: startsWith( matrix.runner, 'ubuntu-' ) && matrix.perl == '5.40'
         run: |
           cpanm --verbose Test::Pod
-          sudo apt install ispell
+          sudo apt-get install hunspell hunspell-tools
           cpanm --verbose Test::Spelling
           prove -bv xt
 
