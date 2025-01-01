@@ -25,7 +25,7 @@ jobs:
     name: Perl ${{ matrix.perl }} on ${{ matrix.runner }}
     
     steps:
-    - uses: AAHAZRED/install-perl-module@v0.01
+    - uses: AAHAZRED/install-perl-module@v0.02
       with:
         os: ${{ matrix.runner }}
         node: ${{ matrix.perl }}
