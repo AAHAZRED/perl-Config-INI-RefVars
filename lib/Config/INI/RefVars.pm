@@ -9,7 +9,7 @@ use feature ":5.10";
 use Config;
 use File::Spec::Functions qw(catdir rel2abs splitpath);
 
-our $VERSION = '0.17';
+our $VERSION = '0.18';
 
 use constant DFLT_TOCOPY_SECTION  => "__TOCOPY__";
 
