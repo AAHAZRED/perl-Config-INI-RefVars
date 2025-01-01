@@ -1,8 +1,9 @@
 Revision history for Config-INI-RefVars
 
-x.yx    yyyy/mm/dd
+0.18    2025/01/01
 
     - POD: corrected typos
+    - README: removed boilerplate
 
 0.17    2024/09/27
 
