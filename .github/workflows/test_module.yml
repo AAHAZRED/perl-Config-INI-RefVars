@@ -1,4 +1,4 @@
-name: Perl CI
+name: Run Module Tests
 
 on:
   push:
