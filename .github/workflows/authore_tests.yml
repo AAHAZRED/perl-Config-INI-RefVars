@@ -26,19 +26,17 @@ jobs:
           perl-version: "5.40"
       - name: Show Perl version
         run: perl -V
+      - name: Install hunspell
+        run: sudo apt-get install hunspell hunspell-tools
       - name: Install current cpanm
         run: cpanm App::cpanminus
       - name: Install dependencies
         run: cpanm --installdeps .
-
+      - name: Install modules for author tests
+        run: cpanm Test::Pod Test::Spelling
       - name: Show content of log files on Linux
         if: failure()
         run: cat /home/runner/.cpanm/work/*/build.log
-
-      - name: Install hunspell and modules for author tests
-        run: |
-          sudo apt-get install hunspell hunspell-tools
-          cpanm Test::Pod Test::Spelling
 
       - name: Run author tests
         run: prove -bv xt
