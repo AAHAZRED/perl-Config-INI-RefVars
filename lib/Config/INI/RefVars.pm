@@ -1293,7 +1293,7 @@ The constructor takes the following optional named arguments:
 
 =item C<cmnt_vl>
 
-Optional, a Boolean value. If this value is set to I<true>, comments are
+Optional, a boolean value. If this value is set to I<true>, comments are
 permitted in variable lines. The comment character is a semicolon preceded by
 one or more spaces.
 
