@@ -38,7 +38,9 @@ jobs:
         run: cpanm App::cpanminus
       - name: Install dependencies
         run: cpanm --installdeps .
-
+      - name: Install Test::Fatal
+        # Is not automatically installed for 5.16/ubuntu - don't know why
+        run: cpanm Test::Fatal
       - name: Show content of log files on Linux
         if: ${{ failure() && startsWith( matrix.runner, 'ubuntu-' )  }}
         run: cat /home/runner/.cpanm/work/*/build.log
