@@ -1,6 +1,6 @@
 # Hint for Developers
 
-Note that the git repos uses a submodule.
+Note that the git repo uses a submodule.
 So if you want to clone it, you should do so afterwards:
 
     git submodule init
