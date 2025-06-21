@@ -4,6 +4,22 @@ use warnings;
 use ExtUtils::MakeMaker;
 
 
+use File::Spec::Functions;
+use autodie;
+
+my $PM_File = catfile(qw(lib Config INI RefVars.pm));
+
+open(my $h, '<', $PM_File);
+my $Version;
+foreach my $line (<$h>) {
+  if ($line =~ /\bour\s+\$VERSION\s+.*?["']([^"']+)["']/) {
+    $Version = $1;
+    last;
+  }
+}
+close($h);
+die("VERSION not found in $PM_File") if !$Version;
+
 
 my %WriteMakefileArgs = (
     NAME             => 'Config::INI::RefVars',
@@ -34,6 +50,13 @@ my %WriteMakefileArgs = (
                 web  => 'https://github.com/AAHAZRED/perl-Config-INI-RefVars',
             },
         },
+        bugtracker => {
+            web => 'https://github.com/AAHAZRED/perl-Config-INI-RefVars/issues'
+        },
+        provides => { 'Text::Table::Read::RelationOn::Tiny' => {file => $PM_File,
+                                                                version => $Version
+                                                               },
+                    },
     },
     TEST_REQUIRES => {
         'strict' => 0,

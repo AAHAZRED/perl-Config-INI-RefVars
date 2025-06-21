@@ -1,5 +1,10 @@
 Revision history for Config-INI-RefVars
 
+x.xy    YYYY/MM/DD
+
+    - Added CONTRIBUTING.md and SECURITY.md.
+    - Completed Makefile.PL to resolve CPANTS experimental issues.
+
 0.21    2025/06/02
 
     - Adapted Makefile.PL to generate META.json.
