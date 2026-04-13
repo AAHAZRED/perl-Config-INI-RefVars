@@ -2,6 +2,7 @@ Revision history for Config-INI-RefVars
 
 x.xy    YYYY/MM/DD
 
+    - Improved POD section.
     - Added CONTRIBUTING.md and SECURITY.md.
     - Completed Makefile.PL to resolve CPANTS experimental issues.
 

@@ -701,8 +701,9 @@ executed if the variable is not yet defined.
 
 =item C<??=>
 
-This works similar to C<?=>: the assignment is only executed if the variable
-is not yet defined or if its current, non-expanded value is an empty string.
+This works similarly to the C<?=> operator: the assignment is only executed if
+the variable is not yet defined or if its current, non-expanded value is an
+empty string.
 
 This allows you to set a default value for an environment variable:
 
@@ -1551,7 +1552,8 @@ Other modules handling INI files:
 
 L<Config::INI>,
 L<Config::INI::Tiny>,
-L<Config::IniFiles>, and many more.
+L<Config::IniFiles>,
+L<Config::Tiny> and many more.
 
 
 =head1 AUTHOR
