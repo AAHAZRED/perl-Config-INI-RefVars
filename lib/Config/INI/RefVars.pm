@@ -1143,7 +1143,9 @@ But in global mode the result is:
      sec        => {x => 'y'}
    }
 
-For a local copy of a global variable, use assignment operator C<:=>.
+To create a local copy of a global variable, use the assignment operator C<:=>
+instead of a simple C<=>, since the latter can sometimes lead to undesirable
+results (see example below).
 
 B<NOTE:>
 In some special cases, variables have different values in standard mode than in global mode.
