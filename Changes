@@ -2,6 +2,7 @@ Revision history for Config-INI-RefVars
 
 x.xy    YYYY/MM/DD
 
+    - Tests: Switched from Test::Fatal to Test::Exception to avoid problems with perl 5.10.
     - Improved POD section.
     - Added CONTRIBUTING.md and SECURITY.md.
     - Completed Makefile.PL to resolve CPANTS experimental issues.

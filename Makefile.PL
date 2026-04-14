@@ -68,7 +68,7 @@ my %WriteMakefileArgs = (
         'Test::Simple' => '0.98',
         'TAP::Harness' => '3.26',
         'Test::More'  => '0.98',
-        'Test::Fatal' => '0.010',
+        'Test::Exception' => '0.36',
         'Test::Warn' => '0.37',
     },
     dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', DIST_CP => 'cp',
