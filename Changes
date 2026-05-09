@@ -1,6 +1,6 @@
 Revision history for Config-INI-RefVars
 
-x.xy    YYYY/MM/DD
+0.22    2026/04/14
 
     - Tests: Switched from Test::Fatal to Test::Exception to avoid problems with perl 5.10.
     - Improved POD section.
