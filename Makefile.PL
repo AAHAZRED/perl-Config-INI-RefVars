@@ -53,9 +53,9 @@ my %WriteMakefileArgs = (
         bugtracker => {
             web => 'https://github.com/AAHAZRED/perl-Config-INI-RefVars/issues'
         },
-        provides => { 'Text::Table::Read::RelationOn::Tiny' => {file => $PM_File,
-                                                                version => $Version
-                                                               },
+        provides => { 'Config::INI::RefVars' => {file => $PM_File,
+																								 version => $Version
+																								},
                     },
     },
     TEST_REQUIRES => {
