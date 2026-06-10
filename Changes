@@ -1,8 +1,12 @@
 Revision history for Config-INI-RefVars
 
+x.yz    YYYY/MM/DD
+
+    - Added function calls via $(=& FUNC,...).
+
 0.24    2026/05/09
 
-    Fixed Makefile.PL.
+    - Fixed Makefile.PL.
 
 0.23    2026/05/09
 

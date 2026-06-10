@@ -2,21 +2,19 @@ package Config::INI::RefVars;
 use 5.010;
 use strict;
 use warnings;
-use Carp;
-
 use feature ":5.10";
 
+use Carp;
 use Config;
-use File::Spec::Functions qw(catdir rel2abs splitpath);
+use File::Spec::Functions qw(catdir catfile rel2abs splitpath);
 
 our $VERSION = '0.24';
 
-use constant DFLT_TOCOPY_SECTION  => "__TOCOPY__";
+use constant DFLT_TOCOPY_SECTION => "__TOCOPY__";
+use constant FLD_KEY_PREFIX      => __PACKAGE__ . ' __ ';
 
-use constant FLD_KEY_PREFIX => __PACKAGE__ . ' __ ';
-
-use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
-
+use constant {
+              EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
               CMNT_VL           => FLD_KEY_PREFIX . 'CMNT_VL',
               TOCOPY_SECTION    => FLD_KEY_PREFIX . 'TOCOPY_SECTION',
               CURR_TOCP_SECTION => FLD_KEY_PREFIX . 'CURR_TOCP_SECTION',
@@ -32,36 +30,119 @@ use constant {EXPANDED          => FLD_KEY_PREFIX . 'EXPANDED',
               SEPARATOR         => FLD_KEY_PREFIX . 'SEPARATOR',
               BACKUP            => FLD_KEY_PREFIX . 'BACKUP',
               VARNAME_CHK_RE    => FLD_KEY_PREFIX . 'VARNAME_CHK_RE',
+              DISPATCH_TABLE    => FLD_KEY_PREFIX . 'DISPATCH_TABLE',
              };
 
-my %Globals = ('=:'       => catdir("", "",),
+my %Globals = ('=:'       => catdir("", ""),
                '=::'      => $Config{path_sep},
-               '=VERSION' => $VERSION);
-
+               '=VERSION' => $VERSION,
+              );
 
 # Match punctuation chars, but not the underscores.
 my $Modifier_Char = '[^_[:^punct:]]';
 
 my ($_look_up, $_x_var_name, $_expand_vars);
 
+my $_dispatch_sub = sub {
+  my ($self, $name) = @_;
+
+  my $dispatch = $self->{+DISPATCH_TABLE}
+    or croak("Internal error: dispatch table is not initialized");
+
+  my $sub = $dispatch->{$name}
+    or croak("unknown function '$name'");
+
+  return $sub;
+};
+
+my $_split_dispatch_spec = sub {
+  my ($self, $spec) = @_;
+
+  $spec =~ s/^\s+//;
+  $spec =~ s/\s+$//;
+
+  croak("empty function call") if $spec eq "";
+
+  my @parts;
+  my $buf = "";
+  my $level = 0;
+
+  foreach my $token (split(/(\$\(|\))/, $spec)) {
+    if ($token eq '$(') {
+      ++$level;
+      $buf .= $token;
+    }
+    elsif ($token eq ')') {
+      croak("unterminated variable reference") if !$level;
+      --$level;
+      $buf .= $token;
+    }
+    else {
+      foreach my $subtok (split(/(,)/, $token)) {
+        if ($subtok eq ',' && !$level) {
+          push(@parts, $buf);
+          $buf = "";
+        }
+        else {
+          $buf .= $subtok;
+        }
+      }
+    }
+  }
+
+  croak("unterminated variable reference") if $level;
+
+  push(@parts, $buf);
+
+  my $name = shift(@parts);
+  $name =~ s/^\s+//;
+  $name =~ s/\s+$//;
+
+  croak("empty function name") if !defined($name) || $name eq "";
+
+  @parts = map {
+    s/^\s+//;
+    s/\s+$//;
+    $_;
+  } @parts;
+
+  return ($name, @parts);
+};
+
+my $_dispatch_call = sub {
+  my ($self, $curr_sect, $spec, $seen) = @_;
+
+  my ($name, @args) = $self->$_split_dispatch_spec($spec);
+  @args = map { $self->$_expand_vars($curr_sect, undef, $_, $seen, 1) } @args;
+
+  my $sub = $self->$_dispatch_sub($name);
+  my $result = $sub->(@args);
+
+  return defined($result) ? $result : "";
+};
+
+
 my $_check_tocopy_vars = sub {
   my ($self, $tocopy_vars, $set) = @_;
+
   croak("'tocopy_vars': expected HASH ref") if ref($tocopy_vars) ne 'HASH';
   $tocopy_vars = { %$tocopy_vars };
+
   while (my ($var, $value) = each(%$tocopy_vars)) {
     croak("'tocopy_vars': value of '$var' is a ref, expected scalar") if ref($value);
+
     if (!defined($value)) {
       carp("'tocopy_vars': value '$var' is undef - treated as empty string");
       $tocopy_vars->{$var} = "";
     }
+
     croak("'tocopy_vars': variable '$var': name is not permitted")
       if ($var =~ /^\s*$/ || $var =~ /^[[=;]/);
   }
-  #  @{$self->{+TOCOPY_VARS}}{keys(%$tocopy_vars)} = values(%$tocopy_vars) if $set;
+
   $self->{+TOCOPY_VARS} = {%$tocopy_vars} if $set;
   return $tocopy_vars;
 };
-
 
 my $_check_not_tocopy = sub {
   my ($self, $not_tocopy, $set) = @_;
@@ -79,18 +160,49 @@ my $_check_not_tocopy = sub {
   else {
     croak("'not_tocopy': unexpected type: must be ARRAY or HASH ref");
   }
-  $self->{+NOT_TOCOPY}= $not_tocopy if $set;
+  $self->{+NOT_TOCOPY} = $not_tocopy if $set;
   return $not_tocopy;
 };
 
 
 sub new {
   my ($class, %args) = @_;
-  state $allowed_keys = {map {$_ => undef} qw(tocopy_section tocopy_vars not_tocopy global_mode
-                                              separator cmnt_vl varname_chk_re)};
+
+  state $allowed_keys = {
+    map { $_ => undef }
+    qw(tocopy_section tocopy_vars not_tocopy global_mode separator cmnt_vl varname_chk_re)
+  };
+
   _check_args(\%args, $allowed_keys);
-  my $self = {};
+
+  my $self =
+    {
+     +DISPATCH_TABLE() => {
+                           catdir  => \&catdir,
+                           catfile => \&catfile,
+                           ignore  => sub { return ""; },
+                           concat  => sub { return join("", @_); },
+                           join    => sub { return @_ ? join(shift(@_), @_) : ""; },
+                           substr  => sub {
+                             croak("substr: expected 2 or 3 arguments") if @_ < 2 || @_ > 3;
+                             my $warning = "";
+                             local $SIG{__WARN__} = sub {
+                               $warning = $_[0];
+                               chomp($warning);
+                               $warning =~ s/\s+at\s+\S+\s+line\s+\d+\.?\z//;
+                             };
+                             my $result = @_ == 2
+                               ? substr($_[0], $_[1])
+                               : substr($_[0], $_[1], $_[2]);
+
+                             die("substr: $warning\n") if $warning ne "";
+                             return $result;
+                           },
+                          },
+    };
+
   croak("'tocopy_section': must not be a reference") if ref($args{tocopy_section});
+
   if (exists($args{separator})) {
     state $allowed_sep_chars = "#!%&',./:~\\";
     my $sep = $args{separator};
@@ -98,23 +210,26 @@ sub new {
     croak("'separator': invalid value. Allowed chars: $allowed_sep_chars")
       if $sep !~ m{^[\Q$allowed_sep_chars\E]+$};
     $self->{+SEPARATOR} = $sep;
-    $self->{+VREF_RE} = qr/^(.*?)(?:\Q$sep\E)(.*)$/;
+    $self->{+VREF_RE}   = qr/^(.*?)(?:\Q$sep\E)(.*)$/;
   }
   else {
     $self->{+VREF_RE} = qr/^\[\s*(.*?)\s*\](.*)$/;
   }
-  $self->{+CMNT_VL} = $args{cmnt_vl};
+  $self->{+CMNT_VL}        = $args{cmnt_vl};
   $self->{+TOCOPY_SECTION} = $args{tocopy_section} // DFLT_TOCOPY_SECTION;
+
   $self->$_check_tocopy_vars($args{tocopy_vars}, 1) if exists($args{tocopy_vars});
-  $self->$_check_not_tocopy($args{not_tocopy},   1) if exists($args{not_tocopy});
+  $self->$_check_not_tocopy($args{not_tocopy}, 1)   if exists($args{not_tocopy});
+
   $self->{+GLOBAL_MODE} = !!$args{global_mode};
+
   if (exists($args{varname_chk_re})) {
-    croak("'varname_chk_re': must be a compiled regex") if ref($args{varname_chk_re}) ne 'Regexp';
+    croak("'varname_chk_re': must be a compiled regex")
+      if ref($args{varname_chk_re}) ne 'Regexp';
     $self->{+VARNAME_CHK_RE} = $args{varname_chk_re};
   }
   return bless($self, $class);
 }
-
 
 my $_expand_value = sub {
   return $_[0]->$_expand_vars($_[1], undef, $_[2]);
@@ -126,22 +241,25 @@ my $_expand_value = sub {
 #
 my $_cp_tocopy_vars = sub {
   my ($self, $to_sect_name) = @_;
+
   my $comm_sec   = $self->{+VARIABLES}{$self->{+TOCOPY_SECTION}} // die("no tocopy vars");
   my $not_tocopy = $self->{+NOT_TOCOPY};
   my $to_sec     = $self->{+VARIABLES}{$to_sect_name} //= {};
   my $expanded   = $self->{+EXPANDED};
+
   foreach my $comm_var (keys(%$comm_sec)) {
     next if exists($not_tocopy->{$comm_var});
     $to_sec->{$comm_var} = $comm_sec->{$comm_var};
-    my $comm_x_var_name = "[$comm_sec]$comm_var";   # see _x_var_name()
-    $expanded->{"[$to_sect_name]$comm_var"} = undef if exists($expanded->{$comm_x_var_name});
+    my $comm_x_var_name = "[" . $self->{+TOCOPY_SECTION} . "]$comm_var";
+    $expanded->{"[$to_sect_name]$comm_var"} = undef
+      if exists($expanded->{$comm_x_var_name});
   }
 };
-
 
 my $_parse_ini = sub {
   my ($self, $src) = @_;
   my $src_name;
+
   if (ref($src)) {
     croak("Internal error: argument is not an ARRAY ref") if ref($src) ne 'ARRAY';
     $src_name = $self->{+SRC_NAME};
@@ -179,6 +297,7 @@ my $_parse_ini = sub {
     else {
       $variables->{$curr_section} = {};
     }
+
     $_fatal->("'$curr_section': duplicate header") if exists($sections_h->{$curr_section});
     $sections_h->{$curr_section} = @$sections; # Index!
     push(@$sections, $curr_section);
@@ -203,16 +322,23 @@ my $_parse_ini = sub {
     # var = val
     $line =~ s/\s+;.*$// if $cmnt_vl;
     $set_curr_section->($tocopy_sec) if !defined($curr_section);
-    $line =~ /^(.*?)\s*($Modifier_Char*?)=(?:\s*)(.*)/ or
-      $_fatal->("neither section header nor key definition");
+
+    $line =~ /^(.*?)\s*($Modifier_Char*?)=(?:\s*)(.*)/
+      or $_fatal->("neither section header nor key definition");
+
     my ($var_name, $modifier, $value) = ($1, $2, $3);
+
     if ($vnm_chk_re) {
       croak("'$var_name': var name does not match varname_chk_re") if $var_name !~ $vnm_chk_re;
     }
+
     my $x_var_name = $self->$_x_var_name($curr_section, $var_name);
-    my $exp_flag = exists($expanded->{$x_var_name});
+    my $exp_flag   = exists($expanded->{$x_var_name});
+
     $_fatal->("empty variable name") if $var_name eq "";
+
     my $sect_vars = $variables->{$curr_section} //= {};
+
     if ($modifier eq "") {
       delete $expanded->{$x_var_name} if $exp_flag;
       $sect_vars->{$var_name} = $value;
@@ -221,8 +347,8 @@ my $_parse_ini = sub {
       $sect_vars->{$var_name} = $value if !exists($sect_vars->{$var_name});
     }
     elsif ($modifier eq '??') {
-      $sect_vars->{$var_name} = $value if (!exists($sect_vars->{$var_name})
-                                           || $sect_vars->{$var_name} eq "");
+      $sect_vars->{$var_name} = $value
+        if (!exists($sect_vars->{$var_name}) || $sect_vars->{$var_name} eq "");
     }
     elsif ($modifier eq '+') {
       if (exists($sect_vars->{$var_name})) {
@@ -238,13 +364,12 @@ my $_parse_ini = sub {
         . ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value);
     }
     elsif ($modifier eq ':') {
-      delete $expanded->{$x_var_name} if $exp_flag; # Needed to make _expand_vars corectly!
+      delete $expanded->{$x_var_name} if $exp_flag;
       $sect_vars->{$var_name} = $self->$_expand_vars($curr_section, $var_name, $value, undef, 1);
     }
     elsif ($modifier eq '+>') {
       if (exists($sect_vars->{$var_name})) {
-        $sect_vars->{$var_name} =
-          ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value)
+        $sect_vars->{$var_name} = ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value)
           . ' ' . $sect_vars->{$var_name};
       }
       else {
@@ -252,36 +377,43 @@ my $_parse_ini = sub {
       }
     }
     elsif ($modifier eq '.>') {
-      $sect_vars->{$var_name} =
-        ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value)
+      $sect_vars->{$var_name} = ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value)
         . ($sect_vars->{$var_name} // "");
     }
     else {
       $_fatal->("'$modifier': unsupported modifier");
     }
   }
+
   return ($tocopy_sec_declared, $curr_section);
 };
 
-
 sub parse_ini {
   my $self = shift;
-  my %args = (cleanup => 1,
-              @_ );
-  state $allowed_keys = {map {$_ => undef} qw(cleanup src src_name
-                                              tocopy_section tocopy_vars not_tocopy)};
+  my %args = (cleanup => 1, @_);
+
+  state $allowed_keys = {
+    map { $_ => undef }
+    qw(cleanup src src_name tocopy_section tocopy_vars not_tocopy)
+  };
   state $dflt_src_name = "INI data";
+
   _check_args(\%args, $allowed_keys);
+
   foreach my $scalar_arg (qw(tocopy_section src_name)) {
-     croak("'$scalar_arg': must not be a reference") if ref($args{$scalar_arg});
-   }
+    croak("'$scalar_arg': must not be a reference") if ref($args{$scalar_arg});
+  }
+
   delete $self->{+SRC_NAME} if exists($self->{+SRC_NAME});
   $self->{+SRC_NAME} = $args{src_name} if exists($args{src_name});
-  my (      $cleanup, $src, $tocopy_section, $tocopy_vars, $not_tocopy) =
-    @args{qw(cleanup   src   tocopy_section   tocopy_vars   not_tocopy)};
+
+  my ($cleanup, $src, $tocopy_section, $tocopy_vars, $not_tocopy)
+    = @args{qw(cleanup src tocopy_section tocopy_vars not_tocopy)};
 
   croak("'src': missing mandatory argument") if !defined($src);
+
   my $backup = $self->{+BACKUP} //= {};
+
   if (defined($tocopy_section)) {
     $backup->{tocopy_section} = $self->{+TOCOPY_SECTION};
     $self->{+TOCOPY_SECTION}  = $tocopy_section;
@@ -289,27 +421,34 @@ sub parse_ini {
   else {
     $tocopy_section = $self->{+TOCOPY_SECTION};
   }
+
   $self->{+CURR_TOCP_SECTION} = $tocopy_section;
-  $Globals{'=TO_CP_SEC'} = $tocopy_section;
+  $Globals{'=TO_CP_SEC'}      = $tocopy_section;
+
   if ($tocopy_vars) {
     $backup->{tocopy_vars} = $self->{+TOCOPY_VARS};
     $self->$_check_tocopy_vars($tocopy_vars, 1);
   }
+
   if ($not_tocopy) {
     $backup->{not_tocopy} = $self->{+NOT_TOCOPY};
-    $self->$_check_not_tocopy($not_tocopy, 1)
+    $self->$_check_not_tocopy($not_tocopy, 1);
   }
+
   $self->{+SECTIONS}   = [];
   $self->{+SECTIONS_H} = {};
   $self->{+EXPANDED}   = {};
-  $self->{+VARIABLES}  =
-    {$tocopy_section => ($self->{+TOCOPY_VARS} ? {%{$self->{+TOCOPY_VARS}}} : {})};
+  $self->{+VARIABLES}  = {
+    $tocopy_section => ($self->{+TOCOPY_VARS} ? {%{$self->{+TOCOPY_VARS}}} : {})
+  };
 
-  my $global_vars = $self->{+GLOBAL_VARS} = {%Globals};
-  my $variables = $self->{+VARIABLES};
+  my $global_vars     = $self->{+GLOBAL_VARS} = {%Globals};
+  my $variables       = $self->{+VARIABLES};
   my $tocopy_sec_vars = $variables->{$tocopy_section};
+
   if (my $ref_src = ref($src)) {
     $self->{+SRC_NAME} = $dflt_src_name if !exists($self->{+SRC_NAME});
+
     if ($ref_src eq 'ARRAY') {
       $src = [@$src];
       foreach my $entry (@$src) {
@@ -329,35 +468,45 @@ sub parse_ini {
       my $path = $src;
       $src = [do { local (*ARGV); @ARGV = ($path); <> }];
       $self->{+SRC_NAME} = $path if !exists($self->{+SRC_NAME});
+
       my ($vol, $dirs, $file) = splitpath(rel2abs($path));
-      @{$global_vars}{'=INIfile', '=INIdir'} = ($file, catdir(length($vol // "") ? $vol : (),
-                                                              $dirs));
+      @{$global_vars}{'=INIfile', '=INIdir'} = (
+        $file,
+        catdir(length($vol // "") ? $vol : (), $dirs),
+      );
     }
     else {
       $src = [split(/\n/, $src)];
       $self->{+SRC_NAME} = $dflt_src_name if !exists($self->{+SRC_NAME});
     }
   }
+
   $global_vars->{'=srcname'} = $self->{+SRC_NAME};
 
   my ($tocopy_sec_declared, undef) = $self->$_parse_ini($src);
 
-  my @sections = (exists($self->{+SECTIONS_H}{$tocopy_section}) ? () : $tocopy_section,
-                  @{$self->{+SECTIONS}}
-                 );
+  my @sections = (
+    exists($self->{+SECTIONS_H}{$tocopy_section}) ? () : $tocopy_section,
+    @{$self->{+SECTIONS}},
+  );
+
   foreach my $section (@sections) {
     my $sec_vars = $variables->{$section};
+
     while (my ($variable, $value) = each(%$sec_vars)) {
       $sec_vars->{$variable} = $self->$_expand_vars($section, $variable, $value);
     }
   }
+
   if ($cleanup) {
     while (my ($section, $sec_vars) = each(%{$variables})) {
       foreach my $var (keys(%$sec_vars)) {
         delete $sec_vars->{$var} if index($var, '=') >= 0;
       }
     }
-    delete $variables->{$self->{+TOCOPY_SECTION}} if (!$tocopy_sec_declared && !%$tocopy_sec_vars);
+
+    delete $variables->{$self->{+TOCOPY_SECTION}}
+      if (!$tocopy_sec_declared && !%$tocopy_sec_vars);
   }
   else {
     if ($self->{+GLOBAL_MODE}) {
@@ -373,32 +522,41 @@ sub parse_ini {
       }
     }
   }
+
   $self->{+TOCOPY_SECTION} = $backup->{tocopy_section} if exists($backup->{tocopy_section});
   $self->{+TOCOPY_VARS}    = $backup->{tocopy_vars}    if exists($backup->{tocopy_vars});
   $self->{+NOT_TOCOPY}     = $backup->{not_tocopy}     if exists($backup->{not_tocopy});
   $backup = {};
+
   return $self;
 }
 
+sub current_tocopy_section { $_[0]->{+CURR_TOCP_SECTION} }
+sub tocopy_section         { $_[0]->{+TOCOPY_SECTION} }
+sub global_mode            { $_[0]->{+GLOBAL_MODE} }
 
-sub current_tocopy_section {$_[0]->{+CURR_TOCP_SECTION}}
-sub tocopy_section  {$_[0]->{+TOCOPY_SECTION}}
-sub global_mode     {$_[0]->{+GLOBAL_MODE}}
-sub sections        { defined($_[0]->{+SECTIONS})   ? [@{$_[0]->{+SECTIONS}}]     : undef}
-sub sections_h      { defined($_[0]->{+SECTIONS_H}) ? +{ %{$_[0]->{+SECTIONS_H}} } : undef }
-sub separator       {$_[0]->{+SEPARATOR}}
-sub src_name        {$_[0]->{+SRC_NAME}}
-sub variables       { my $vars = $_[0]->{+VARIABLES} // return undef;
-                      return  {map {$_ => {%{$vars->{$_}}}} keys(%$vars)};
-                    }
+sub sections {
+  return defined($_[0]->{+SECTIONS}) ? [@{$_[0]->{+SECTIONS}}] : undef;
+}
 
+sub sections_h {
+  return defined($_[0]->{+SECTIONS_H}) ? +{ %{$_[0]->{+SECTIONS_H}} } : undef;
+}
+
+sub separator { $_[0]->{+SEPARATOR} }
+sub src_name  { $_[0]->{+SRC_NAME} }
+
+sub variables {
+  my $vars = $_[0]->{+VARIABLES} // return undef;
+  return { map { $_ => {%{$vars->{$_}}} } keys(%$vars) };
+}
 
 $_look_up = sub {
   my ($self, $curr_sect, $variable) = @_;
   my $matched = $variable =~ $self->{+VREF_RE};
   my ($v_section, $v_basename) = $matched ? ($1, $2) : ($curr_sect, $variable);
   my $v_value;
-  my $variables = $self->{+VARIABLES};
+  my $variables      = $self->{+VARIABLES};
   my $tocopy_section = $self->{+TOCOPY_SECTION};
   if (!exists($variables->{$v_section})) {
     $v_value = "";
@@ -422,7 +580,10 @@ $_look_up = sub {
     $v_value = $self->{+GLOBAL_VARS}{$v_basename};
   }
   elsif ($self->{+GLOBAL_MODE} && exists($variables->{$tocopy_section}{$v_basename})) {
-    if (!$matched && $curr_sect ne $tocopy_section && exists($self->{+NOT_TOCOPY}{$v_basename})) {
+    if (!$matched
+        && $curr_sect ne $tocopy_section
+        && exists($self->{+NOT_TOCOPY}{$v_basename})
+       ) {
       $v_value = "";
     }
     else {
@@ -436,6 +597,7 @@ $_look_up = sub {
   return wantarray ? ($v_section, $v_basename, $v_value) : $v_value;
 };
 
+
 # extended var name
 $_x_var_name = sub {
   my ($self, $curr_sect, $variable) = @_;
@@ -448,41 +610,57 @@ $_x_var_name = sub {
   }
 };
 
-
 $_expand_vars = sub {
   my ($self, $curr_sect, $variable, $value, $seen, $not_seen) = @_;
   my $top = !$seen;
   my @result = ("");
+  my @raw = ("");
   my $level = 0;
   my $x_variable_name;
+
   if (defined($variable)) {
     ((my $var_basename), $x_variable_name) = $self->$_x_var_name($curr_sect, $variable);
-    return $self->$_look_up($curr_sect, $variable) if (exists($self->{+EXPANDED}{$x_variable_name})
-                                                       || $var_basename =~ /^=(?:ENV|CONFIG):/);
-    croak("recursive variable '", $x_variable_name, "' references itself")
+
+    return $self->$_look_up($curr_sect, $variable)
+      if (exists($self->{+EXPANDED}{$x_variable_name}) || $var_basename =~ /^=(?:ENV|CONFIG):/);
+
+    croak("recursive variable '$x_variable_name' references itself")
       if exists($seen->{$x_variable_name});
+
     $seen->{$x_variable_name} = undef if !$not_seen;
   }
+
   foreach my $token (split(/(\$\(|\))/, $value)) {
     if ($token eq '$(') {
       ++$level;
+      $raw[$level - 1] .= '$(' if $level > 1;
     }
     elsif ($token eq ')' && $level) {
-      # Now $result[$level] contains the name of a referenced variable.
+      my $raw_expr = $raw[$level];
+
       if ($result[$level] eq '==') {
         $result[$level - 1] .= $variable;
       }
-      else {
-        $result[$level - 1] .=
-          $self->$_expand_vars($self->$_look_up($curr_sect, $result[$level]), $seen);
+      elsif ($raw_expr =~ /^\s*=&\s*(.*)$/s) {
+        $result[$level - 1] .= $self->$_dispatch_call($curr_sect, $1, $seen);
       }
+      else {
+        $result[$level - 1] .= $self->$_expand_vars(
+          $self->$_look_up($curr_sect, $result[$level]),
+          $seen,
+        );
+      }
+      $raw[$level - 1] .= $raw_expr . ')';
       pop(@result);
+      pop(@raw);
       --$level;
     }
     else {
       $result[$level] .= $token;
+      $raw[$level]    .= $token;
     }
   }
+
   croak("'$x_variable_name': unterminated variable reference") if $level;
   $value = $result[0];
   if ($x_variable_name) {
@@ -491,7 +669,6 @@ $_expand_vars = sub {
   }
   return $value;
 };
-
 
 #
 # This is a function, not a method!
@@ -508,7 +685,6 @@ sub _check_args {
 1; # End of Config::INI::RefVars
 
 
-
 __END__
 
 
@@ -517,7 +693,7 @@ __END__
 
 =head1 NAME
 
-Config::INI::RefVars - INI file reader that supports make-style variable references and multiple assignment operators.
+Config::INI::RefVars - INI file reader that supports make-style variable references and various assignment operators
 
 
 =head1 VERSION
@@ -825,7 +1001,7 @@ because C<$()> always expands to an empty string (see section L</"PREDEFINED
 VARIABLES">).
 
 Recursive references are not possible, an attempt to do so leads to a fatal
-error. However, you can do this with the C<:=> assignment:
+error. However, you can do the following with the C<:=> assignment:
 
    a=omethin
    a:=s$(a)g
@@ -1214,6 +1390,126 @@ In standard mode, C<x_val=$(x)> is copied to C<[local-sec]> and C<x_2> is
 given the value C<LOCAL> due to the local definition of C<x>.
 
 A corresponding explanation applies to the different values of C<var_2>.
+
+
+=head2 FUNCTION CALLS
+
+In addition to variable references, function calls may be used in
+expanded values:
+
+  value = $(=& func, arg1, arg2, ...)
+
+Function calls are evaluated during variable expansion. Arguments may
+contain variable references and nested function calls.
+
+Example:
+
+  [paths]
+  root = /usr/local
+
+  bin = $(=& catdir, $(root), bin)
+
+Result:
+
+  /usr/local/bin
+
+Arguments are split before argument expansion, similar to GNU Make's
+C<$(call ...)> function. Therefore commas introduced by later expansion
+do not create additional arguments.
+
+Example:
+
+  [paths]
+  comma = ,
+
+  dir = $(=& catdir, foo, bar$(comma)baz)
+
+The second argument is expanded to C<bar,baz>, so the result becomes:
+
+  foo/bar,baz
+
+rather than:
+
+  foo/bar/baz
+
+The following functions are available by default:
+
+=over
+
+=item C<catdir>
+
+Calls C<File::Spec::Functions::catdir()>.
+
+Example:
+
+  dir = $(=& catdir, usr, local, bin)
+
+=item C<catfile>
+
+Calls C<File::Spec::Functions::catfile()>.
+
+Example:
+
+  file = $(=& catfile, etc, myapp.conf)
+
+=item C<ignore>
+
+Ignores all arguments and returns the empty string.
+
+Example:
+
+  value = $(=& ignore, foo, bar)
+
+=item C<concat>
+
+Concatenates all arguments without a separator.
+
+Example:
+
+  value = $(=& concat, foo, bar, baz)
+
+Result:
+
+  foobarbaz
+
+=item C<join>
+
+Equivalent to Perl's C<join()> function.
+
+The first argument is used as the separator; all remaining arguments
+are joined.
+
+Example:
+
+  value = $(=& join, :, usr, local, bin)
+
+Result:
+
+  usr:local:bin
+
+=item C<substr>
+
+Equivalent to Perl's C<substr()> function.
+
+Accepted forms:
+
+  $(=& substr, STRING, OFFSET)
+  $(=& substr, STRING, OFFSET, LENGTH)
+
+Examples:
+
+  value = $(=& substr, abcdef, 2)
+
+Result:
+
+  value = $(=& substr, abcdef, 2, 3)
+
+Result:
+
+  cde
+
+=back
+
 
 
 =head2 COMMENTS
