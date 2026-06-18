@@ -2,7 +2,8 @@ Revision history for Config-INI-RefVars
 
 x.yz    YYYY/MM/DD
 
-    - Added function calls via $(=& FUNC,...).
+    - Added built-in function calls via $(=& FUNC,...).
+    - Added user defined INI-level function defs and calls.
 
 0.24    2026/05/09
 

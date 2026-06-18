@@ -24,6 +24,7 @@ use constant {
               SECTIONS_H        => FLD_KEY_PREFIX . 'SECTIONS_H',
               SRC_NAME          => FLD_KEY_PREFIX . 'SRC_NAME',
               VARIABLES         => FLD_KEY_PREFIX . 'VARIABLES',
+              FUNCTIONS         => FLD_KEY_PREFIX . 'FUNCTIONS',
               GLOBAL_VARS       => FLD_KEY_PREFIX . 'GLOBAL_VARS',
               GLOBAL_MODE       => FLD_KEY_PREFIX . 'GLOBAL_MODE',
               VREF_RE           => FLD_KEY_PREFIX . 'VREF_RE',
@@ -41,7 +42,7 @@ my %Globals = ('=:'       => catdir("", ""),
 # Match punctuation chars, but not the underscores.
 my $Modifier_Char = '[^_[:^punct:]]';
 
-my ($_look_up, $_x_var_name, $_expand_vars);
+my ($_look_up, $_x_var_name, $_expand_vars, $_user_function_call, $_function_body);
 
 my $_dispatch_sub = sub {
   my ($self, $name) = @_;
@@ -94,11 +95,10 @@ my $_split_dispatch_spec = sub {
 
   push(@parts, $buf);
 
-  my $name = shift(@parts);
+  my $name = shift(@parts) // "";
   $name =~ s/^\s+//;
   $name =~ s/\s+$//;
-
-  croak("empty function name") if !defined($name) || $name eq "";
+  croak("empty function name") if $name eq "";
 
   @parts = map {
     s/^\s+//;
@@ -109,6 +109,7 @@ my $_split_dispatch_spec = sub {
   return ($name, @parts);
 };
 
+
 my $_dispatch_call = sub {
   my ($self, $curr_sect, $spec, $seen) = @_;
 
@@ -116,9 +117,85 @@ my $_dispatch_call = sub {
   @args = map { $self->$_expand_vars($curr_sect, undef, $_, $seen, 1) } @args;
 
   my $sub = $self->$_dispatch_sub($name);
-  my $result = $sub->(@args);
+  return $sub->(@args) // "";
+};
 
-  return defined($result) ? $result : "";
+
+$_function_body = sub {
+  my ($self, $curr_sect, $name) = @_;
+  my $functions = $self->{+FUNCTIONS} // {};
+
+  if ($name =~ $self->{+VREF_RE}) {
+    my ($section, $basename) = ($1, $2);
+    return ($section, $basename, $functions->{$section}{$basename})
+      if exists($functions->{$section}) && exists($functions->{$section}{$basename});
+    return;
+  }
+
+  return ($curr_sect, $name, $functions->{$curr_sect}{$name})
+    if exists($functions->{$curr_sect}) && exists($functions->{$curr_sect}{$name});
+
+  my $tocopy_section = $self->{+TOCOPY_SECTION};
+  return ($tocopy_section, $name, $functions->{$tocopy_section}{$name})
+    if ($curr_sect ne $tocopy_section
+        && exists($functions->{$tocopy_section})
+        && exists($functions->{$tocopy_section}{$name}));
+
+  return;
+};
+
+
+$_user_function_call = sub {
+  my ($self, $curr_sect, $spec, $seen) = @_;
+
+  my ($name, @args) = $self->$_split_dispatch_spec($spec);
+  @args = map { $self->$_expand_vars($curr_sect, undef, $_, $seen, 1) } @args;
+
+  my ($func_section, $func_name, $body) = $self->$_function_body($curr_sect, $name);
+
+  if (!defined($body)) {
+    croak("unknown function '$name'") if $name =~ $self->{+VREF_RE};
+    return $self->$_dispatch_sub($name)->(@args) // "";
+  }
+
+  my $x_func_name = "[$func_section]#=$func_name";
+
+  croak("recursive function '$x_func_name' calls itself")
+    if exists($seen->{$x_func_name});
+
+  $seen->{$x_func_name} = undef;
+
+  my $variables = $self->{+VARIABLES};
+  my $sect_vars = $variables->{$curr_sect} //= {};
+  my (%had_arg, %old_arg, %param);
+
+  for my $i (1 .. @args) {
+    $param{$i} = $args[$i - 1];
+  }
+
+  while ($body =~ /\$\((\d+)\)/g) {
+    $param{$1} //= "";
+  }
+
+  foreach my $arg (keys(%param)) {
+    $had_arg{$arg} = exists($sect_vars->{$arg});
+    $old_arg{$arg} = $sect_vars->{$arg} if $had_arg{$arg};
+    $sect_vars->{$arg} = $param{$arg};
+  }
+
+  my $result;
+  eval { $result = $self->$_expand_vars($curr_sect, undef, $body, $seen, 1); 1; } or die($@);
+
+  foreach my $arg (keys(%param)) {
+    if ($had_arg{$arg}) {
+      $sect_vars->{$arg} = $old_arg{$arg};
+    }
+    else {
+      delete($sect_vars->{$arg});
+    }
+  }
+  delete($seen->{$x_func_name});
+  return $result;
 };
 
 
@@ -130,19 +207,17 @@ my $_check_tocopy_vars = sub {
 
   while (my ($var, $value) = each(%$tocopy_vars)) {
     croak("'tocopy_vars': value of '$var' is a ref, expected scalar") if ref($value);
-
     if (!defined($value)) {
       carp("'tocopy_vars': value '$var' is undef - treated as empty string");
       $tocopy_vars->{$var} = "";
     }
-
     croak("'tocopy_vars': variable '$var': name is not permitted")
       if ($var =~ /^\s*$/ || $var =~ /^[[=;]/);
   }
-
   $self->{+TOCOPY_VARS} = {%$tocopy_vars} if $set;
   return $tocopy_vars;
 };
+
 
 my $_check_not_tocopy = sub {
   my ($self, $not_tocopy, $set) = @_;
@@ -231,9 +306,8 @@ sub new {
   return bless($self, $class);
 }
 
-my $_expand_value = sub {
-  return $_[0]->$_expand_vars($_[1], undef, $_[2]);
-};
+
+my $_expand_value = sub { return $_[0]->$_expand_vars($_[1], undef, $_[2]); };
 
 #
 # We assume that this is called when the target section is still empty and if
@@ -256,6 +330,7 @@ my $_cp_tocopy_vars = sub {
   }
 };
 
+
 my $_parse_ini = sub {
   my ($self, $src) = @_;
   my $src_name;
@@ -274,6 +349,7 @@ my $_parse_ini = sub {
   my $sections_h  = $self->{+SECTIONS_H};
   my $expanded    = $self->{+EXPANDED};
   my $variables   = $self->{+VARIABLES};
+  my $functions   = $self->{+FUNCTIONS};
   my $tocopy_sec  = $self->{+TOCOPY_SECTION};
   my $tocopy_vars = $variables->{$tocopy_sec}; # hash key need not to exist!
   my $global_mode = $self->{+GLOBAL_MODE};
@@ -289,6 +365,7 @@ my $_parse_ini = sub {
     if ($curr_section eq $tocopy_sec) {
       $_fatal->("tocopy section '$tocopy_sec' must be first section") if @$sections;
       $tocopy_vars = $variables->{$tocopy_sec} = {} if !$tocopy_vars;
+      $functions->{$tocopy_sec} //= {};
       $tocopy_sec_declared = 1;
     }
     elsif ($tocopy_vars && !$global_mode) {
@@ -297,6 +374,7 @@ my $_parse_ini = sub {
     else {
       $variables->{$curr_section} = {};
     }
+    $functions->{$curr_section} //= {};
 
     $_fatal->("'$curr_section': duplicate header") if exists($sections_h->{$curr_section});
     $sections_h->{$curr_section} = @$sections; # Index!
@@ -338,8 +416,12 @@ my $_parse_ini = sub {
     $_fatal->("empty variable name") if $var_name eq "";
 
     my $sect_vars = $variables->{$curr_section} //= {};
+    my $sect_funcs = $functions->{$curr_section} //= {};
 
-    if ($modifier eq "") {
+    if ($modifier eq '#') {
+      $sect_funcs->{$var_name} = $value;
+    }
+    elsif ($modifier eq "") {
       delete $expanded->{$x_var_name} if $exp_flag;
       $sect_vars->{$var_name} = $value;
     }
@@ -369,7 +451,8 @@ my $_parse_ini = sub {
     }
     elsif ($modifier eq '+>') {
       if (exists($sect_vars->{$var_name})) {
-        $sect_vars->{$var_name} = ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value)
+        $sect_vars->{$var_name} =
+          ($exp_flag ? $self->$_expand_value($curr_section, $value) : $value)
           . ' ' . $sect_vars->{$var_name};
       }
       else {
@@ -384,17 +467,16 @@ my $_parse_ini = sub {
       $_fatal->("'$modifier': unsupported modifier");
     }
   }
-
   return ($tocopy_sec_declared, $curr_section);
 };
+
 
 sub parse_ini {
   my $self = shift;
   my %args = (cleanup => 1, @_);
 
   state $allowed_keys = {
-    map { $_ => undef }
-    qw(cleanup src src_name tocopy_section tocopy_vars not_tocopy)
+    map { $_ => undef } qw(cleanup src src_name tocopy_section tocopy_vars not_tocopy)
   };
   state $dflt_src_name = "INI data";
 
@@ -441,6 +523,7 @@ sub parse_ini {
   $self->{+VARIABLES}  = {
     $tocopy_section => ($self->{+TOCOPY_VARS} ? {%{$self->{+TOCOPY_VARS}}} : {})
   };
+  $self->{+FUNCTIONS} = {};
 
   my $global_vars     = $self->{+GLOBAL_VARS} = {%Globals};
   my $variables       = $self->{+VARIABLES};
@@ -493,13 +576,15 @@ sub parse_ini {
   foreach my $section (@sections) {
     my $sec_vars = $variables->{$section};
 
-    while (my ($variable, $value) = each(%$sec_vars)) {
+    foreach my $variable (keys(%$sec_vars)) {
+      my $value = $sec_vars->{$variable};
       $sec_vars->{$variable} = $self->$_expand_vars($section, $variable, $value);
     }
   }
 
   if ($cleanup) {
-    while (my ($section, $sec_vars) = each(%{$variables})) {
+    foreach my $section (keys(%$variables)) {
+      my $sec_vars = $variables->{$section};
       foreach my $var (keys(%$sec_vars)) {
         delete $sec_vars->{$var} if index($var, '=') >= 0;
       }
@@ -510,13 +595,15 @@ sub parse_ini {
   }
   else {
     if ($self->{+GLOBAL_MODE}) {
-      while (my ($section, $sec_vars) = each(%{$variables})) {
+      foreach my $section (keys(%$variables)) {
+        my $sec_vars = $variables->{$section};
         $sec_vars->{'='} = $section;
       }
       @{$tocopy_sec_vars}{keys(%$global_vars)} = values(%$global_vars);
     }
     else {
-      while (my ($section, $sec_vars) = each(%{$variables})) {
+      foreach my $section (keys(%$variables)) {
+        my $sec_vars = $variables->{$section};
         $sec_vars->{'='} = $section;
         @{$sec_vars}{keys(%$global_vars)} = values(%$global_vars);
       }
@@ -550,6 +637,7 @@ sub variables {
   my $vars = $_[0]->{+VARIABLES} // return undef;
   return { map { $_ => {%{$vars->{$_}}} } keys(%$vars) };
 }
+
 
 $_look_up = sub {
   my ($self, $curr_sect, $variable) = @_;
@@ -610,6 +698,7 @@ $_x_var_name = sub {
   }
 };
 
+
 $_expand_vars = sub {
   my ($self, $curr_sect, $variable, $value, $seen, $not_seen) = @_;
   my $top = !$seen;
@@ -640,6 +729,9 @@ $_expand_vars = sub {
 
       if ($result[$level] eq '==') {
         $result[$level - 1] .= $variable;
+      }
+      elsif ($raw_expr =~ /^\s*=#\s*(.*)$/s) {
+        $result[$level - 1] .= $self->$_user_function_call($curr_sect, $1, $seen);
       }
       elsif ($raw_expr =~ /^\s*=&\s*(.*)$/s) {
         $result[$level - 1] .= $self->$_dispatch_call($curr_sect, $1, $seen);
@@ -1510,6 +1602,140 @@ Result:
 
 =back
 
+=head2 USER-DEFINED INI-LEVEL FUNCTIONS
+
+In addition to built-in functions (called via C<$(=& ...)>), user-defined
+functions can be defined directly in INI files.
+
+A function definition uses the C<#=> assignment operator:
+
+   greet #= Hello $(1)!
+   pair  #= $(1):$(2)
+
+Functions are called using the C<$(=# ...)> syntax:
+
+   msg1 = $(=# greet,World)
+   msg2 = $(=# pair,foo,bar)
+
+The above example produces:
+
+   msg1 = Hello World!
+   msg2 = foo:bar
+
+=head3 Function Parameters
+
+Function parameters are referenced using numeric variables:
+
+=over
+
+=item *
+
+C<$(1)> first argument
+
+=item *
+
+C<$(2)> second argument
+
+=item *
+
+etc
+
+
+=back
+
+Missing arguments expand to the empty string.
+
+Example:
+
+   triple #= $(1):$(2):$(3)
+
+   x = $(=# triple,a,b)
+
+Results in:
+
+   x = a:b:
+
+=head3 Function Scope
+
+Functions are defined per section and follow the same lookup rules as
+variables.
+
+When a function is called, the resolver searches:
+
+=over
+
+=item *
+
+the current section
+
+=item *
+
+the C<**TOCOPY**> section
+
+=item *
+
+the built-in function dispatcher
+
+=back
+
+Example:
+
+   format #= GLOBAL:$(1)
+
+   [sec]
+   format #= LOCAL:$(1)
+
+   result = $(=# format,test)
+
+Results in:
+
+   result = LOCAL:test
+
+
+=head3 Qualified Function Calls
+
+A function from a specific section can be called explicitly:
+
+   result = $(=# [other]format,test)
+
+This behaves similarly to qualified variable references:
+
+   $([other]var)
+
+=head3 Variables Inside Function Bodies
+
+Function bodies are expanded in the caller's scope.
+
+Example:
+
+   format #= $(1):$(var)
+
+   [sec]
+   var = LOCAL
+   result = $(=# format,test)
+
+Results in:
+
+   result = test:LOCAL
+
+A qualified variable reference can be used to force access to a specific
+section:
+
+   format #= $(1):$([**TOCOPY**]var)
+
+=head3 Recursion
+
+Recursive function calls are detected and cause a fatal error.
+
+Example:
+
+   recurse #= $(=# recurse)
+
+   x = $(=# recurse)
+
+Produces an error similar to:
+
+   recursive function '[**TOCOPY**]#=recurse' calls itself
 
 
 =head2 COMMENTS
@@ -1839,6 +2065,43 @@ as follows:
      Root="$(BaseDir)\wwwroot" ; use wwwroot for http and tftp
    EOT
    $obj->parse_ini(src => $src);
+
+
+=head1 ERROR HANDLING
+
+Most parsing and expansion errors are reported by throwing an exception.
+
+Examples include:
+
+=over
+
+=item *
+
+syntax errors
+
+=item *
+
+undefined variables
+
+=item *
+
+unknown functions
+
+=item *
+
+recursive variable references
+
+=item *
+
+recursive function calls
+
+=back
+
+If C<parse_ini()> dies, the object may be left in an inconsistent state.
+
+Applications should treat the object as unusable after a parsing error and
+create a new object before attempting another parse operation.
+
 
 =head1 SEE ALSO
 
