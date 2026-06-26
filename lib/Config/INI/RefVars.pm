@@ -6,7 +6,8 @@ use feature ":5.10";
 
 use Carp;
 use Config;
-use File::Spec::Functions qw(catdir catfile rel2abs splitpath);
+use File::Spec::Functions qw(catdir rel2abs splitpath);
+use Config::INI::RefVars::Builtins;
 
 our $VERSION = '0.24';
 
@@ -243,37 +244,28 @@ my $_check_not_tocopy = sub {
 sub new {
   my ($class, %args) = @_;
 
-  state $allowed_keys = {
-    map { $_ => undef }
-    qw(tocopy_section tocopy_vars not_tocopy global_mode separator cmnt_vl varname_chk_re)
-  };
+  state $allowed_keys = { map { $_ => undef } qw(builtins
+                                                 cmnt_vl
+                                                 global_mode
+                                                 not_tocopy
+                                                 separator
+                                                 tocopy_section
+                                                 tocopy_vars
+                                                 varname_chk_re
+                                               )};
 
   _check_args(\%args, $allowed_keys);
 
+  my $builtins = delete($args{builtins}) // {};
+  croak("builtins must be a hash reference") if ref($builtins) ne 'HASH';
+  my $dispatch = Config::INI::RefVars::Builtins::default_dispatch_table();
+  foreach my $name (keys(%$builtins)) {
+    croak("builtin '$name' is not a CODE reference") if ref($builtins->{$name}) ne 'CODE';
+    $dispatch->{$name} = $builtins->{$name};
+  }
   my $self =
     {
-     +DISPATCH_TABLE() => {
-                           catdir  => \&catdir,
-                           catfile => \&catfile,
-                           ignore  => sub { return ""; },
-                           concat  => sub { return join("", @_); },
-                           join    => sub { return @_ ? join(shift(@_), @_) : ""; },
-                           substr  => sub {
-                             croak("substr: expected 2 or 3 arguments") if @_ < 2 || @_ > 3;
-                             my $warning = "";
-                             local $SIG{__WARN__} = sub {
-                               $warning = $_[0];
-                               chomp($warning);
-                               $warning =~ s/\s+at\s+\S+\s+line\s+\d+\.?\z//;
-                             };
-                             my $result = @_ == 2
-                               ? substr($_[0], $_[1])
-                               : substr($_[0], $_[1], $_[2]);
-
-                             die("substr: $warning\n") if $warning ne "";
-                             return $result;
-                           },
-                          },
+     +DISPATCH_TABLE() => $dispatch,
     };
 
   croak("'tocopy_section': must not be a reference") if ref($args{tocopy_section});
@@ -834,7 +826,6 @@ then C<< $ini_reader->variables >> returns:
 
 =head1 DESCRIPTION
 
-
 =head2 INTRODUCTION
 
 This module provides an INI file reader that allows INI variables and
@@ -1040,6 +1031,10 @@ Example:
   var+>=123
 
 Now C<var> has the value C<123 abc>.
+
+=item C<#=>
+
+Defines a function. See L</User-defined Functions>
 
 =back
 
@@ -1487,23 +1482,24 @@ A corresponding explanation applies to the different values of C<var_2>.
 =head2 FUNCTION CALLS
 
 In addition to variable references, function calls may be used in
-expanded values:
+expanded values.
+
+There are two kinds of function calls:
+
+=over
+
+=item Built-in functions
 
   value = $(=& func, arg1, arg2, ...)
 
+=item User-defined functions
+
+  value = $(=# func, arg1, arg2, ...)
+
+=back
+
 Function calls are evaluated during variable expansion. Arguments may
 contain variable references and nested function calls.
-
-Example:
-
-  [paths]
-  root = /usr/local
-
-  bin = $(=& catdir, $(root), bin)
-
-Result:
-
-  /usr/local/bin
 
 Arguments are split before argument expansion, similar to GNU Make's
 C<$(call ...)> function. Therefore commas introduced by later expansion
@@ -1524,143 +1520,72 @@ rather than:
 
   foo/bar/baz
 
-The following functions are available by default:
+=head3 Built-in Functions
 
-=over
-
-=item C<catdir>
-
-Calls C<File::Spec::Functions::catdir()>.
+Built-in functions are called with C<$(=& ...)>.
 
 Example:
 
-  dir = $(=& catdir, usr, local, bin)
-
-=item C<catfile>
-
-Calls C<File::Spec::Functions::catfile()>.
-
-Example:
-
-  file = $(=& catfile, etc, myapp.conf)
-
-=item C<ignore>
-
-Ignores all arguments and returns the empty string.
-
-Example:
-
-  value = $(=& ignore, foo, bar)
-
-=item C<concat>
-
-Concatenates all arguments without a separator.
-
-Example:
-
-  value = $(=& concat, foo, bar, baz)
+  [paths]
+  root = /usr/local
+  bin  = $(=& catdir, $(root), bin)
 
 Result:
 
-  foobarbaz
+  /usr/local/bin
 
-=item C<join>
+The built-in functions are provided by
+L<Config::INI::RefVars::Builtins>.
 
-Equivalent to Perl's C<join()> function.
+Additional built-in functions can be registered via constructor argument
+C<builtins>.
 
-The first argument is used as the separator; all remaining arguments
-are joined.
+=head3 User-defined Functions
 
-Example:
-
-  value = $(=& join, :, usr, local, bin)
-
-Result:
-
-  usr:local:bin
-
-=item C<substr>
-
-Equivalent to Perl's C<substr()> function.
-
-Accepted forms:
-
-  $(=& substr, STRING, OFFSET)
-  $(=& substr, STRING, OFFSET, LENGTH)
-
-Examples:
-
-  value = $(=& substr, abcdef, 2)
-
-Result:
-
-  value = $(=& substr, abcdef, 2, 3)
-
-Result:
-
-  cde
-
-=back
-
-=head2 USER-DEFINED INI-LEVEL FUNCTIONS
-
-In addition to built-in functions (called via C<$(=& ...)>), user-defined
-functions can be defined directly in INI files.
-
-A function definition uses the C<#=> assignment operator:
-
-   greet #= Hello $(1)!
-   pair  #= $(1):$(2)
-
-Functions are called using the C<$(=# ...)> syntax:
-
-   msg1 = $(=# greet,World)
-   msg2 = $(=# pair,foo,bar)
-
-The above example produces:
-
-   msg1 = Hello World!
-   msg2 = foo:bar
-
-=head3 Function Parameters
-
-Function parameters are referenced using numeric variables:
-
-=over
-
-=item *
-
-C<$(1)> first argument
-
-=item *
-
-C<$(2)> second argument
-
-=item *
-
-etc
-
-
-=back
-
-Missing arguments expand to the empty string.
+User-defined functions are defined with the C<#=> assignment operator.
 
 Example:
 
-   triple #= $(1):$(2):$(3)
+  greet #= Hello $(1)!
+  pair  #= $(1):$(2)
 
-   x = $(=# triple,a,b)
+  [sec]
+  msg1 = $(=# greet, World)
+  msg2 = $(=# pair, foo, bar)
 
-Results in:
+Result:
 
-   x = a:b:
+  msg1 = Hello World!
+  msg2 = foo:bar
 
-=head3 Function Scope
+Function parameters are available as numeric variables:
 
-Functions are defined per section and follow the same lookup rules as
-variables.
+  $(1)
+  $(2)
+  $(3)
 
-When a function is called, the resolver searches:
+Missing parameters expand to the empty string.
+
+Example:
+
+  triple #= $(1):$(2):$(3)
+
+  [sec]
+  x = $(=# triple, a, b)
+
+Result:
+
+  x = a:b:
+
+=head3 Function Lookup
+
+User-defined functions are searched similarly to variables.
+
+For an unqualified call:
+
+  $(=# func, arg1, arg2)
+
+the resolver searches:
 
 =over
 
@@ -1670,7 +1595,7 @@ the current section
 
 =item *
 
-the C<**TOCOPY**> section
+the I<tocopy> section
 
 =item *
 
@@ -1678,64 +1603,95 @@ the built-in function dispatcher
 
 =back
 
+Thus a user-defined function may override a built-in function for C<$(=# ...)>
+calls. The built-in function remains available through C<$(=& ...)>.
+
 Example:
 
-   format #= GLOBAL:$(1)
+  concat #= user:$(1):$(2)
 
-   [sec]
-   format #= LOCAL:$(1)
+  [sec]
+  x = $(=# concat, a, b)
+  y = $(=& concat, a, b)
 
-   result = $(=# format,test)
+Result:
 
-Results in:
-
-   result = LOCAL:test
-
+  x = user:a:b
+  y = ab
 
 =head3 Qualified Function Calls
 
 A function from a specific section can be called explicitly:
 
-   result = $(=# [other]format,test)
+  value = $(=# [section]func, arg1, arg2)
 
-This behaves similarly to qualified variable references:
+This is analogous to qualified variable references:
 
-   $([other]var)
+  value = $([section]var)
 
-=head3 Variables Inside Function Bodies
+Example:
+
+  fmt #= GLOBAL:$(1)
+
+  [sec]
+  fmt = not relevant
+  fmt #= LOCAL:$(1)
+
+  x = $(=# fmt, test)
+  y = $(=# [__TOCOPY__]fmt, test)
+
+Result:
+
+  x = LOCAL:test
+  y = GLOBAL:test
+
+A qualified function call does not fall back to a built-in function if the
+specified section does not contain such a function.
+
+=head3 Function Scope
 
 Function bodies are expanded in the caller's scope.
 
 Example:
 
-   format #= $(1):$(var)
+  fmt #= $(1):$(var)
+  var = GLOBAL
 
-   [sec]
-   var = LOCAL
-   result = $(=# format,test)
+  [sec]
+  var = LOCAL
+  x = $(=# fmt, test)
 
-Results in:
+Result:
 
-   result = test:LOCAL
+  x = test:LOCAL
 
-A qualified variable reference can be used to force access to a specific
-section:
+A qualified variable reference may be used to force access to a variable from
+a specific section:
 
-   format #= $(1):$([**TOCOPY**]var)
+  fmt #= $(1):$([__TOCOPY__]var)
+
+Functions and variables use separate namespaces. Therefore this is valid:
+
+  foo = value
+  foo #= function:$(1)
+
+The variable C<foo> is referenced with C<$(foo)>, while the function C<foo> is
+called with C<$(=# foo, ...)>.
 
 =head3 Recursion
 
-Recursive function calls are detected and cause a fatal error.
+Recursive user-defined function calls are detected and cause a fatal error.
 
 Example:
 
-   recurse #= $(=# recurse)
+  recurse #= $(=# recurse)
 
-   x = $(=# recurse)
+  [sec]
+  x = $(=# recurse)
 
 Produces an error similar to:
 
-   recursive function '[**TOCOPY**]#=recurse' calls itself
+  recursive function '[__TOCOPY__]#=recurse' calls itself
 
 
 =head2 COMMENTS
@@ -1815,6 +1771,68 @@ method argument.
 The constructor takes the following optional named arguments:
 
 =over
+
+=item C<builtins>
+
+Optional. Argument for registering additional built-in functions.
+
+Example:
+
+  my $cfg = Config::INI::RefVars->new(
+                      builtins => {
+                                     _uc => sub {
+                                       return uc($_[0] // "");
+                                     },
+                                     _sprintf => sub {
+                                       my $fmt = shift // return "";
+                                       my $result;
+                                       eval { $result = sprintf($fmt, @_); 1; } or
+                                         die("_sprintf: $@\n");
+                                       return $result;
+                                   },
+                                  });
+
+The keys of the hash reference specify the function names. The values
+must be code references.
+
+Built-in functions are invoked using the C<$(=& ...)> syntax:
+
+  upper  = $(=& _uc,hello)
+  string = $(=& _sprintf, <%s:%d>, a string, 27)
+
+The callback receives the expanded function arguments in C<@_>. The
+callback's return value becomes the result of the function call.
+
+If a user-defined built-in has the same name as one of the predefined
+built-in functions, the user-defined implementation takes precedence.
+
+Exceptions thrown by a callback are propagated to the caller and abort
+parsing in the same way as errors raised by the predefined built-in
+functions.
+
+B<Naming convention>: User-defined built-in functions may use any name,
+including the names of predefined built-in functions. If a user-defined
+built-in has the same name as a predefined one, the user-defined
+implementation takes precedence.
+
+To avoid accidental name clashes with future versions of this module,
+applications are encouraged to use function names containing at least
+one underscore (C<_>).
+
+This module guarantees that no predefined built-in function, present or
+future, will contain an underscore in its name.
+
+Examples:
+
+  project_root
+  is_release_build
+  my_concat
+  cfg_dir
+
+Using such names ensures that future versions of
+C<Config::INI::RefVars> cannot introduce a conflicting predefined
+built-in function.
+
 
 =item C<cmnt_vl>
 
@@ -2116,6 +2134,8 @@ L<Config::INI::Tiny>,
 L<Config::IniFiles>,
 L<Config::Tiny> and many more.
 
+Remark: the built-in functions are provided by
+L<Config::INI::RefVars::Builtins>.
 
 =head1 AUTHOR
 

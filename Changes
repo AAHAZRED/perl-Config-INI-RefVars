@@ -3,7 +3,9 @@ Revision history for Config-INI-RefVars
 x.yz    YYYY/MM/DD
 
     - Added built-in function calls via $(=& FUNC,...).
-    - Added user defined INI-level function defs and calls.
+    - Added user defined INI-level function defs and calls via $(=# FUNC, ...).
+    - Added more built-in function.
+    - Added constructor argument 'builtins' for to register additional built-in functions.
 
 0.24    2026/05/09
 

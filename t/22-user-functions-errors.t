@@ -2,24 +2,17 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Exception;
+
+use lib 't';
+
+use Local::Test::RefVars qw(throws_ini_like);
 
 use Config::INI::RefVars;
 
-sub dies_like {
-  my ($name, $ini, $re) = @_;
-
-  my $ok = eval {
-    my $obj = Config::INI::RefVars->new();
-    $obj->parse_ini(src => $ini);
-    1;
-  };
-
-  ok(!$ok, "$name dies");
-  like($@, $re, "$name error message");
-}
-
 subtest 'unknown user functions' => sub {
-  dies_like(
+
+  throws_ini_like(
     'unknown unqualified function',
     <<'INI',
 [sec]
@@ -28,7 +21,7 @@ INI
     qr/unknown function 'does_not_exist'/,
   );
 
-  dies_like(
+  throws_ini_like(
     'unknown qualified function in existing section',
     <<'INI',
 [other]
@@ -40,7 +33,7 @@ INI
     qr/unknown function '\[other\]does_not_exist'/,
   );
 
-  dies_like(
+  throws_ini_like(
     'unknown qualified function in missing section',
     <<'INI',
 [sec]
@@ -51,6 +44,7 @@ INI
 };
 
 subtest 'qualified user function calls' => sub {
+
   my $ini = <<'INI';
 fmt #= GLOBAL:$(1)
 
@@ -71,11 +65,12 @@ INI
 
   is($vars->{b}{x}, 'B:x', 'unqualified call uses local function');
   is($vars->{b}{y}, 'A:y', 'qualified call uses function from explicit section');
-  is($vars->{b}{z}, 'GLOBAL:z', 'qualified call can use tocopy function');
+  is($vars->{b}{z}, 'GLOBAL:z', 'qualified call can use function from __TOCOPY__');
 };
 
 subtest 'qualified call does not fall back to builtin' => sub {
-  dies_like(
+
+  throws_ini_like(
     'qualified builtin fallback is not allowed',
     <<'INI',
 [sec]
@@ -86,7 +81,8 @@ INI
 };
 
 subtest 'malformed and empty calls' => sub {
-  dies_like(
+
+  throws_ini_like(
     'empty user function call',
     <<'INI',
 [sec]
@@ -95,7 +91,7 @@ INI
     qr/empty function call/,
   );
 
-  dies_like(
+  throws_ini_like(
     'blank user function call',
     <<'INI',
 [sec]
@@ -104,7 +100,7 @@ INI
     qr/empty function call/,
   );
 
-  dies_like(
+  throws_ini_like(
     'empty qualified function basename',
     <<'INI',
 [sec]
@@ -115,7 +111,8 @@ INI
 };
 
 subtest 'recursive user functions die cleanly' => sub {
-  dies_like(
+
+  throws_ini_like(
     'direct recursive function',
     <<'INI',
 rec #= $(=# rec)
@@ -126,7 +123,7 @@ INI
     qr/recursive function '\[__TOCOPY__\]#=rec' calls itself/,
   );
 
-  dies_like(
+  throws_ini_like(
     'indirect recursive function',
     <<'INI',
 a #= $(=# b)
@@ -138,7 +135,7 @@ INI
     qr/recursive function '\[__TOCOPY__\]#=a' calls itself/,
   );
 
-  dies_like(
+  throws_ini_like(
     'section-local recursive function',
     <<'INI',
 [sec]
@@ -150,6 +147,7 @@ INI
 };
 
 subtest 'recursive user functions restore temporary parameters' => sub {
+
   my $ini = <<'INI';
 rec #= $(1)$(=# rec,$(1))
 ok  #= $(1):$(2)
@@ -163,13 +161,13 @@ INI
 
   my $obj = Config::INI::RefVars->new();
 
-  my $ok = eval {
-    $obj->parse_ini(src => $ini);
-    1;
-  };
-
-  ok(!$ok, 'recursive function dies');
-  like($@, qr/recursive function '\[__TOCOPY__\]#=rec' calls itself/, 'clean recursive function error');
+  throws_ok(
+    sub {
+      $obj->parse_ini(src => $ini);
+    },
+    qr/recursive function '\[__TOCOPY__\]#=rec' calls itself/,
+    'recursive function dies',
+  );
 
   my $ini_after = <<'INI';
 ok #= $(1):$(2)
@@ -186,9 +184,12 @@ INI
 
   my $vars = $obj->variables();
 
-  is($vars->{sec}{good}, 'a:b', 'function still works after recursion error in new object');
-  is($vars->{sec}{check}, 'original-1:original-2', 'numeric variables are not left polluted');
+  is($vars->{sec}{good}, 'a:b',
+     'function still works after recursion error in new object');
+
+  is($vars->{sec}{check}, 'original-1:original-2',
+     'numeric variables are not left polluted');
 };
 
+#==================================================================================================
 done_testing();
-

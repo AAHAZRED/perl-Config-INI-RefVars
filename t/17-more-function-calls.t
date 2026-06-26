@@ -98,5 +98,23 @@ INI
   is($vars->{sec}{z}, "abcdef", 'substr extracts middle part');
 };
 
+subtest 'x function' => sub {
+  my $ini = <<'INI';
+[sec]
+x = $(=& x,, 3)
+y = $(=& x, abc, 0)
+z = $(=& x, abc, 4)
+INI
+
+  my $obj = Config::INI::RefVars->new();
+  $obj->parse_ini(src => $ini);
+
+  my $vars = $obj->variables();
+
+  is($vars->{sec}{x}, "", 'x("", 3) works');
+  is($vars->{sec}{y}, "", 'x(string, 0) works');
+  is($vars->{sec}{z}, "abcabcabcabc", 'x(string, n), n>0, works');
+};
+
 #==================================================================================================
 done_testing();

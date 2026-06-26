@@ -17,4 +17,6 @@ Hazred
 VMS
 TOCOPY
 tocopy
+concat
+dirname
 

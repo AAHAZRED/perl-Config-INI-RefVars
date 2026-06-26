@@ -1,0 +1,28 @@
+^\.git\/
+^\.github\/
+^\.gitmodules$
+^\.gitignore$
+
+^tools/\.git(?:/|$)
+
+# Makemaker generated files and dirs.
+^MANIFEST\.
+^Makefile$
+^blib/
+^MakeMaker-\d
+^MYMETA\..*
+^pm_to_blib$
+
+# Module specific files
+\bConfig-INI-RefVar-\d+(?:\.\d+)+\/
+^Config-INI-RefVars-\d+(?:\.\d+)+\.tar\.gz$
+
+# Temp, old and emacs backup files.
+~$
+\.old$
+(?:^|/)#[^/]*#$
+(?:^|/)\.#
+
+
+# Other
+^tmp.*
