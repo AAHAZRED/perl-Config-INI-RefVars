@@ -375,12 +375,12 @@ my $_parse_ini = sub {
 
   for ($i = 0; $i < @$src; ++$i) {
     my $line = $src->[$i];
+    $line =~ s/\s+$//;
     if (index($line, ";!") == 0 || index($line, "=") == 0) {
       $_fatal->("directives are not yet supported");
     }
     $line =~ s/^\s+//;
     next if $line eq "" || $line =~ /^[;#]/;
-    $line =~ s/\s+$//;
     # section header
     if (index($line, "[") == 0) {
       $line =~ s/\s*[#;][^\]]*$//;
@@ -397,6 +397,15 @@ my $_parse_ini = sub {
       or $_fatal->("neither section header nor key definition");
 
     my ($var_name, $modifier, $value) = ($1, $2, $3);
+
+    if ($modifier =~ s/\\\z//) {
+      while ($value =~ s/\\\z//) {
+        last if $i + 1 >= @$src;
+        my $next_line = $src->[++$i];
+        $next_line =~ s/\s+$//;
+        $value .= $next_line;
+      }
+    }
 
     if ($vnm_chk_re) {
       croak("'$var_name': var name does not match varname_chk_re") if $var_name !~ $vnm_chk_re;
@@ -1036,7 +1045,62 @@ Now C<var> has the value C<123 abc>.
 
 Defines a function. See L</User-defined Functions>
 
+=item C<\=>, C<:\=>, etc
+
+See L<Line continuation>.
+
+
 =back
+
+
+=head2 Line continuation
+
+By default, each physical input line is treated as a separate assignment.
+
+To enable line continuation, place a backslash immediately before the
+assignment operator. This works with all assignment operators, for example
+C<\=>, C<:\=>, C<+\=>, etc.
+
+If such an assignment ends with a backslash, the trailing backslash is
+removed and the following physical line is appended. This process is
+repeated until a line does not end with a backslash or end-of-file is
+reached.
+
+Trailing whitespace is stripped from each physical line before line
+continuation is processed.
+
+The backslash preceding the assignment operator is only a marker to enable
+line continuation and is not part of the operator itself.
+
+Examples:
+
+  long_line \= foo\
+    bar\
+    baz
+
+is equivalent to
+
+  long_line = foo  bar  baz
+
+Likewise,
+
+  text :\= Hello,\
+  world!
+
+is equivalent to
+
+  text := Hello,world!
+
+Assignments without a backslash before the assignment operator never use
+line continuation, even if their value ends with a backslash.
+
+  normal = foo\
+  bar = baz
+
+is interpreted as
+
+  normal = foo\
+  bar = baz
 
 
 =head2 REFERENCING VARIABLES
