@@ -641,14 +641,6 @@ sub parse_ini {
     my ($vol, $dirs) = splitpath($abs_path);
     $src_dir = catdir(length($vol // "") ? $vol : (), $dirs);
   }
-  elsif (exists($args{src_name}) && defined($args{src_name}) && $args{src_name} ne $dflt_src_name) {
-    my $abs_path = abs_path($args{src_name});
-    if (defined($abs_path)) {
-      $include_stack->{$abs_path} = undef;
-      my ($vol, $dirs) = splitpath($abs_path);
-      $src_dir = catdir(length($vol // "") ? $vol : (), $dirs);
-    }
-  }
 
   my ($tocopy_sec_declared, undef) = $self->$_parse_ini(
     $src,
@@ -2182,7 +2174,7 @@ Mode">.
 
 =head3 parse_ini
 
-Parses an INI source. The method takes the following optional named arguments:
+Parses an INI source. The method takes the following optional arguments:
 
 =over
 

@@ -8,6 +8,10 @@ use warnings;
 use File::Spec::Functions qw(catdir catfile);
 use File::Basename qw(dirname basename);
 
+
+our $VERSION = '0.24';
+
+
 sub default_dispatch_table {
   return {
           catdir   => \&catdir,
