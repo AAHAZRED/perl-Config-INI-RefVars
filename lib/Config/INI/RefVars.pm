@@ -6,7 +6,8 @@ use feature ":5.10";
 
 use Carp;
 use Config;
-use File::Spec::Functions qw(catdir rel2abs splitpath);
+use Cwd qw(abs_path);
+use File::Spec::Functions qw(catdir catfile file_name_is_absolute splitpath);
 use Config::INI::RefVars::Builtins;
 
 our $VERSION = '0.24';
@@ -43,7 +44,7 @@ my %Globals = ('=:'       => catdir("", ""),
 # Match punctuation chars, but not the underscores.
 my $Modifier_Char = '[^_[:^punct:]]';
 
-my ($_look_up, $_x_var_name, $_expand_vars, $_user_function_call, $_function_body);
+my ($_look_up, $_x_var_name, $_expand_vars, $_user_function_call, $_function_body, $_parse_ini);
 
 my $_dispatch_sub = sub {
   my ($self, $name) = @_;
@@ -323,19 +324,26 @@ my $_cp_tocopy_vars = sub {
 };
 
 
-my $_parse_ini = sub {
-  my ($self, $src) = @_;
-  my $src_name;
+my $_read_ini_file = sub {
+  my ($path) = @_;
 
-  if (ref($src)) {
-    croak("Internal error: argument is not an ARRAY ref") if ref($src) ne 'ARRAY';
-    $src_name = $self->{+SRC_NAME};
-  }
-  else {
-    $src_name = $src;
-    $src = [do { local (*ARGV); @ARGV = ($src_name); <> }];
-  }
-  my $curr_section;
+  open(my $fh, '<', $path) or croak("'$path': cannot open file: $!");
+  my @lines = <$fh>;
+  close($fh) or croak("'$path': cannot close file: $!");
+
+  return \@lines;
+};
+
+
+$_parse_ini = sub {
+  my ($self, $src, $curr_section, $include_stack, $src_dir, $src_name) = @_;
+
+  croak("Internal error: argument is not an ARRAY ref") if ref($src) ne 'ARRAY';
+
+  $src_name //= $self->{+SRC_NAME};
+  $src_dir  //= '.';
+  $include_stack //= {};
+
   my $cmnt_vl     = $self->{+CMNT_VL};
   my $sections    = $self->{+SECTIONS};
   my $sections_h  = $self->{+SECTIONS_H};
@@ -351,6 +359,47 @@ my $_parse_ini = sub {
 
   my $i;                        # index in for() loop
   my $_fatal = sub { croak("'$src_name': ", $_[0], " at line ", $i + 1); };
+
+  my $_include_file = sub {
+    my ($include) = @_;
+
+    $include =~ s/^\s+//;
+    $include =~ s/\s+$//;
+    $_fatal->("missing file name in include directive") if $include eq "";
+
+    $include = $self->$_expand_vars(
+      defined($curr_section) ? $curr_section : $tocopy_sec,
+      undef,
+      $include,
+      undef,
+      1,
+    );
+
+    my $path = file_name_is_absolute($include)
+      ? $include
+      : catfile($src_dir, $include);
+
+    my $abs_path = abs_path($path)
+      or $_fatal->("'$include': cannot resolve include file");
+
+    $_fatal->("'$include': recursive include") if exists($include_stack->{$abs_path});
+
+    local $include_stack->{$abs_path} = undef;
+
+    my ($vol, $dirs) = splitpath($abs_path);
+    my $inc_dir = catdir(length($vol // "") ? $vol : (), $dirs);
+
+    my ($inc_tocopy_declared, $inc_curr_section) = $self->$_parse_ini(
+      $_read_ini_file->($abs_path),
+      $curr_section,
+      $include_stack,
+      $inc_dir,
+      $abs_path,
+    );
+
+    $tocopy_sec_declared ||= $inc_tocopy_declared;
+    $curr_section = $inc_curr_section if defined($inc_curr_section);
+  };
 
   my $set_curr_section = sub {
     $curr_section = shift;
@@ -376,11 +425,20 @@ my $_parse_ini = sub {
   for ($i = 0; $i < @$src; ++$i) {
     my $line = $src->[$i];
     $line =~ s/\s+$//;
+    next if $line eq "";
+
+    if ($line =~ /^=include(?:\s+(.+))?\z/) {
+      $_include_file->($1 // "");
+      next;
+    }
+
     if (index($line, ";!") == 0 || index($line, "=") == 0) {
       $_fatal->("directives are not yet supported");
     }
+
     $line =~ s/^\s+//;
     next if $line eq "" || $line =~ /^[;#]/;
+
     # section header
     if (index($line, "[") == 0) {
       $line =~ s/\s*[#;][^\]]*$//;
@@ -403,10 +461,14 @@ my $_parse_ini = sub {
         last if $i + 1 >= @$src;
         my $next_line = $src->[++$i];
         $next_line =~ s/\s+$//;
+
+        if (index($next_line, "=") == 0) {
+          $_fatal->("directive in line continuation");
+        }
+
         $value .= $next_line;
       }
     }
-
     if ($vnm_chk_re) {
       croak("'$var_name': var name does not match varname_chk_re") if $var_name !~ $vnm_chk_re;
     }
@@ -550,10 +612,12 @@ sub parse_ini {
   else {
     if (index($src, "\n") < 0) {
       my $path = $src;
-      $src = [do { local (*ARGV); @ARGV = ($path); <> }];
+      my $abs_path = abs_path($path)
+        or croak("'$path': cannot resolve file name");
+      $src = $_read_ini_file->($abs_path);
       $self->{+SRC_NAME} = $path if !exists($self->{+SRC_NAME});
 
-      my ($vol, $dirs, $file) = splitpath(rel2abs($path));
+      my ($vol, $dirs, $file) = splitpath($abs_path);
       @{$global_vars}{'=INIfile', '=INIdir'} = (
         $file,
         catdir(length($vol // "") ? $vol : (), $dirs),
@@ -567,7 +631,32 @@ sub parse_ini {
 
   $global_vars->{'=srcname'} = $self->{+SRC_NAME};
 
-  my ($tocopy_sec_declared, undef) = $self->$_parse_ini($src);
+  my $src_dir = '.';
+  my $include_stack = {};
+
+  if (!ref($args{src}) && index($args{src}, "\n") < 0) {
+    my $abs_path = abs_path($args{src})
+      or croak("'$args{src}': cannot resolve file name");
+    $include_stack->{$abs_path} = undef;
+    my ($vol, $dirs) = splitpath($abs_path);
+    $src_dir = catdir(length($vol // "") ? $vol : (), $dirs);
+  }
+  elsif (exists($args{src_name}) && defined($args{src_name}) && $args{src_name} ne $dflt_src_name) {
+    my $abs_path = abs_path($args{src_name});
+    if (defined($abs_path)) {
+      $include_stack->{$abs_path} = undef;
+      my ($vol, $dirs) = splitpath($abs_path);
+      $src_dir = catdir(length($vol // "") ? $vol : (), $dirs);
+    }
+  }
+
+  my ($tocopy_sec_declared, undef) = $self->$_parse_ini(
+    $src,
+    undef,
+    $include_stack,
+    $src_dir,
+    $self->{+SRC_NAME},
+  );
 
   my @sections = (
     exists($self->{+SECTIONS_H}{$tocopy_section}) ? () : $tocopy_section,
@@ -944,7 +1033,9 @@ the I<tocopy> section heading, but then this must be the first active line in
 your INI file.
 
 
-=head2 VARIABLES AND ASSIGNMENT OPERATORS
+=head2 ASSIGNMENT OPERATORS
+
+=head3 Overview
 
 There are several assignment operators, the basic one is the C<=>, the others
 are formed by a C<=> preceded by one or more punctuation characters. Thus, if
@@ -954,6 +1045,8 @@ operator.
 
 B<Note>: Since the use of the underscore in identifiers is so common, it is
 not treated as a punctuation character here.
+
+=head3 List of assignment operators
 
 =over
 
@@ -1047,13 +1140,13 @@ Defines a function. See L</User-defined Functions>
 
 =item C<\=>, C<:\=>, etc
 
-See L<Line continuation>.
+See L<LINE CONTINUATION>.
 
 
 =back
 
 
-=head2 Line continuation
+=head2 LINE CONTINUATION
 
 By default, each physical input line is treated as a separate assignment.
 
@@ -1101,6 +1194,79 @@ is interpreted as
 
   normal = foo\
   bar = baz
+
+
+=head2 INCLUDE FILES
+
+An INI file may include another INI file by using the C<=include>
+directive:
+
+  =include common.ini
+
+The file name may contain variable references:
+
+  config_dir = config
+
+  =include $(config_dir)/common.ini
+
+If the specified file name is relative, it is interpreted relative to the
+directory containing the current INI file. Absolute file names may also be
+used.
+
+An included file is processed exactly as if its contents had been inserted
+at the position of the C<=include> directive. Consequently, the current
+section is preserved across file boundaries. If the included file changes
+the current section, parsing continues in that section after the include.
+
+The same file may be included multiple times. However, recursive includes
+are detected and reported as an error.
+
+Examples:
+
+  [general]
+
+  =include common.ini
+
+  name = example
+
+If F<common.ini> contains
+
+  version = 1.0
+
+the resulting input is equivalent to
+
+  [general]
+
+  version = 1.0
+
+  name = example
+
+Likewise,
+
+  [first]
+
+  =include other.ini
+
+  value = x
+
+where F<other.ini> contains
+
+  [second]
+
+  other = y
+
+is equivalent to
+
+  [first]
+
+  [second]
+
+  other = y
+
+  value = x
+
+Line continuation never crosses file boundaries. In particular, a directive
+must not appear where a continuation line is expected.
 
 
 =head2 REFERENCING VARIABLES

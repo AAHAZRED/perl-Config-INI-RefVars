@@ -7,6 +7,7 @@ x.yz    YYYY/MM/DD
     - Added more built-in function.
     - Added constructor argument 'builtins' for to register additional built-in functions.
     - Allow line continuation via \=, :\= etc.
+    - Allow inculde files via '=include FILE'.
 
 0.24    2026/05/09
 

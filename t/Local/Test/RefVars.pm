@@ -11,7 +11,9 @@ use Config::INI::RefVars;
 our @EXPORT_OK = qw(
   throws_ini_like
   ini_exception
+  write_file
 );
+
 
 sub throws_ini_like {
   my ($name, $ini, $re) = @_;
@@ -26,6 +28,7 @@ sub throws_ini_like {
   );
 }
 
+
 sub ini_exception {
   my ($ini) = @_;
 
@@ -38,6 +41,16 @@ sub ini_exception {
   my $error = $@;
   $error =~ s/\s+at\s+\S+\s+line\s+\d+\.?\n?\z//;
   return $error;
+}
+
+
+sub write_file {
+  my ($file, $text) = @_;
+
+  open(my $fh, ">:encoding(UTF-8)", $file)
+    or die "$file: $!";
+  print {$fh} $text;
+  close($fh);
 }
 
 1;
