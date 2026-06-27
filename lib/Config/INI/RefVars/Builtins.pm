@@ -9,7 +9,7 @@ use File::Spec::Functions qw(catdir catfile);
 use File::Basename qw(dirname basename);
 
 
-our $VERSION = '0.24';
+our $VERSION = '#VERSION#';
 
 
 sub default_dispatch_table {
@@ -194,10 +194,15 @@ sub _eq {
 
 __END__
 
+=pod
+
 =head1 NAME
 
 Config::INI::RefVars::Builtins - Built-in functions for Config::INI::RefVars
 
+=head1 VERSION
+
+Version #VERSION#
 
 =head1 SYNOPSIS
 
@@ -535,6 +540,26 @@ function names.
 =head1 SEE ALSO
 
 L<Config::INI::RefVars>, L<File::Basename>, L<File::Spec::Functions>
+
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc Config::INI::RefVars
+
+
+You can also look for information here: L<Config::INI::RefVars>
+
+
+=head1 LICENSE AND COPYRIGHT
+
+This software is copyright (c) 2026 by #AUTHOR#.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+
 
 =cut
 
