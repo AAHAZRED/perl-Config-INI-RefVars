@@ -16,9 +16,7 @@ d = $(=& dirname,/tmp/file.txt)
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  my $vars = $obj->variables()->{sec};
+  my $vars = $obj->parse_ini(src => $ini)->variables()->{sec};
 
   is($vars->{a}, '1',        'not: false');
   is($vars->{b}, '1',        'eq: strings are equal');
@@ -27,6 +25,5 @@ INI
 };
 
 
+#==================================================================================================
 done_testing();
-
-

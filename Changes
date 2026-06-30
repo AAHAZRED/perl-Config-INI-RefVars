@@ -1,6 +1,6 @@
 Revision history for Config-INI-RefVars
 
-x.yz    YYYY/MM/DD
+1.00    2026/06/30
 
     - Added built-in function calls via $(=& FUNC,...).
     - Added user defined INI-level function defs and calls via $(=# FUNC, ...).
@@ -8,6 +8,7 @@ x.yz    YYYY/MM/DD
     - Added constructor argument 'builtins' for to register additional built-in functions.
     - Allow line continuation via \=, :\= etc.
     - Allow inculde files via '=include FILE'.
+    - Added variables '=rootdir' and '=tmpdir'.
 
 0.24    2026/05/09
 

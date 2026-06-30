@@ -38,12 +38,10 @@ INI
 
 
 subtest "overwrite buildin" => sub {
-  my $cfg = Config::INI::RefVars->new(
-                                      builtins => { concat => sub { return join(':', @_); },
+  my $cfg = Config::INI::RefVars->new(builtins => { concat => sub { return join(':', @_); },
                                                   },
                                      );
-  $cfg->parse_ini(
-                  src => <<'INI'
+  $cfg->parse_ini(src => <<'INI'
 [sec]
 x = $(=& concat,a,b,c)
 INI
@@ -53,5 +51,5 @@ INI
 };
 
 
+#==================================================================================================
 done_testing();
-

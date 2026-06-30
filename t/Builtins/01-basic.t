@@ -8,28 +8,26 @@ use Config::INI::RefVars::Builtins ();
 
 my $Dispatch = Config::INI::RefVars::Builtins::default_dispatch_table();
 
-my %Names = map {$_ => undef } qw(
-                                   and
-                                   basename
-                                   catdir
-                                   catfile
-                                   concat
-                                   dirname
-                                   eq
-                                   if
-                                   ignore
-                                   join
-                                   m
-                                   not
-                                   or
-                                   s
-                                   substr
-                                   tr
-                                   x
+my %Names = map {$_ => undef } qw(and
+                                  basename
+                                  catdir
+                                  catfile
+                                  concat
+                                  dirname
+                                  eq
+                                  if
+                                  ignore
+                                  join
+                                  m
+                                  not
+                                  or
+                                  s
+                                  substr
+                                  tr
+                                  x
                                 );
 
 isa_ok($Dispatch, 'HASH', 'dispatch table');
-
 
 while (my ($name, $value) = each %$Dispatch) {
   is(ref($Dispatch->{$name}), 'CODE', "$name is code ref");
@@ -47,5 +45,6 @@ is($Dispatch->{concat}->('a', 'b', 'c'), 'abc', 'concat');
 is($Dispatch->{join}->(':', 'a', 'b', 'c'), 'a:b:c', 'join');
 is($Dispatch->{x}->('ab', 3), 'ababab', 'x');
 
-done_testing();
 
+#==================================================================================================
+done_testing();

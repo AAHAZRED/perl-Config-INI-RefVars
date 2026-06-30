@@ -16,13 +16,12 @@ y = $(=# hello,World)
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  my $vars = $obj->variables();
+  my $vars = $obj->parse_ini(src => $ini)->variables();
 
   is($vars->{sec}{x}, 'a:b', 'pair function works');
   is($vars->{sec}{y}, 'Hello World', 'hello function works');
 };
+
 
 subtest 'section local functions override tocopy functions' => sub {
   my $ini = <<'INI';
@@ -34,10 +33,10 @@ x = $(=# fmt,test)
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
 
-  is($obj->variables()->{sec}{x}, 'local:test', 'local function wins');
+  is($obj->parse_ini(src => $ini)->variables()->{sec}{x}, 'local:test', 'local function wins');
 };
+
 
 subtest 'qualified function call' => sub {
   my $ini = <<'INI';
@@ -49,10 +48,10 @@ x = $(=# [__TOCOPY__]fmt,test)
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  is($obj->variables()->{sec}{x}, 'global:test', 'qualified function call works');
+  is($obj->parse_ini(src => $ini)->variables()->{sec}{x}, 'global:test',
+     'qualified function call works');
 };
+
 
 subtest 'local variables are visible inside function body' => sub {
   my $ini = <<'INI';
@@ -65,10 +64,10 @@ x = $(=# fmt,test)
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  is($obj->variables()->{sec}{x}, 'test:LOCAL', 'function expands in caller scope');
+  is($obj->parse_ini(src => $ini)->variables()->{sec}{x}, 'test:LOCAL',
+     'function expands in caller scope');
 };
+
 
 subtest 'builtins are fallback for user-function calls' => sub {
   my $ini = <<'INI';
@@ -77,10 +76,9 @@ x = $(=# concat,a,b,c)
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  is($obj->variables()->{sec}{x}, 'abc', 'builtin fallback works');
+  is($obj->parse_ini(src => $ini)->variables()->{sec}{x}, 'abc', 'builtin fallback works');
 };
 
-done_testing();
 
+#==================================================================================================
+done_testing();

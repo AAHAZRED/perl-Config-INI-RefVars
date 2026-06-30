@@ -16,14 +16,13 @@ z := $(=& join, , foo, bar)
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  my $vars = $obj->variables();
+  my $vars = $obj->parse_ini(src => $ini)->variables();
 
   is($vars->{sec}{x}, 'a,b,c', 'join with comma separator');
   is($vars->{sec}{y}, 'foo-bar-baz', 'join with dash separator');
   is($vars->{sec}{z}, 'foobar', 'join with empty separator');
 };
+
 
 subtest 'join with nested and expanded arguments' => sub {
   my $ini = <<'INI';
@@ -36,13 +35,12 @@ y := $(=& join, /, $(=& concat, foo, bar), baz)
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  my $vars = $obj->variables();
+  my $vars = $obj->parse_ini(src => $ini)->variables();
 
   is($vars->{sec}{x}, 'pre-left,mid-right,post', 'join expands arguments first');
   is($vars->{sec}{y}, 'foobar/baz', 'join works with nested function call');
 };
+
 
 subtest 'join edge cases' => sub {
   my $ini = <<'INI';
@@ -53,14 +51,13 @@ z := $(=& join, :, one)
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  my $vars = $obj->variables();
+  my $vars = $obj->parse_ini(src => $ini)->variables();
 
   is($vars->{sec}{x}, '', 'join with empty separator and one empty item');
   is($vars->{sec}{y}, '', 'join with separator only and no items');
   is($vars->{sec}{z}, 'one', 'join with one item returns the item unchanged');
 };
+
 
 #==================================================================================================
 done_testing();

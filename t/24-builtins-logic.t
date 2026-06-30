@@ -16,9 +16,7 @@ e = $(=& and,yes,$(=& ignore,no),later)
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  my $vars = $obj->variables()->{sec};
+  my $vars = $obj->parse_ini(src => $ini)->variables()->{sec};
 
   is($vars->{a}, 'c', 'and returns last non-empty argument');
   is($vars->{b}, '', 'and returns empty if one argument is empty');
@@ -26,6 +24,7 @@ INI
   is($vars->{d}, 'yes', 'and with one argument returns that argument');
   is($vars->{e}, '', 'and treats expanded empty argument as false');
 };
+
 
 subtest 'or' => sub {
   my $ini = <<'INI';
@@ -38,9 +37,7 @@ e = $(=& or,$(=& ignore,no),fallback)
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  my $vars = $obj->variables()->{sec};
+  my $vars = $obj->parse_ini(src => $ini)->variables()->{sec};
 
   is($vars->{a}, 'b', 'or returns first non-empty argument');
   is($vars->{b}, '', 'or returns empty if all arguments are empty');
@@ -48,6 +45,7 @@ INI
   is($vars->{d}, 'yes', 'or returns first argument if non-empty');
   is($vars->{e}, 'fallback', 'or treats expanded empty argument as false');
 };
+
 
 subtest 'if' => sub {
   my $ini = <<'INI';
@@ -60,9 +58,7 @@ e = $(=& if,$(=& ignore,no),then,else)
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  my $vars = $obj->variables()->{sec};
+  my $vars = $obj->parse_ini(src => $ini)->variables()->{sec};
 
   is($vars->{a}, 'then', 'if returns then branch for non-empty condition');
   is($vars->{b}, 'else', 'if returns else branch for empty condition');
@@ -71,5 +67,6 @@ INI
   is($vars->{e}, 'else', 'if treats expanded empty condition as false');
 };
 
-done_testing();
 
+#==================================================================================================
+done_testing();

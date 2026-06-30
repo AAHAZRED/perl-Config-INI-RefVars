@@ -10,7 +10,7 @@ use Cwd qw(abs_path);
 use File::Spec::Functions qw(catdir catfile file_name_is_absolute splitpath);
 use Config::INI::RefVars::Builtins;
 
-our $VERSION = '0.24';
+our $VERSION = '1.00';
 
 use constant DFLT_TOCOPY_SECTION => "__TOCOPY__";
 use constant FLD_KEY_PREFIX      => __PACKAGE__ . ' __ ';
@@ -39,6 +39,8 @@ use constant {
 my %Globals = ('=:'       => catdir("", ""),
                '=::'      => $Config{path_sep},
                '=VERSION' => $VERSION,
+               '=rootdir' => File::Spec::Functions::rootdir(),
+               '=tmpdir'  => File::Spec::Functions::tmpdir(),
               );
 
 # Match punctuation chars, but not the underscores.
@@ -92,7 +94,6 @@ my $_split_dispatch_spec = sub {
       }
     }
   }
-
   croak("unterminated variable reference") if $level;
 
   push(@parts, $buf);
@@ -129,11 +130,9 @@ $_function_body = sub {
 
   if ($name =~ $self->{+VREF_RE}) {
     my ($section, $basename) = ($1, $2);
-    return ($section, $basename, $functions->{$section}{$basename})
-      if exists($functions->{$section}) && exists($functions->{$section}{$basename});
-    return;
+    return (exists($functions->{$section}) && exists($functions->{$section}{$basename})) ?
+      ($section, $basename, $functions->{$section}{$basename}) : ();
   }
-
   return ($curr_sect, $name, $functions->{$curr_sect}{$name})
     if exists($functions->{$curr_sect}) && exists($functions->{$curr_sect}{$name});
 
@@ -142,7 +141,6 @@ $_function_body = sub {
     if ($curr_sect ne $tocopy_section
         && exists($functions->{$tocopy_section})
         && exists($functions->{$tocopy_section}{$name}));
-
   return;
 };
 
@@ -162,8 +160,7 @@ $_user_function_call = sub {
 
   my $x_func_name = "[$func_section]#=$func_name";
 
-  croak("recursive function '$x_func_name' calls itself")
-    if exists($seen->{$x_func_name});
+  croak("recursive function '$x_func_name' calls itself") if exists($seen->{$x_func_name});
 
   $seen->{$x_func_name} = undef;
 
@@ -184,7 +181,6 @@ $_user_function_call = sub {
     $old_arg{$arg} = $sect_vars->{$arg} if $had_arg{$arg};
     $sect_vars->{$arg} = $param{$arg};
   }
-
   my $result;
   eval { $result = $self->$_expand_vars($curr_sect, undef, $body, $seen, 1); 1; } or die($@);
 
@@ -264,10 +260,9 @@ sub new {
     croak("builtin '$name' is not a CODE reference") if ref($builtins->{$name}) ne 'CODE';
     $dispatch->{$name} = $builtins->{$name};
   }
-  my $self =
-    {
-     +DISPATCH_TABLE() => $dispatch,
-    };
+  my $self = {
+              +DISPATCH_TABLE() => $dispatch,
+             };
 
   croak("'tocopy_section': must not be a reference") if ref($args{tocopy_section});
 
@@ -285,7 +280,6 @@ sub new {
   }
   $self->{+CMNT_VL}        = $args{cmnt_vl};
   $self->{+TOCOPY_SECTION} = $args{tocopy_section} // DFLT_TOCOPY_SECTION;
-
   $self->$_check_tocopy_vars($args{tocopy_vars}, 1) if exists($args{tocopy_vars});
   $self->$_check_not_tocopy($args{not_tocopy}, 1)   if exists($args{not_tocopy});
 
@@ -367,20 +361,16 @@ $_parse_ini = sub {
     $include =~ s/\s+$//;
     $_fatal->("missing file name in include directive") if $include eq "";
 
-    $include = $self->$_expand_vars(
-      defined($curr_section) ? $curr_section : $tocopy_sec,
-      undef,
-      $include,
-      undef,
-      1,
-    );
+    $include = $self->$_expand_vars(defined($curr_section) ? $curr_section : $tocopy_sec,
+                                    undef,
+                                    $include,
+                                    undef,
+                                    1,
+                                   );
 
-    my $path = file_name_is_absolute($include)
-      ? $include
-      : catfile($src_dir, $include);
+    my $path = file_name_is_absolute($include) ? $include : catfile($src_dir, $include);
 
-    my $abs_path = abs_path($path)
-      or $_fatal->("'$include': cannot resolve include file");
+    my $abs_path = abs_path($path) or $_fatal->("'$include': cannot resolve include file");
 
     $_fatal->("'$include': recursive include") if exists($include_stack->{$abs_path});
 
@@ -389,13 +379,13 @@ $_parse_ini = sub {
     my ($vol, $dirs) = splitpath($abs_path);
     my $inc_dir = catdir(length($vol // "") ? $vol : (), $dirs);
 
-    my ($inc_tocopy_declared, $inc_curr_section) = $self->$_parse_ini(
-      $_read_ini_file->($abs_path),
-      $curr_section,
-      $include_stack,
-      $inc_dir,
-      $abs_path,
-    );
+    my ($inc_tocopy_declared, $inc_curr_section) =
+      $self->$_parse_ini($_read_ini_file->($abs_path),
+                         $curr_section,
+                         $include_stack,
+                         $inc_dir,
+                         $abs_path,
+                        );
 
     $tocopy_sec_declared ||= $inc_tocopy_declared;
     $curr_section = $inc_curr_section if defined($inc_curr_section);
@@ -465,7 +455,6 @@ $_parse_ini = sub {
         if (index($next_line, "=") == 0) {
           $_fatal->("directive in line continuation");
         }
-
         $value .= $next_line;
       }
     }
@@ -612,16 +601,14 @@ sub parse_ini {
   else {
     if (index($src, "\n") < 0) {
       my $path = $src;
-      my $abs_path = abs_path($path)
-        or croak("'$path': cannot resolve file name");
+      my $abs_path = abs_path($path) or croak("'$path': cannot resolve file name");
       $src = $_read_ini_file->($abs_path);
       $self->{+SRC_NAME} = $path if !exists($self->{+SRC_NAME});
 
       my ($vol, $dirs, $file) = splitpath($abs_path);
-      @{$global_vars}{'=INIfile', '=INIdir'} = (
-        $file,
-        catdir(length($vol // "") ? $vol : (), $dirs),
-      );
+      @{$global_vars}{'=INIfile', '=INIdir'} = ($file,
+                                                catdir(length($vol // "") ? $vol : (), $dirs),
+                                               );
     }
     else {
       $src = [split(/\n/, $src)];
@@ -642,18 +629,16 @@ sub parse_ini {
     $src_dir = catdir(length($vol // "") ? $vol : (), $dirs);
   }
 
-  my ($tocopy_sec_declared, undef) = $self->$_parse_ini(
-    $src,
-    undef,
-    $include_stack,
-    $src_dir,
-    $self->{+SRC_NAME},
-  );
+  my ($tocopy_sec_declared, undef) = $self->$_parse_ini($src,
+                                                        undef,
+                                                        $include_stack,
+                                                        $src_dir,
+                                                        $self->{+SRC_NAME},
+                                                       );
 
-  my @sections = (
-    exists($self->{+SECTIONS_H}{$tocopy_section}) ? () : $tocopy_section,
-    @{$self->{+SECTIONS}},
-  );
+  my @sections = ((exists($self->{+SECTIONS_H}{$tocopy_section}) ? () : $tocopy_section),
+                  @{$self->{+SECTIONS}},
+                 );
 
   foreach my $section (@sections) {
     my $sec_vars = $variables->{$section};
@@ -672,8 +657,7 @@ sub parse_ini {
       }
     }
 
-    delete $variables->{$self->{+TOCOPY_SECTION}}
-      if (!$tocopy_sec_declared && !%$tocopy_sec_vars);
+    delete $variables->{$self->{+TOCOPY_SECTION}} if (!$tocopy_sec_declared && !%$tocopy_sec_vars);
   }
   else {
     if ($self->{+GLOBAL_MODE}) {
@@ -700,6 +684,7 @@ sub parse_ini {
   return $self;
 }
 
+
 sub current_tocopy_section { $_[0]->{+CURR_TOCP_SECTION} }
 sub tocopy_section         { $_[0]->{+TOCOPY_SECTION} }
 sub global_mode            { $_[0]->{+GLOBAL_MODE} }
@@ -714,6 +699,7 @@ sub sections_h {
 
 sub separator { $_[0]->{+SEPARATOR} }
 sub src_name  { $_[0]->{+SRC_NAME} }
+
 
 sub variables {
   my $vars = $_[0]->{+VARIABLES} // return undef;
@@ -843,6 +829,7 @@ $_expand_vars = sub {
   }
   return $value;
 };
+
 
 #
 # This is a function, not a method!
@@ -1038,7 +1025,7 @@ operator.
 B<Note>: Since the use of the underscore in identifiers is so common, it is
 not treated as a punctuation character here.
 
-=head3 List of assignment operators
+=head3 List of Assignment Operators
 
 =over
 
@@ -1133,7 +1120,6 @@ Defines a function. See L</User-defined Functions>
 =item C<\=>, C<:\=>, etc
 
 See L<LINE CONTINUATION>.
-
 
 =back
 
@@ -1471,6 +1457,16 @@ Name of the I<tocopy> section, see L</"THE I<TOCOPY> SECTION">.
 
 Version of the C<Config::INI::RefVars> module.
 
+=item C<=rootdir>
+
+A string representation of the root directory (result of function
+C<rootdir> from L<File::Spec::Functions >).
+
+=item C<=tmpdir>
+
+A string representation of the root directory (result of function
+C<tmpdir> from L<File::Spec::Functions >).
+
 =back
 
 
@@ -1756,8 +1752,23 @@ Result:
 
   /usr/local/bin
 
-The built-in functions are provided by
-L<Config::INI::RefVars::Builtins>.
+The built-in functions are provided by L<Config::INI::RefVars::Builtins>.
+
+Function names are not expanded. Only function arguments are subject to
+variable expansion.
+
+Thus,
+
+  path = $(=& catdir, foo, bar)
+
+is valid, whereas
+
+  fn1 = cat
+  fn2 = dir
+  path = $(=& $(fn1)$(fn2), foo, bar)
+
+attempts to call a function literally named C<$(fn1)$(fn2)> and therefore
+fails.
 
 Additional built-in functions can be registered via constructor argument
 C<builtins>.
@@ -1825,8 +1836,9 @@ the built-in function dispatcher
 
 =back
 
-Thus a user-defined function may override a built-in function for C<$(=# ...)>
-calls. The built-in function remains available through C<$(=& ...)>.
+Thus, a user-defined function can have the same name as a built-in function
+for C<$(=# ...)> calls. The built-in function remains available via C<$(=&
+...)>.
 
 Example:
 
@@ -1869,6 +1881,20 @@ Result:
 
 A qualified function call does not fall back to a built-in function if the
 specified section does not contain such a function.
+
+B<Note:> the function name is interpreted literally and is not subject to variable
+expansion. Variable references are expanded only in the function arguments.
+
+Thus,
+
+  myfunc #= myfunc:$(1)
+  fn1 = my
+  fn2 = func
+  result = $(=# $(fn1)$(fn2), foo)
+
+attempts to call a function literally named C<$(fn1)$(fn2)> and therefore
+fails.
+
 
 =head3 Function Scope
 
@@ -1937,53 +1963,6 @@ a comment to the right of a header declaration:
    [section]  ; My fancy section
 
 B<Attention>: if you do this, the comment must not contain a C<]> character!
-
-
-=head2 PITFALLS
-
-In most cases, the keys in the hash returned by C<variables> are the same as
-the keys in the hash returned by the C<sections_h> method and the entries in
-the array returned by the C<sections> method. In special cases, however, there
-may be a difference with regard to the I<tocopy> section. Example:
-
-   [A]
-   a=1
-
-   [B]
-   b=2
-
-If you parse this INI source like this:
-
-  my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $src, tocopy_vars => {'foo' => 'xyz'});
-
-then the C<variables> method returns this:
-
-   'A' => {
-           'a' => '1',
-           'foo' => 'xyz'
-          },
-   'B' => {
-           'b' => '2',
-           'foo' => 'xyz'
-          },
-   '__TOCOPY__' => {
-                    'foo' => 'xyz'
-                   }
-
-but C<sections_h> returns
-
-   { 'A' => '0',
-     'B' => '1' }
-
-and C<sections> returns
-
-   ['A', 'B']
-
-No C<__TOCOPY__>. The reason for this is that the return values of
-C<sections_h> and C<sections> refer to what is contained in the source, and in
-this case C<__TOCOPY__> is not contained in the source, but comes from a
-method argument.
 
 
 =head2 METHODS
@@ -2269,7 +2248,76 @@ variable value). By default, variables with a C<=> in their name are not
 included; this can be changed with the C<cleanup> argument.
 
 
+=head2 PITFALLS
+
+=head3 Method C<sections> vs. C<sections_h>
+
+
+In most cases, the keys in the hash returned by C<variables> are the same as
+the keys in the hash returned by the C<sections_h> method and the entries in
+the array returned by the C<sections> method. In special cases, however, there
+may be a difference with regard to the I<tocopy> section. Example:
+
+   [A]
+   a=1
+
+   [B]
+   b=2
+
+If you parse this INI source like this:
+
+  my $obj = Config::INI::RefVars->new();
+  $obj->parse_ini(src => $src, tocopy_vars => {'foo' => 'xyz'});
+
+then the C<variables> method returns this:
+
+   'A' => {
+           'a' => '1',
+           'foo' => 'xyz'
+          },
+   'B' => {
+           'b' => '2',
+           'foo' => 'xyz'
+          },
+   '__TOCOPY__' => {
+                    'foo' => 'xyz'
+                   }
+
+but C<sections_h> returns
+
+   { 'A' => '0',
+     'B' => '1' }
+
+and C<sections> returns
+
+   ['A', 'B']
+
+No C<__TOCOPY__>. The reason for this is that the return values of
+C<sections_h> and C<sections> refer to what is contained in the source, and in
+this case C<__TOCOPY__> is not contained in the source, but comes from a
+method argument.
+
+=head3 Regular Expressions: Groups
+
+Currently, there is no access to the contents of capturing groups. However,
+you may still want to use non-capturing groups. In this case, be aware that
+you cannot use them directly in the regular expression, since the closing
+parenthesis will confuse the parser. Therefore, the following will not work:
+
+  [WRONG]
+  a = $(=& m, bb, ^(?:a|b)b$)
+
+Instead, use a helper variable, e.g.:
+
+  [RIGHT]
+  regex = (?:a|b)b
+  a = $(=& m, bb, ^$(regex)$)
+
+
 =head2 EXAMPLES
+
+=head3 Reading DHCP Server INI files
+
 
 You can parse INI files as described here L<$(section\name) syntax for INI
 file
@@ -2305,6 +2353,44 @@ as follows:
      Root="$(BaseDir)\wwwroot" ; use wwwroot for http and tftp
    EOT
    $obj->parse_ini(src => $src);
+
+
+=head3 Evaluating Arithmetic Expressions
+
+There is no built-in arithmetic. However, if you need to evaluate arithmetic
+expressions in your INI file, it is simple to add such a feature, e.g.:
+
+  use strict;
+  use warnings;
+
+  use Config::INI::RefVars;
+  use Math::Expression::Evaluator;
+
+  my $cfg = Config::INI::RefVars->new(
+    builtins => {
+      my_calculator => sub {
+        die("calc: needs exactly 1 arg") unless @_ == 1;
+
+        my $m = Math::Expression::Evaluator->new;
+        my $result;
+
+        eval { $result = $m->parse($_[0])->val(); 1 }
+          or die("calc: $@");
+
+        return $result;
+      },
+    },
+  );
+
+  my $ini = <<'INI';
+  [sec]
+  val = 3
+  result = $(=& my_calculator, 2 + $(val))
+  INI
+
+  print($cfg->parse_ini(src => $ini)->variables->{sec}{result}, "\n");
+
+This will print C<5>.
 
 
 =head1 ERROR HANDLING
@@ -2359,10 +2445,10 @@ L<Config::Tiny> and many more.
 Remark: the built-in functions are provided by
 L<Config::INI::RefVars::Builtins>.
 
+
 =head1 AUTHOR
 
 #AUTHOR#, C<< <451 at gmx.eu> >>
-
 
 
 =head1 BUGS

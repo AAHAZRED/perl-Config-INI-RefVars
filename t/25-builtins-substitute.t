@@ -21,9 +21,7 @@ e = $(=& s,a b c,[ ]+,_,g)
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  my $vars = $obj->variables()->{sec};
+  my $vars = $obj->parse_ini(src => $ini)->variables()->{sec};
 
   is($vars->{a}, 'baz bar foo', 's replaces first match');
   is($vars->{b}, 'baz bar baz', 's with g replaces all matches');
@@ -31,6 +29,7 @@ INI
   is($vars->{d}, 'X', 's supports regex patterns');
   is($vars->{e}, 'a_b_c', 's supports regex whitespace class');
 };
+
 
 subtest 'tr builtin' => sub {
   my $ini = <<'INI';
@@ -43,9 +42,7 @@ e = $(=& tr,abc123,0-9,,d)
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  my $vars = $obj->variables()->{sec};
+  my $vars = $obj->parse_ini(src => $ini)->variables()->{sec};
 
   is($vars->{a}, 'xbcxbc', 'tr replaces characters');
   is($vars->{b}, 'ABCABC', 'tr maps character lists');
@@ -54,87 +51,77 @@ INI
   is($vars->{e}, 'abc', 'tr supports d modifier');
 };
 
+
 subtest 's rejects unsafe regex code blocks' => sub {
-  like(
-    ini_exception(<<'INI'),
+  like(ini_exception(<<'INI'),
 [sec]
 bad = (?{})
 x = $(=& s,abc,$(bad),x)
 INI
-    qr/^s: regex code blocks are not allowed/,
-    's rejects (?{ ... })',
-  );
+       qr/^s: regex code blocks are not allowed/,
+       's rejects (?{ ... })');
 
-  like(
-    ini_exception(<<'INI'),
+  like(ini_exception(<<'INI'),
 [sec]
 bad = (??{})
 x = $(=& s,abc,$(bad),x)
 INI
-    qr/^s: regex code blocks are not allowed/,
-    's rejects (??{ ... })',
-  );
+       qr/^s: regex code blocks are not allowed/,
+       's rejects (??{ ... })');
 };
 
+
 subtest 's rejects unsupported modifiers' => sub {
-  like(
-    ini_exception(<<'INI'),
+  like(ini_exception(<<'INI'),
 [sec]
 x = $(=& s,abc,a,b,e)
 INI
-    qr/^s: unsupported modifier 'e'/,
-    's rejects e modifier',
-  );
+       qr/^s: unsupported modifier 'e'/,
+       's rejects e modifier');
 
-  like(
-    ini_exception(<<'INI'),
+  like(ini_exception(<<'INI'),
 [sec]
 x = $(=& s,abc,a,b,ge)
 INI
     qr/^s: unsupported modifier 'ge'/,
-    's rejects mixed unsupported modifier',
-  );
+    's rejects mixed unsupported modifier');
 };
 
+
 subtest 'tr rejects unsupported modifiers' => sub {
-  like(
-    ini_exception(<<'INI'),
+  like(ini_exception(<<'INI'),
 [sec]
 x = $(=& tr,abc,a,b,g)
 INI
-    qr/^tr: unsupported modifier 'g'/,
-    'tr rejects g modifier',
-  );
 
-  like(
-    ini_exception(<<'INI'),
+       qr/^tr: unsupported modifier 'g'/,
+       'tr rejects g modifier');
+
+  like(ini_exception(<<'INI'),
 [sec]
 x = $(=& tr,abc,a,b,e)
 INI
     qr/^tr: unsupported modifier 'e'/,
-    'tr rejects e modifier',
-  );
+    'tr rejects e modifier');
 };
 
+
 subtest 'argument count errors' => sub {
-  like(
-    ini_exception(<<'INI'),
+  like(ini_exception(<<'INI'),
 [sec]
 x = $(=& s,abc,a)
 INI
-    qr/^s: expected 3 or 4 arguments/,
-    's rejects too few arguments',
-  );
+       qr/^s: expected 3 or 4 arguments/,
+       's rejects too few arguments');
 
-  like(
-    ini_exception(<<'INI'),
+  like(ini_exception(<<'INI'),
 [sec]
 x = $(=& tr,abc,a)
 INI
-    qr/^tr: expected 3 or 4 arguments/,
-    'tr rejects too few arguments',
-  );
+       qr/^tr: expected 3 or 4 arguments/,
+       'tr rejects too few arguments');
 };
 
-done_testing();
 
+#==================================================================================================
+done_testing();

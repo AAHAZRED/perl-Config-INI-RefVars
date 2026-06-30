@@ -34,6 +34,7 @@ sub default_dispatch_table {
          };
 }
 
+
 sub _clean_error {
   my ($error) = @_;
   chomp($error);
@@ -41,17 +42,21 @@ sub _clean_error {
   return $error;
 }
 
+
 sub _ignore {
   return "";
 }
+
 
 sub _concat {
   return join("", @_);
 }
 
+
 sub _join {
   return @_ ? join(shift(@_), @_) : "";
 }
+
 
 sub _substr {
   die("substr: expected 2 or 3 arguments\n") if @_ < 2 || @_ > 3;
@@ -63,12 +68,12 @@ sub _substr {
   };
 
   my $result = @_ == 2
-    ? substr($_[0], $_[1])
-    : substr($_[0], $_[1], $_[2]);
+    ? substr($_[0], $_[1]) : substr($_[0], $_[1], $_[2]);
 
   die("substr: $warning\n") if $warning ne "";
   return $result;
 }
+
 
 sub _x {
   die("x: expected 2 arguments\n") if @_ != 2;
@@ -81,12 +86,14 @@ sub _x {
   return $str x $n;
 }
 
+
 sub _and {
   foreach my $arg (@_) {
     return "" if $arg eq "";
   }
   return @_ ? $_[-1] : "";
 }
+
 
 sub _or {
   foreach my $arg (@_) {
@@ -95,10 +102,12 @@ sub _or {
   return "";
 }
 
+
 sub _if {
   die("if: expected 2 or 3 arguments\n") if @_ < 2 || @_ > 3;
   return $_[0] ne "" ? $_[1] : ($_[2] // "");
 }
+
 
 sub _s {
   die("s: expected 3 or 4 arguments\n") if @_ < 3 || @_ > 4;
@@ -106,19 +115,12 @@ sub _s {
   my ($str, $pattern, $replacement, $mods) = @_;
   $mods //= "";
 
-  die("s: unsupported modifier '$mods'\n")
-    if $mods !~ /^[gimsx]*$/;
+  die("s: unsupported modifier '$mods'\n") if $mods !~ /^[gimsx]*$/;
 
-  die("s: regex code blocks are not allowed\n")
-    if $pattern =~ /\(\?\??\{/;
+  die("s: regex code blocks are not allowed\n") if $pattern =~ /\(\?\??\{/;
 
   my $global = $mods =~ s/g//g;
-  my $re = eval {
-    $mods eq ""
-      ? qr/$pattern/
-      : qr/(?$mods:$pattern)/;
-  };
-
+  my $re = eval { $mods eq "" ? qr/$pattern/ : qr/(?$mods:$pattern)/; };
   die("s: ", _clean_error($@), "\n") if $@;
 
   if ($global) {
@@ -130,6 +132,7 @@ sub _s {
   return $str;
 }
 
+
 sub _pick_tr_delim {
   my @values = @_;
 
@@ -139,6 +142,7 @@ sub _pick_tr_delim {
   }
   die("tr: no safe delimiter found\n");
 }
+
 
 sub _tr {
   die("tr: expected 3 or 4 arguments\n") if @_ < 3 || @_ > 4;
@@ -150,9 +154,7 @@ sub _tr {
 
   my $delim = _pick_tr_delim($search, $replacement);
   my $code = "\$str =~ tr${delim}${search}${delim}${replacement}${delim}${mods};";
-
-  my $ok = eval "$code; 1";
-  die("tr: ", _clean_error($@), "\n") if !$ok;
+  eval "$code; 1" or die("tr: ", _clean_error($@), "\n");
 
   return $str;
 }
@@ -167,11 +169,7 @@ sub _m {
   die("m: unsupported modifier '$mods'\n") if $mods !~ /^[imsx]*$/;
   die("m: regex code blocks are not allowed\n") if $pattern =~ /\(\?\??\{/;
 
-  my $re = eval {
-    $mods eq ""
-      ? qr/$pattern/
-      : qr/(?$mods:$pattern)/;
-  };
+  my $re = eval { $mods eq "" ? qr/$pattern/ : qr/(?$mods:$pattern)/; };
   die("m: ", _clean_error($@), "\n") if $@;
 
   return $str =~ $re ? "1" : "";

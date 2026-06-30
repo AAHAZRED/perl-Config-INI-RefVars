@@ -33,7 +33,7 @@ y = separate
 last \= last line\
 END_INI
 
-  my $parser = Config::INI::RefVars->new;
+  my $parser = Config::INI::RefVars->new();
   my $vars = $parser->parse_ini(src => $ini)->variables()->{'my section'};
 
   is($vars->{single}, 'one\\',
@@ -66,10 +66,8 @@ END_INI
   my $parser = Config::INI::RefVars->new;
   my $vars = $parser->parse_ini(src => $ini)->variables()->{'my section'};
 
-  is($vars->{a}, 'abcdefghi',
-    'multiple continuation lines');
-  is($vars->{b}, 'xyz',
-    'EOF after trailing backslash');
+  is($vars->{a}, 'abcdefghi', 'multiple continuation lines');
+  is($vars->{b}, 'xyz', 'EOF after trailing backslash');
 };
 
 
@@ -79,15 +77,13 @@ subtest 'directive in line continuation' => sub {
 
   write_file(
     File::Spec->catfile($dir, "main.ini"),
-<<'END');
+             <<'END');
 text \= abc\
 =include foo.ini
 END
 
   throws_ok {
-    Config::INI::RefVars
-      ->new
-      ->parse_ini(src => File::Spec->catfile($dir, "main.ini"));
+    Config::INI::RefVars->new->parse_ini(src => File::Spec->catfile($dir, "main.ini"));
   }
   qr/directive in line continuation/i,
     'directive not allowed inside line continuation';
@@ -96,25 +92,21 @@ END
 
 subtest 'equal sign inside continuation text' => sub {
   my $dir = tempdir(CLEANUP => 1);
-  write_file(
-    File::Spec->catfile($dir, "main.ini"),
+  write_file(File::Spec->catfile($dir, "main.ini"),
              <<'END');
 [sec]
 text \= abc\
 $()=include foo.ini
 END
 
-  my $vars = Config::INI::RefVars
-    ->new
-    ->parse_ini(src => File::Spec->catfile($dir, "main.ini"))
-    ->variables;
+  my $vars =
+    Config::INI::RefVars->new->parse_ini(src =>
+                                         File::Spec->catfile($dir, "main.ini")) ->variables;
 
-  is(
-    $vars->{sec}{text},
-    'abc=include foo.ini',
-    'only a physical line beginning with "=" is treated as a directive'
-  );
+  is($vars->{sec}{text}, 'abc=include foo.ini',
+     'only a physical line beginning with "=" is treated as a directive');
 };
 
 
+#==================================================================================================
 done_testing;

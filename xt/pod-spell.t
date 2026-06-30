@@ -19,4 +19,5 @@ TOCOPY
 tocopy
 concat
 dirname
+DHCP
 

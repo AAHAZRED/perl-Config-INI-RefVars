@@ -17,10 +17,10 @@ x = $(=# wrapped_pair,a,b)
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  is($obj->variables()->{sec}{x}, '[a:b]', 'nested user function call works');
+  is($obj->parse_ini(src => $ini)->variables()->{sec}{x}, '[a:b]',
+     'nested user function call works');
 };
+
 
 subtest 'user function calls builtin dispatch function' => sub {
   my $ini = <<'INI';
@@ -31,10 +31,10 @@ x = $(=# path,foo,bar,baz)
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  is($obj->variables()->{sec}{x}, catdir('foo', 'bar', 'baz'), 'user function can call builtin');
+  is($obj->parse_ini(src => $ini)->variables()->{sec}{x}, catdir('foo', 'bar', 'baz'),
+     'user function can call builtin');
 };
+
 
 subtest 'builtin arguments may contain user function calls' => sub {
   my $ini = <<'INI';
@@ -45,10 +45,10 @@ x = $(=& catfile,foo,$(=# name,bar))
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  is($obj->variables()->{sec}{x}, catfile('foo', 'bar.txt'), 'builtin argument can contain user function call');
+  is($obj->parse_ini(src => $ini)->variables()->{sec}{x}, catfile('foo', 'bar.txt'),
+     'builtin argument can contain user function call');
 };
+
 
 subtest 'expanded commas from nested user functions stay inside arguments' => sub {
   my $ini = <<'INI';
@@ -61,10 +61,10 @@ x = $(=# path,foo,$(=# with_comma,bar,baz))
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  is($obj->variables()->{sec}{x}, catdir('foo', 'bar,baz'), 'comma from nested user function stays in argument');
+  is($obj->parse_ini(src => $ini)->variables()->{sec}{x}, catdir('foo', 'bar,baz'),
+     'comma from nested user function stays in argument');
 };
+
 
 subtest 'nested qualified user function calls' => sub {
   my $ini = <<'INI';
@@ -79,10 +79,11 @@ x = $(=# wrap,test)
 INI
 
   my $obj = Config::INI::RefVars->new();
-  $obj->parse_ini(src => $ini);
-
-  is($obj->variables()->{b}{x}, '[A:test]', 'nested qualified user function call works');
+  is($obj->parse_ini(src => $ini)->variables()->{b}{x}, '[A:test]',
+     'nested qualified user function call works');
 };
 
+
+#==================================================================================================
 done_testing();
 
