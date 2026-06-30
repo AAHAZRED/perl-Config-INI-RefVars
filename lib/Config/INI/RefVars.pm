@@ -10,7 +10,7 @@ use Cwd qw(abs_path);
 use File::Spec::Functions qw(catdir catfile file_name_is_absolute splitpath);
 use Config::INI::RefVars::Builtins;
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 use constant DFLT_TOCOPY_SECTION => "__TOCOPY__";
 use constant FLD_KEY_PREFIX      => __PACKAGE__ . ' __ ';
@@ -854,7 +854,7 @@ __END__
 
 =head1 NAME
 
-Config::INI::RefVars - INI file reader that supports make-style variable references and various assignment operators
+Config::INI::RefVars - INI file reader with variable references and function calls
 
 
 =head1 VERSION
@@ -863,61 +863,80 @@ Version #VERSION#
 
 =head1 SYNOPSIS
 
-    use Config::INI::RefVars;
+  use Config::INI::RefVars;
 
-    my $ini_reader = Config::INI::RefVars->new();
-    $ini_reader->parse_ini(src => $my_ini_file);
-    my $variables = $ini_reader->variables;
-    while (my ($section, $section_vars) = each(%$variables)) {
-        # ...
-    }
+  my $cfg = Config::INI::RefVars->new();
+  $cfg->parse_ini(src => 'config.ini');
+  my $vars = $cfg->variables;
+  print $vars->{database}{host}, "\n";
 
-If the INI file contains:
+C<Config::INI::RefVars> extends the INI format with variable references and
+function calls. The parser resolves all variable references, built-in function
+calls, and user-defined function calls while reading the INI file. The
+resulting data structure therefore contains only plain Perl scalars and no
+unresolved references.
 
-   section = $(=)
 
-   [sec A]
-   foo=Variable $(==) in section $(section)
-   bar:=$(foo)
-   foo.=!
+=head1 QUICK EXAMPLE
 
-   [sec B]
-   baz = from $(=): ref foo from sec A: $([sec A]foo)
 
-then C<< $ini_reader->variables >> returns:
+Suppose F<config.ini> contains
+
+  root = /usr/local
+
+  [paths]
+  bin = $(root)/bin
+  lib = $(root)/lib
+  cfg = $(=& catfile, $(lib), config.ini)
+
+  [copy]
+  cfg = $([paths]cfg)
+
+Then
+
+  my $cfg = Config::INI::RefVars->new();
+
+  $cfg->parse_ini(src => 'config.ini');
+
+  my $vars = $cfg->variables;
+
+produces
 
   {
     '__TOCOPY__' => {
-                      'section' => '__TOCOPY__'
-                    },
-    'sec A' => {
-                 'bar' => 'Variable foo in section sec A',
-                 'foo' => 'Variable foo in section sec A!',
-                 'section' => 'sec A'
-               },
-    'sec B' => {
-                 'baz' => 'from sec B: ref foo from sec A: Variable foo in section sec A!',
-                 'section' => 'sec B'
-               }
+      root => '/usr/local',
+    },
+    paths => {
+      root => '/usr/local',
+      bin  => '/usr/local/bin',
+      lib  => '/usr/local/lib',
+      cfg  => '/usr/local/lib/config.ini',
+    },
+    copy => {
+      root => '/usr/local',
+      cfg  => '/usr/local/lib/config.ini',
+    },
   }
+
 
 =head1 DESCRIPTION
 
 =head2 INTRODUCTION
 
-This module provides an INI file reader that allows INI variables and
-environment variables to be referenced within the INI file. It also supports
-some additional assignment operators.
+C<Config::INI::RefVars> extends the traditional INI format with variable
+references, function calls, include directives, line continuations, and
+additional assignment operators. All references are resolved while parsing, so
+the resulting data structure contains only plain Perl scalars.
 
 Minimum version of perl required to use this module: C<v5.10.1>.
 
 
 =head2 OVERVIEW
 
-A line in an INI file should not start with an C<=> or the sequence
-C<;!>. These are reserved for future extensions. Otherwise the parser throws a
-"Directives are not yet supported" exception. Apart from these special cases,
-the following rules apply:
+A line in an INI file should normally not start with an C<=> or the sequence
+C<;!>. These are reserved for extensions (e.g. C<=include>). Otherwise the
+parser throws a "Directives are not yet supported" exception. Apart from these
+special cases, the following rules apply:
 
 =over
 
@@ -957,11 +976,6 @@ A variable name cannot be empty.
 
 =item *
 
-The sequence C<$(...)> is used to reference INI variables or environment
-variables.
-
-=item *
-
 Spaces around the assignment operator are ignored. Note that there are several
 assignment operators, not just C<=>.
 
@@ -973,12 +987,25 @@ and the assignment operator.
 
 =item *
 
-The source to be parsed (argument C<src> of the method C<parse_ini>) does not
-have to be a file, but can also be a string or an array.
+The sequence C<$(...)> is used to reference INI variables or environment
+variables.
+
+=item *
+
+The sequence C<$(=& ...)> is used to call built-in functions.
+
+=item *
+
+The sequence C<$(=# ...)> is used to call user-defined functions.
 
 =item *
 
 There is no escape character.
+
+=item *
+
+The source to be parsed (argument C<src> of the method C<parse_ini>) does not
+have to be a file, but can also be a string or an array.
 
 =back
 
@@ -1168,10 +1195,21 @@ line continuation, even if their value ends with a backslash.
   normal = foo\
   bar = baz
 
-is interpreted as
+Here, the variable C<normal> has the value C<foo\>, and the variable C<bar>
+has the value C<baz>.
 
-  normal = foo\
-  bar = baz
+B<Note:> The first character in a continued line cannot be C<=>. This
+
+  v\=abcd\
+  =
+
+will cause a C<directive in line continuation> error, but this will work:
+
+
+  v\=abcd\
+   =
+
+This works because of the space before the C<=>.
 
 
 =head2 INCLUDE FILES
@@ -1460,12 +1498,14 @@ Version of the C<Config::INI::RefVars> module.
 =item C<=rootdir>
 
 A string representation of the root directory (result of function
-C<rootdir> from L<File::Spec::Functions >).
+C<rootdir> from L<File::Spec::Functions>).
 
 =item C<=tmpdir>
 
-A string representation of the root directory (result of function
-C<tmpdir> from L<File::Spec::Functions >).
+A string representation of the first writable directory from a list of
+possible temporary directories, or the current directory if no writable
+temporary directories are found (result of function
+C<tmpdir> from L<File::Spec::Functions>).
 
 =back
 
@@ -1771,7 +1811,7 @@ attempts to call a function literally named C<$(fn1)$(fn2)> and therefore
 fails.
 
 Additional built-in functions can be registered via constructor argument
-C<builtins>.
+C<builtins>, see also L</Evaluating Arithmetic Expressions>.
 
 =head3 User-defined Functions
 
@@ -1836,9 +1876,8 @@ the built-in function dispatcher
 
 =back
 
-Thus, a user-defined function can have the same name as a built-in function
-for C<$(=# ...)> calls. The built-in function remains available via C<$(=&
-...)>.
+Thus, a user-defined function can override a built-in function for C<$(=#
+...)> calls. The built-in function remains available via C<$(=& ...)>.
 
 Example:
 
@@ -2369,13 +2408,13 @@ expressions in your INI file, it is simple to add such a feature, e.g.:
   my $cfg = Config::INI::RefVars->new(
     builtins => {
       my_calculator => sub {
-        die("calc: needs exactly 1 arg") unless @_ == 1;
+        die("my_calculator: needs exactly 1 arg") unless @_ == 1;
 
         my $m = Math::Expression::Evaluator->new;
         my $result;
 
         eval { $result = $m->parse($_[0])->val(); 1 }
-          or die("calc: $@");
+          or die("my_calculator: $@");
 
         return $result;
       },

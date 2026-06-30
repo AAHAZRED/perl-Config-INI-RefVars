@@ -1,5 +1,9 @@
 Revision history for Config-INI-RefVars
 
+1.01    2026/06/30
+
+    - Fixed/completed POD POD.
+
 1.00    2026/06/30
 
     - Added built-in function calls via $(=& FUNC,...).

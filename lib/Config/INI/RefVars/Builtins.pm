@@ -204,7 +204,7 @@ Version #VERSION#
 
 =head1 SYNOPSIS
 
-  use Config::INI::RefVars::Builtins ();
+  use Config::INI::RefVars::Builtins;
 
   my $dispatch =
     Config::INI::RefVars::Builtins::default_dispatch_table();
@@ -212,16 +212,7 @@ Version #VERSION#
 
 =head1 DESCRIPTION
 
-This module contains the built-in functions used by
-L<Config::INI::RefVars>.
-
-It is primarily an internal module. Applications normally access built-in
-functions indirectly via the C<$(=& ...)> syntax.
-
-Example:
-
-  [section]
-  path = $(=& catdir,foo,bar)
+This module contains the built-in functions used by L<Config::INI::RefVars>.
 
 
 =head1 FUNCTIONS
@@ -239,11 +230,14 @@ objects.
 
 =head1 BUILT-IN FUNCTIONS
 
-Built-in functions are called using the C<$(=& ...)> syntax.
+In the INI file, built-in functions are called using the syntax C<$(=& ...)>.
 
 Example:
 
   path = $(=& catdir,foo,bar)
+
+This is parsed by L<Config::INI::RefVars>, where C<catdir> is a key in the
+dispatch table returned by C<default_dispatch_table>.
 
 
 =head2 catdir
@@ -534,6 +528,9 @@ Additional built-in functions may be added in future releases.
 Applications should therefore avoid relying on the absence of specific
 function names.
 
+B<Naming conveention>: build in functions that may be added in the future will
+never have an underscore in their names.
+
 
 =head1 SEE ALSO
 
@@ -544,10 +541,14 @@ L<Config::INI::RefVars>, L<File::Basename>, L<File::Spec::Functions>
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Config::INI::RefVars
+  perldoc Config::INI::RefVars::Builtins
+
+For more information, refer to: L<Config::INI::RefVars>.
 
 
-You can also look for information here: L<Config::INI::RefVars>
+=head1 AUTHOR
+
+#AUTHOR#, C<< <451 at gmx.eu> >>
 
 
 =head1 LICENSE AND COPYRIGHT
