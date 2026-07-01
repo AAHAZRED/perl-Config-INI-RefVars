@@ -39,6 +39,7 @@ use constant {
 my %Globals = ('=:'       => catdir("", ""),
                '=::'      => $Config{path_sep},
                '=VERSION' => $VERSION,
+               '=devnull' => File::Spec::Functions::devnull(),
                '=rootdir' => File::Spec::Functions::rootdir(),
                '=tmpdir'  => File::Spec::Functions::tmpdir(),
               );
@@ -1502,6 +1503,11 @@ Name of the I<tocopy> section, see L</"THE I<TOCOPY> SECTION">.
 =item C<=VERSION>
 
 Version of the C<Config::INI::RefVars> module.
+
+=item C<=devnull>
+
+A string representation of the null device (result of function
+C<devnull> from L<File::Spec::Functions>.
 
 =item C<=rootdir>
 
