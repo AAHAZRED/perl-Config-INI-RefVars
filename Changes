@@ -1,5 +1,12 @@
 Revision history for Config-INI-RefVars
 
+x.yz    YYY/MM/DD
+
+    - Completed CONTRIBUTING.md.
+    - Fixed/completed POD.
+    - Added tests.
+    - Added variable '=devnull'.
+
 1.01    2026/06/30
 
     - Fixed/completed POD.
