@@ -1,5 +1,9 @@
 Revision history for Config-INI-RefVars
 
+1.03    2026/07/01
+
+    - Added function 'catpath'.
+
 1.02    2026/07/01
 
     - Completed CONTRIBUTING.md.
