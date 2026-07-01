@@ -1101,10 +1101,9 @@ Now C<var> has the value C<abc123>.
 
 =item C<+=>
 
-Works like the corresponding operator of GNU Make: the right-hand side is
-appended to the value of the variable, separated by a space. If the right-hand
-side is empty, a space is appended. If the variable is not yet defined, this
-has the same effect as a simple C<=>.
+The right-hand side is appended to the value of the variable, separated by a
+space. If the right-hand side is empty, a space is appended. If the variable
+is not yet defined, this has the same effect as a simple C<=>.
 
 Example:
 
@@ -1112,6 +1111,15 @@ Example:
    var+=123
 
 Now C<var> has the value C<abc 123>.
+
+B<Note:> The semantics of the C<+=> operator are intentionally based on GNU
+Make up to version 4.2.1. Consequently, an assignment such as
+
+  foo =
+  foo +=
+
+appends a single space rather than an empty string. GNU Make changed this
+behavior in version 4.3.
 
 
 =item C<< .>= >>
@@ -1525,7 +1533,8 @@ By default, all variables whose names contain a C<=> are removed from the
 resulting hash. This means that the variables discussed above are not normally
 included in the result. This behavior can be changed with the C<parse_ini>
 argument C<cleanup>. The variable C<==> can of course not be included in the
-result.
+result. Similarly, C<$(=ENV:...)>, C<$(=env:...)>, and C<$(=CONFIG:...)> are
+never included in the result.
 
 
 =head2 ACCESSING ENVIRONMENT AND CONFIG VARIABLES
@@ -1554,6 +1563,11 @@ You can access configuration variables of Perl's L<Config> module with this C<$(
   the archlib=$(=CONFIG:archlib)
 
 This gives the variable C<the archlib> the value of C<$Config{archlib}>.
+
+You can write something like C<$([SEC]=ENV:FOO)>; this yields the same result
+as C<$(=ENV:FOO)>, provided that C<[SEC]> exists, and an empty string if
+C<[SEC]> does not exist. The same applies, of course, to C<$([SEC]=env:FOO)>
+and C<$([SEC]=CONFIG:FOO)>.
 
 Note: In contrast to C<$(=ENV:...)>, there is no lower-case counterpart to
 C<$(=CONFIG:...)>, as this would not make sense.

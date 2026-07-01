@@ -528,7 +528,7 @@ Additional built-in functions may be added in future releases.
 Applications should therefore avoid relying on the absence of specific
 function names.
 
-B<Naming conveention>: build in functions that may be added in the future will
+B<Naming convention>: build in functions that may be added in the future will
 never have an underscore in their names.
 
 
