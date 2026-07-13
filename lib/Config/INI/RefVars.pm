@@ -987,7 +987,8 @@ and the assignment operator.
 =item *
 
 The name of a user-defined variable cannot be empty. Furthermore, it cannot
-begin with any of the characters C<=>, C<;>, or C<[>.
+begin with any of the characters C<;>, or C<[>. Obviously, it also cannot contain a
+C<=> at all (but see constructor variable C<tocopy_vars>).
 
 =item *
 

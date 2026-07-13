@@ -104,3 +104,19 @@ delete $WriteMakefileArgs{LICENSE}
     unless eval { ExtUtils::MakeMaker->VERSION('6.31'); 1 };
 
 WriteMakefile(%WriteMakefileArgs);
+
+
+sub MY::postamble {
+  return "
+clean_all: clean
+\trm -f MANIFEST README
+
+README.md: $PM_File
+\tpod2markdown $PM_File > README.md
+
+README: $PM_File
+\tpod2text $PM_File > README
+
+all :: README
+";
+}
