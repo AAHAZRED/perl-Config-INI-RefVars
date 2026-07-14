@@ -900,7 +900,7 @@ Then
 produces
 
   {
-    '__TOCOPY__' => {
+    __TOCOPY__ => {
       root => '/usr/local',
     },
     paths => {
