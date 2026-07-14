@@ -23,6 +23,8 @@
 (?:^|/)#[^/]*#$
 (?:^|/)\.#
 
+# We generate a README file for the distribution, so README.md is not needed.
+^README\.md$
 
 # Other
 ^tmp.*

@@ -10,7 +10,7 @@ use Cwd qw(abs_path);
 use File::Spec::Functions qw(catdir catfile file_name_is_absolute splitpath);
 use Config::INI::RefVars::Builtins;
 
-our $VERSION = '1.04';
+our $VERSION = '1.05';
 
 use constant DFLT_TOCOPY_SECTION => "__TOCOPY__";
 use constant FLD_KEY_PREFIX      => __PACKAGE__ . ' __ ';
@@ -211,7 +211,7 @@ my $_check_tocopy_vars = sub {
       $tocopy_vars->{$var} = "";
     }
     croak("'tocopy_vars': variable '$var': name is not permitted")
-      if ($var =~ /^\s*$/ || $var =~ /^[[=;]/);
+      if ($var =~ /^\s*$/ || $var =~ /^[=;]/);
   }
   $self->{+TOCOPY_VARS} = {%$tocopy_vars} if $set;
   return $tocopy_vars;
@@ -2189,7 +2189,7 @@ I<tocopy> section, the hash values become the corresponding variable values. Thi
 allows you to specify variables that you cannot specify in the INI file,
 e.g. variables with a C<=> in the name.
 
-Keys with C<=>, C<[> or C<;> as the first character are not permitted.
+Keys with C<=> or C<;> as the first character are not permitted.
 
 Default is C<undef>.
 
