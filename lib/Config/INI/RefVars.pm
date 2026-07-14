@@ -10,7 +10,7 @@ use Cwd qw(abs_path);
 use File::Spec::Functions qw(catdir catfile file_name_is_absolute splitpath);
 use Config::INI::RefVars::Builtins;
 
-our $VERSION = '1.05';
+our $VERSION = '1.06';
 
 use constant DFLT_TOCOPY_SECTION => "__TOCOPY__";
 use constant FLD_KEY_PREFIX      => __PACKAGE__ . ' __ ';
