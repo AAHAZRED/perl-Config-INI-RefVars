@@ -2202,13 +2202,13 @@ Example:
 
    my $obj = Config::INI::RefVars->new(varname_chk_re => qr/^[A-Z]/);
    my $src = <<'EOT';
-      [the section]
-      A=the value
-      xYZ=123
-      Z1=z2
-      Y=
+     [the section]
+     A=the value
+     xYZ=123
+     Z1=z2
+     Y=
    EOT
-  $obj->parse_ini(src => $src);
+   $obj->parse_ini(src => $src);
 
 This will result in an exception with the message C<'xYZ': var name does not
 match varname_chk_re>.
@@ -2383,14 +2383,14 @@ method argument.
 
    my $cfg = Config::INI::RefVars->new(separator => "/");
 
-   my $ini =<<'INI';
-    [FOO]
-    var=abcde
+   my $ini = <<'INI';
+     [FOO]
+     var=abcde
 
-    [BAR]
-    FOO/var=my var in section BAR
-    a=$(FOO/var)
-    b=$(BAR/FOO/var)
+     [BAR]
+     FOO/var=my var in section BAR
+     a=$(FOO/var)
+     b=$(BAR/FOO/var)
    INI
 
 By specifying the C<separator> argument, qualified variable references use
