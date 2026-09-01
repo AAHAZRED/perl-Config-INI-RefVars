@@ -10,7 +10,7 @@ use Cwd qw(abs_path);
 use File::Spec::Functions qw(catdir catfile file_name_is_absolute splitpath);
 use Config::INI::RefVars::Builtins;
 
-our $VERSION = '1.06';
+our $VERSION = '1.07';
 
 use constant DFLT_TOCOPY_SECTION => "__TOCOPY__";
 use constant FLD_KEY_PREFIX      => __PACKAGE__ . ' __ ';
@@ -2612,8 +2612,7 @@ L<https://github.com/AAHAZRED/perl-Config-INI-RefVars>
 
 This software is copyright (c) 2026 by #AUTHOR#.
 
-This is free software; you can redistribute it and/or modify it under
-the same terms as the Perl 5 programming language system itself.
+This software is licensed under the Artistic License 2.0.
 
 
 =cut
